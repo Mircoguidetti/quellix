@@ -1,0 +1,407 @@
+<title>Quellix</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Quellix applies your lab's spec to every first-person video you collect and decides accept, reject or review, so your reviewers only see the doubtful cases.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one dark column, quiet sections, product shown as small app windows (same UI language as the Hesten landing). */
+:root{
+  color-scheme:dark;
+  --bg:#000;
+  --panel:#0b0c0e;
+  --panel2:#121417;
+  --line:#22252a;
+  --fg:#f2f3f5;
+  --mute:#8d939c;
+  --dim:#5c626b;
+  --accent:#8fb4ff;
+  --accent-bg:rgba(143,180,255,.12);
+  --ok:#7ed6a8;
+  --no:#ff8a7a;
+  --f-ui:"Schibsted Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gut-l:max(16px,env(safe-area-inset-left,0px));
+  --gut-r:max(16px,env(safe-area-inset-right,0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg)}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+h1,h2,h3{margin:0;font-weight:500;text-wrap:balance;letter-spacing:-.02em}
+p{margin:0}
+
+/* nav */
+.nv{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(0,0,0,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nv.sc{border-bottom-color:var(--line)}
+.nv .in{max-width:1120px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r);height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{font-weight:600;letter-spacing:.14em;font-size:15px;display:flex;align-items:center;gap:10px}
+.logo i{width:16px;height:16px;border:1.5px solid var(--fg);border-radius:3px;position:relative;display:inline-block}
+.logo i::after{content:"";position:absolute;inset:3px;border:1.5px solid var(--accent);border-radius:1px}
+.nn{display:flex;align-items:center;gap:28px;font-size:15px}
+.nn .lk{color:var(--mute);transition:color .15s}
+.nn .lk:hover{color:var(--fg)}
+.pill{background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-weight:500}
+.mb{display:none;background:none;border:0;width:40px;height:40px;padding:0;cursor:pointer;position:relative}
+.mb i{position:absolute;left:10px;right:10px;height:1.5px;background:var(--fg);transition:transform .2s}
+.mb i:first-child{top:16px}.mb i:last-child{top:23px}
+.mb[aria-expanded="true"] i:first-child{transform:translateY(3.5px) rotate(45deg)}
+.mb[aria-expanded="true"] i:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+.mp{display:none;flex-direction:column;padding:8px var(--gut-r) 20px var(--gut-l);border-top:1px solid var(--line)}
+.mp a{padding:12px 0;font-size:18px;color:var(--mute)}
+.mp a.g{color:var(--fg)}
+.mp.op{display:flex}
+@media (max-width:720px){.nn .lk,.nn .pill{display:none}.mb{display:block}}
+
+/* hero */
+.hero{position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;left:50%;top:38%;width:min(1100px,160vw);aspect-ratio:1;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(143,180,255,.13),rgba(143,180,255,0));pointer-events:none}
+.hc{position:relative;max-width:1120px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r);padding-block:clamp(80px,12vw,140px) clamp(64px,9vw,112px);display:flex;flex-direction:column;align-items:center;text-align:center}
+h1{font-size:clamp(40px,7vw,80px);line-height:1.02;max-width:14ch;letter-spacing:-.035em}
+.hl{color:var(--mute);font-size:clamp(17px,2vw,20px);max-width:40ch;margin-top:22px}
+.hb{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px;justify-content:center}
+.vis{position:relative;width:100%;max-width:960px;margin-top:clamp(48px,7vw,80px);text-align:left}
+.scr{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:20px;border:1px solid var(--line);background:var(--panel);overflow:hidden;box-shadow:0 40px 120px -40px rgba(143,180,255,.25)}
+#hc{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;top:14px;left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;font-family:var(--f-mono);font-size:12px;color:var(--mute)}
+.hud .rc{display:flex;align-items:center;gap:8px;color:var(--fg)}
+.hud .rc i{width:7px;height:7px;border-radius:50%;background:var(--no)}
+.ov{position:absolute;right:-24px;bottom:-28px;width:280px;background:rgba(18,20,23,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.ovh{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12px;color:var(--mute)}
+@media (max-width:1040px){.ov{right:16px;bottom:16px}}
+@media (max-width:640px){.hud span:last-child{display:none}.ov{position:relative;right:auto;bottom:auto;width:100%;margin-top:12px}}
+.b{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 22px;border-radius:999px;font-size:16px;font-weight:500;transition:background .15s,border-color .15s}
+.b.w{background:var(--fg);color:var(--bg)}
+.b.w:hover{background:#fff}
+.b.o{border:1px solid var(--line);color:var(--fg)}
+.b.o:hover{border-color:var(--dim)}
+
+/* sections */
+.sec .wrap{max-width:1120px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r);padding-block:clamp(72px,10vw,120px)}
+.sec + .sec .wrap{border-top:1px solid var(--line)}
+h2{font-size:clamp(30px,4.4vw,48px);line-height:1.08;max-width:20ch}
+.sec h2,.sec .lead{margin-left:auto;margin-right:auto;text-align:center}
+.lead{color:var(--mute);font-size:clamp(17px,1.8vw,19px);max-width:52ch;margin-top:16px}
+.body{margin-top:56px;display:grid;gap:20px}
+.more{text-align:center}
+.faq{margin-left:auto;margin-right:auto}
+
+/* cards + carousel */
+.car{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:20px}
+.cd{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cd h3{font-size:20px;display:flex;align-items:center;gap:10px;margin-top:8px}
+.cd h3 b{font-family:var(--f-mono);font-weight:500;font-size:12px;color:var(--accent);background:var(--accent-bg);border-radius:6px;width:24px;height:24px;display:inline-grid;place-items:center}
+.cd > p{color:var(--mute);font-size:16px}
+@media (max-width:860px){
+  .car{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding-bottom:6px;margin-right:calc(-1 * var(--gut-r));padding-right:var(--gut-r);scrollbar-width:none}
+  .car::-webkit-scrollbar{display:none}
+  .car > *{flex:0 0 min(84%,380px);scroll-snap-align:start}
+}
+
+/* mock windows */
+.pn{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:214px;display:flex}
+.x-win{flex:1;display:flex;flex-direction:column;min-width:0}
+.x-wh{display:flex;align-items:center;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.x-wh i{width:9px;height:9px;border-radius:50%;background:#2c3036}
+.x-wh span{font-family:var(--f-mono);font-size:12px;color:var(--dim);margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x-fld{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;font-size:14px;color:var(--mute);border-bottom:1px solid var(--line)}
+.x-fld:last-of-type{border-bottom:0}
+.x-t{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:6px;background:#1b1e22;color:var(--fg);white-space:nowrap;font-variant-numeric:tabular-nums}
+.x-t.b{background:var(--accent-bg);color:var(--accent)}
+.x-t.ok{background:rgba(126,214,168,.12);color:var(--ok)}
+.x-t.no{background:rgba(255,138,122,.12);color:var(--no)}
+.x-note{margin-top:auto;padding:10px 14px;font-size:13px;color:var(--fg);background:#16191d;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start}
+.x-note::before{content:"";flex:0 0 6px;height:6px;margin-top:7px;border-radius:50%;background:var(--accent)}
+.x-code{font-family:var(--f-mono);font-size:12.5px;line-height:1.75;padding:12px 14px;color:var(--mute);white-space:pre;overflow-x:auto;font-variant-numeric:tabular-nums}
+.x-code .k{color:var(--accent)}
+.x-code .s{color:var(--fg)}
+.x-code .n{color:var(--no)}
+.x-code .t{color:var(--dim)}
+
+/* frame preview inside step 1 */
+.vf{position:relative;margin:12px 14px 4px;height:70px;border-radius:8px;background:repeating-linear-gradient(135deg,#15181c 0 10px,#121519 10px 20px);overflow:hidden}
+.vf .c{position:absolute;width:12px;height:12px;border-color:var(--fg);border-style:solid;opacity:.7}
+.vf .c1{top:6px;left:6px;border-width:1.5px 0 0 1.5px}.vf .c2{top:6px;right:6px;border-width:1.5px 1.5px 0 0}
+.vf .c3{bottom:6px;left:6px;border-width:0 0 1.5px 1.5px}.vf .c4{bottom:6px;right:6px;border-width:0 1.5px 1.5px 0}
+.vf .hand{position:absolute;bottom:10px;right:-8px;width:40px;height:30px;border:1.5px dashed var(--no);border-radius:6px}
+.vf .doc{position:absolute;top:14px;left:26px;width:46px;height:30px;border-radius:4px;background:rgba(143,180,255,.25);backdrop-filter:blur(2px)}
+.vf .doc::after{content:"sfocato";position:absolute;inset:auto 0 -2px;font-family:var(--f-mono);font-size:9px;color:var(--accent);text-align:center;transform:translateY(100%)}
+
+/* flow */
+.flow{display:grid;grid-template-columns:1fr 48px 1.15fr 48px 1fr;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px}
+.nd{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.nd h3{font-size:16px}
+.nd small{font-family:var(--f-mono);font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.nd.on{border-color:rgba(143,180,255,.45);box-shadow:0 0 0 4px var(--accent-bg)}
+.x-g{display:block;height:8px;border-radius:4px;background:#1f2328}
+.x-g.bl{background:repeating-linear-gradient(90deg,rgba(143,180,255,.35) 0 6px,rgba(143,180,255,.15) 6px 12px)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.ln{height:1px;background:linear-gradient(90deg,var(--line),var(--accent),var(--line));position:relative}
+.ln::after{content:"";position:absolute;right:-1px;top:-3px;border-left:6px solid var(--accent);border-top:3.5px solid transparent;border-bottom:3.5px solid transparent}
+@media (max-width:760px){
+  .flow{grid-template-columns:1fr;gap:0;padding:18px}
+  .ln{width:1px;height:28px;justify-self:center;background:linear-gradient(180deg,var(--line),var(--accent))}
+  .ln::after{right:auto;left:-3px;top:auto;bottom:-1px;border-top:6px solid var(--accent);border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-bottom:0}
+}
+
+/* lists */
+.ls{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:16px;color:var(--mute)}
+.ls li{display:flex;gap:12px;align-items:flex-start}
+.ls li::before{flex:0 0 18px;height:18px;border-radius:50%;margin-top:3px;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;line-height:1}
+.ls.y li::before{content:"✓";background:rgba(126,214,168,.12);color:var(--ok)}
+.ls.n li::before{content:"×";background:rgba(255,138,122,.12);color:var(--no)}
+
+/* fraud split */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:stretch}
+.split .pn{min-height:0}
+.frd{display:grid;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.frd > div{padding:20px;display:grid;gap:6px;border-bottom:1px solid var(--line)}
+.frd > div:last-child{border-bottom:0}
+.frd h3{font-size:17px}
+.frd p{color:var(--mute);font-size:15px}
+@media (max-width:860px){.split{grid-template-columns:1fr}}
+
+/* rows */
+.rows{margin-top:48px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--line)}
+.rw{padding:28px 32px 28px 0;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.rw:nth-child(even){padding:28px 0 28px 32px;border-left:1px solid var(--line)}
+.rw h3{font-size:19px}
+.rw p{color:var(--mute);font-size:16px;max-width:46ch}
+@media (max-width:760px){.rows{grid-template-columns:1fr}.rw,.rw:nth-child(even){padding:22px 0;border-left:0}}
+.more{margin-top:28px;font-size:16px}
+.more a{color:var(--accent)}
+
+/* pricing */
+.ck{list-style:none;margin:36px auto 0;max-width:760px;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 32px;font-size:16px;color:var(--mute)}
+.ck li{padding-left:20px;position:relative}
+.ck li::before{content:"";position:absolute;left:0;top:10px;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+.ck b{color:var(--fg);font-weight:500}
+@media (max-width:760px){.ck{grid-template-columns:1fr}}
+.pcs{margin-top:40px}
+.pk{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.pk.on{border-color:rgba(143,180,255,.45);background:linear-gradient(180deg,rgba(143,180,255,.06),var(--panel) 60%)}
+.ph{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.pp2{font-size:40px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.pe{font-size:14px;color:var(--dim);margin-top:-6px}
+.calc{display:grid;gap:0;border-top:1px solid var(--line);margin-top:2px}
+.calc div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px;color:var(--mute)}
+.calc div span:last-child{font-family:var(--f-mono);font-size:13.5px;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc .tot span:last-child{color:var(--ok)}
+.calc .neg span:last-child{color:var(--no)}
+.fine{font-size:13px;color:var(--dim)}
+
+/* faq */
+.faq{margin-top:40px;border-top:1px solid var(--line);max-width:820px}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;padding:22px 40px 22px 0;font-size:18px;font-weight:500;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-weight:400;color:var(--mute);font-size:20px;transition:transform .2s}
+.faq details[open] summary::after{transform:translateY(-50%) rotate(45deg)}
+.faq details p{color:var(--mute);font-size:16px;padding:0 40px 22px 0;max-width:64ch}
+
+/* end */
+.end{position:relative;overflow:hidden;border-top:1px solid var(--line)}
+.glow{position:absolute;left:50%;top:-30%;width:min(900px,140vw);aspect-ratio:1;max-width:none;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(143,180,255,.18),rgba(143,180,255,0));pointer-events:none}
+.end .z{position:relative;max-width:1120px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r);padding-block:clamp(88px,12vw,150px) 72px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
+.end h2{font-size:clamp(34px,5.4vw,60px);max-width:16ch}
+.end p{color:var(--mute);font-size:18px;max-width:50ch}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:12px}
+.ft{position:relative;max-width:1120px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r);padding-block:28px calc(28px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--dim);border-top:1px solid var(--line)}
+.ft span{letter-spacing:.14em;font-weight:600;color:var(--mute)}
+.ft nav{display:flex;gap:24px}
+.ft a:hover{color:var(--fg)}
+</style>
+
+<header class="nv" id="nv"><div class="in"><a class="logo" href="#top"><i aria-hidden="true"></i>QUELLIX</a><nav class="nn" aria-label="Main"><a class="lk" href="#steps">How it works</a><a class="lk" href="#privacy">Privacy</a><a class="lk" href="#pricing">Pricing</a><a class="pill" href="#start">Request a demo</a><button class="mb" id="mb" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mp"><i></i><i></i></button></nav></div>
+<div class="mp" id="mp"><a href="#steps">How it works</a><a href="#privacy">Privacy</a><a href="#pricing">Pricing</a><a class="g" href="#start">Request a demo</a></div></header>
+
+<main>
+<section class="hero" id="top">
+ <div class="hc">
+  <h1>Stop watching every video before you pay for it.</h1>
+  <p class="hl">Quellix applies your lab’s spec to every upload and decides accept, reject or review. Your reviewers only see the doubtful cases.</p>
+  <div class="hb"><a class="b w" href="#start">Request a demo</a><a class="b o" href="#steps">How it works</a></div>
+  <div class="vis">
+   <div class="scr">
+    <canvas id="hc" aria-hidden="true"></canvas>
+    <div class="hud" aria-hidden="true"><span class="rc"><i></i>REC 00:24</span><span>load the dishwasher</span></div>
+   </div>
+   <div class="ov">
+    <div class="ovh"><span>v_88213</span><span class="x-t ok">accept</span></div>
+    <div class="x-fld"><span>Task completed</span><span class="x-t">yes</span></div>
+    <div class="x-fld"><span>Hands visible</span><span class="x-t b">92%</span></div>
+    <div class="x-fld"><span>Personal data</span><span class="x-t">none</span></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="sec" id="steps"><div class="wrap">
+<h2>From upload to decision in three steps</h2>
+<p class="lead">One API call where you approve videos today. Recruiting, tasks and payouts stay yours.</p>
+<div class="body"><div class="car" style="--cols:3">
+<div class="cd"><div class="pn"><div class="x-win"><div class="x-wh"><i></i><i></i><i></i><span>rubric · load the dishwasher</span></div>
+ <div class="x-fld"><span>Task completed</span><span class="x-t b">required</span></div>
+ <div class="x-fld"><span>Hands visible</span><span class="x-t b">min 80%</span></div>
+ <div class="x-fld"><span>Blur</span><span class="x-t">max 5%</span></div>
+ <div class="x-fld"><span>Faces or documents</span><span class="x-t">review</span></div>
+ <div class="x-note">Start from your buyer's spec. One rubric per task, versioned.</div></div></div>
+ <h3><b>1</b>Set the rubric</h3><p>Write down what an acceptable video looks like for each task, the same way your buyer does.</p></div>
+<div class="cd"><div class="pn"><div class="x-win"><div class="x-wh"><i></i><i></i><i></i><span>video v_88214</span></div>
+ <div class="x-fld"><span>Decision</span><span class="x-t no">reject</span></div>
+ <div class="x-fld"><span>Task completed</span><span class="x-t">00:03–00:31</span></div>
+ <div class="x-fld"><span>Hands visible</span><span class="x-t no">61%</span></div>
+ <div class="x-fld"><span>Blur</span><span class="x-t">2%</span></div>
+ <div class="x-fld"><span>Already delivered</span><span class="x-t">no</span></div></div></div>
+ <h3><b>2</b>Check every upload</h3><p>Each video comes back with a decision and the reasons behind it, in under a minute.</p></div>
+<div class="cd"><div class="pn"><div class="x-win"><div class="x-wh"><i></i><i></i><i></i><span>review queue</span></div>
+<div class="x-code"><span class="t">v_88217</span>  <span class="s">face at 00:12</span>
+<span class="t">v_88221</span>  <span class="s">task ends early</span>
+<span class="t">v_88230</span>  <span class="s">document on table</span>
+<span class="k">auto-decided</span>   <span class="t">87% of today</span>
+<span class="k">lab outcomes</span>   <span class="t">in the report</span></div>
+ <div class="x-note">Your reviewers see only the doubtful cases.</div></div></div>
+ <h3><b>3</b>Review only the edge cases</h3><p>Clear cases are decided for you. Doubtful ones come with the reason, for a person to decide.</p></div>
+</div></div></div></section>
+
+<section class="sec" id="privacy"><div class="wrap">
+<h2>Videos are checked, not kept.</h2>
+<p class="lead">Quellix analyses each video, returns its decision and deletes it. Your videos are never used to train models, and every provider we use is listed.</p>
+<div class="body"><div class="flow">
+<div class="nd"><small>Phone</small><h3>Contributor</h3><span class="x-g" style="width:82%"></span><span class="x-g bl" style="width:46%"></span><span class="x-g" style="width:64%"></span></div>
+<div class="ln" aria-hidden="true"></div>
+<div class="nd on"><small>Cloud</small><h3>Quellix</h3><div class="tags"><span class="x-t b">decision</span><span class="x-t b">reasons</span><span class="x-t b">hands %</span><span class="x-t b">fingerprint</span></div></div>
+<div class="ln" aria-hidden="true"></div>
+<div class="nd"><small>Your platform</small><h3>Pays and sells</h3><span class="x-g" style="width:72%"></span><span class="x-g" style="width:50%"></span></div>
+</div>
+<div class="car">
+<div class="cd"><h3>What Quellix keeps</h3><ul class="ls y"><li>The decision and its reasons.</li><li>The measurement behind each check.</li><li>The rubric version that was used.</li><li>A fingerprint that can’t be turned back into video.</li></ul></div>
+<div class="cd"><h3>What it doesn’t</h3><ul class="ls n"><li>The video, after the analysis.</li><li>Faces, documents and screens it flagged.</li><li>Contributor names and payment details.</li><li>Anything visible to other customers.</li><li>Training data for any model.</li></ul></div>
+</div></div></div></section>
+
+<section class="sec" id="fraud"><div class="wrap">
+<h2>No video gets paid twice.</h2>
+<p class="lead">Re-uploads, edited copies and clips taken from the internet are caught before payment, in the same call as every other check.</p>
+<div class="body split">
+<div class="pn"><div class="x-win"><div class="x-wh"><i></i><i></i><i></i><span>POST /v1/videos · response</span></div>
+<div class="x-code">{
+  <span class="k">"video_id"</span>: <span class="s">"v_88240"</span>,
+  <span class="k">"decision"</span>: <span class="n">"reject"</span>,
+  <span class="k">"reason"</span>: <span class="s">"already_delivered"</span>,
+  <span class="k">"detail"</span>: <span class="s">"same video delivered
+             4 days ago as v_80102"</span>,
+  <span class="k">"similarity"</span>: <span class="s">0.98</span>
+}</div></div></div>
+<div class="frd">
+<div><h3>Old videos uploaded again</h3><p>A recording that was already delivered can’t come back under a new name or a new task.</p></div>
+<div><h3>Edited copies</h3><p>Cropped, mirrored, slowed down or re-compressed copies are matched too.</p></div>
+<div><h3>Footage from the internet</h3><p>Clips downloaded from the web are flagged before anyone gets paid.</p></div>
+</div>
+</div></div></section>
+
+<section class="sec" id="limits"><div class="wrap">
+<h2>What Quellix doesn’t do.</h2>
+<div class="rows">
+<div class="rw"><h3>It doesn’t sell your data.</h3><p>We check your videos and delete them. We don’t keep them and we don’t offer them to labs.</p></div>
+<div class="rw"><h3>It doesn’t take the last word.</h3><p>You set the rubric, your reviewers can override any decision, and contributors can contest a rejection with a person.</p></div>
+<div class="rw"><h3>It doesn’t promise what your lab will accept.</h3><p>It applies the spec you give it, the same way on every video. Upload your lab’s decisions and we measure ourselves against them.</p></div>
+<div class="rw"><h3>First-person video comes first.</h3><p>We start with egocentric video from phones and action cameras. Robot data and other sensors come later.</p></div>
+</div><p class="more"><a href="#faq">Read the FAQ →</a></p></div></section>
+
+<section class="sec" id="pricing"><div class="wrap">
+<h2>Pay for the hours we check</h2>
+<p class="lead">Try it on your own videos first. Prices will be published here, with clear limits so the bill never surprises you.</p>
+<ul class="ck"><li><b>Free pilot</b> on a sample of your videos</li><li><b>Usage-based</b>, per hour of video checked</li><li><b>Annual plans</b> for large volumes</li><li><b>DPA included</b>, for every customer</li></ul>
+<div class="pcs"><div class="car">
+<div class="pk"><span class="ph">Without Quellix</span><div class="pp2">500 h</div><div class="pe">of review per month, example</div>
+<div class="calc"><div><span>Videos received</span><span>10,000</span></div><div><span>Videos a person watches</span><span>10,000</span></div><div><span>Review time per video</span><span>3 min</span></div><div class="neg"><span>Review hours</span><span>500</span></div></div>
+<ul class="ls n"><li>Every video watched by a person</li><li>Each reviewer reads the spec their own way</li></ul></div>
+<div class="pk on"><span class="ph">With Quellix</span><div class="pp2">75 h</div><div class="pe">of review per month, example</div>
+<div class="calc"><div><span>Videos received</span><span>10,000</span></div><div><span>Decided automatically</span><span>8,500</span></div><div><span>Sent to review</span><span>1,500</span></div><div class="tot"><span>Review hours</span><span>75</span></div></div>
+<ul class="ls y"><li>Reviewers see only the doubtful cases</li><li>The same spec on every video, with reasons</li></ul></div>
+</div>
+<p class="fine" style="margin-top:14px">Example with hypothetical numbers: 10,000 videos a month, 3 minutes of review each, 15% sent to review. Quellix’s fee is not included.</p>
+</div></div></section>
+
+<section class="sec" id="faq"><div class="wrap">
+<h2>Questions</h2>
+<div class="faq">
+<details><summary>Do I have to rebuild my app?</summary><p>No. Call the API where you approve videos today. Tasks, payouts and customers stay where they are.</p></details>
+<details><summary>Who sets the criteria?</summary><p>You, usually from your buyer’s spec. Each task has its own rubric, and every decision records the rubric version it used.</p></details>
+<details><summary>How accurate is it?</summary><p>We report precision and recall on rejections, compared with your own acceptance rate, on videos your reviewers or your lab have already judged. Doubtful cases go to review instead of being rejected.</p></details>
+<details><summary>Can I measure it against my lab’s decisions?</summary><p>Yes. Upload the lab’s accept or reject outcomes with your videos, and the report compares our decisions with theirs.</p></details>
+<details><summary>Does Quellix keep my videos?</summary><p>No. Videos are deleted after the analysis and never used to train models. We list every provider that processes them, and a DPA is available for every customer.</p></details>
+<details><summary>What do I get back for each video?</summary><p>The decision, the reasons and each measurement: when the task starts and ends, how long hands are visible, blur, privacy flags, originality, and the rubric version.</p></details>
+</div></div></section>
+</main>
+
+<section class="end" id="start"><div class="glow" aria-hidden="true"></div>
+<div class="z"><h2>Every video you pay for teaches a robot.</h2>
+<p>Automated acceptance for companies that pay people to film their work. Upload videos your reviewers have already judged and see the report.</p>
+<div class="cta"><a class="b w" href="#start">Request a demo</a><a class="b o" href="#steps">How it works</a></div></div>
+<footer class="ft"><span>QUELLIX</span><nav aria-label="Footer"><a href="#steps">How it works</a><a href="#privacy">Privacy</a><a href="#faq">FAQ</a></nav></footer>
+</section>
+
+<script>
+(function(){
+  var nv=document.getElementById('nv'),mb=document.getElementById('mb'),mp=document.getElementById('mp');
+  function sc(){nv.classList.toggle('sc',window.scrollY>8)}
+  window.addEventListener('scroll',sc,{passive:true});sc();
+  mb.addEventListener('click',function(){var o=mp.classList.toggle('op');mb.setAttribute('aria-expanded',o?'true':'false')});
+  mp.addEventListener('click',function(e){if(e.target.tagName==='A'){mp.classList.remove('op');mb.setAttribute('aria-expanded','false')}});
+
+  /* hero: a viewfinder over a field of frame tiles, with a hand trajectory being traced in 3D-ish space */
+  var cv=document.getElementById('hc'),cx=cv.getContext('2d');
+  var rm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W=0,H=0,dpr=1,trail=[],t0=performance.now();
+  function size(){var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)}
+  function pt(t){
+    var ox=W*0.5, oy=H*0.52;
+    var x=Math.sin(t*0.9)*W*0.27+Math.sin(t*2.1)*W*0.04;
+    var y=Math.cos(t*0.7)*H*0.2+Math.sin(t*1.6)*H*0.05;
+    var z=(Math.sin(t*0.5)+1)/2;
+    return {x:ox+x,y:oy+y,z:z};
+  }
+  function grid(){
+    var step=Math.max(28,W/26);cx.fillStyle='rgba(255,255,255,0.07)';
+    for(var gx=step/2;gx<W;gx+=step){for(var gy=step/2;gy<H;gy+=step){cx.fillRect(gx,gy,1,1)}}
+    /* a document on the counter, blurred before upload */
+    var dw=W*0.13,dh=dw*0.7,dx=W*0.12,dy=H*0.62;
+    cx.fillStyle='rgba(143,180,255,0.16)';cx.fillRect(dx,dy,dw,dh);
+    cx.strokeStyle='rgba(143,180,255,0.45)';cx.setLineDash([4,4]);cx.lineWidth=1;cx.strokeRect(dx,dy,dw,dh);cx.setLineDash([]);
+    cx.font='500 10px "JetBrains Mono", ui-monospace, monospace';cx.fillStyle='rgba(143,180,255,0.85)';
+    cx.fillText('DOCUMENT FLAGGED',dx,dy+dh+16);
+  }
+  function finder(p){
+    var w=W*0.58,h=H*0.56,x=W*0.5-w/2,y=H*0.52-h/2,c=18;
+    cx.strokeStyle='rgba(242,243,245,0.35)';cx.lineWidth=1.5;cx.beginPath();
+    cx.moveTo(x,y+c);cx.lineTo(x,y);cx.lineTo(x+c,y);
+    cx.moveTo(x+w-c,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+c);
+    cx.moveTo(x+w,y+h-c);cx.lineTo(x+w,y+h);cx.lineTo(x+w-c,y+h);
+    cx.moveTo(x+c,y+h);cx.lineTo(x,y+h);cx.lineTo(x,y+h-c);cx.stroke();
+    var inside=p.x>x&&p.x<x+w&&p.y>y&&p.y<y+h;
+    cx.font='500 11px "JetBrains Mono", ui-monospace, monospace';
+    cx.fillStyle=inside?'rgba(126,214,168,0.8)':'rgba(255,138,122,0.85)';
+    cx.fillText(inside?'HANDS IN FRAME':'HAND OUT OF FRAME',x,y-10);
+  }
+  function draw(now){
+    var t=(now-t0)/1000;cx.clearRect(0,0,W,H);grid();
+    var p=pt(t);trail.push(p);if(trail.length>140)trail.shift();
+    for(var i=1;i<trail.length;i++){
+      var a=i/trail.length,q=trail[i];
+      cx.strokeStyle='rgba(143,180,255,'+(a*0.55).toFixed(3)+')';cx.lineWidth=0.6+q.z*2.2;
+      cx.beginPath();cx.moveTo(trail[i-1].x,trail[i-1].y);cx.lineTo(q.x,q.y);cx.stroke();
+    }
+    for(var j=0;j<trail.length;j+=14){var r=trail[j];cx.fillStyle='rgba(242,243,245,'+(0.15+0.5*j/trail.length).toFixed(3)+')';cx.beginPath();cx.arc(r.x,r.y,1.6+r.z*1.4,0,Math.PI*2);cx.fill()}
+    cx.fillStyle='#8fb4ff';cx.beginPath();cx.arc(p.x,p.y,3.5+p.z*2.5,0,Math.PI*2);cx.fill();
+    cx.strokeStyle='rgba(143,180,255,0.35)';cx.beginPath();cx.arc(p.x,p.y,10+p.z*5,0,Math.PI*2);cx.stroke();
+    finder(p);
+    if(!rm)requestAnimationFrame(draw);
+  }
+  function still(){var t=0;trail=[];for(var k=0;k<140;k++){t=3+k*0.03;trail.push(pt(t))}t0=performance.now()-t*1000;draw(performance.now())}
+  size();window.addEventListener('resize',function(){size();if(rm)still()});
+  if(rm){still()}else{requestAnimationFrame(draw)}
+})();
+</script>
