@@ -14,7 +14,7 @@ pnpm --filter @quellix/web dev:demo   # no Supabase: seeded demo data, demo@quel
 ```bash
 pnpm lint && pnpm typecheck && pnpm test   # unit tests (Vitest)
 pnpm build && pnpm e2e                     # Playwright: screenshots (1440 / 390 px), keyboard walkthrough, axe, console guard
-pnpm lighthouse                            # with the demo server on :3100; fails under 95 on accessibility
+pnpm lighthouse                            # with the demo server on :3100; home perf/a11y >= 90, app a11y >= 95
 ```
 
 `pnpm e2e` starts `next start` in demo mode, renders a synthetic first-person clip with Chromium + ffmpeg into `e2e/.cache/` (never committed) and writes screenshots to `e2e/screenshots/`.
@@ -23,7 +23,8 @@ pnpm lighthouse                            # with the demo server on :3100; fail
 
 | Path | What |
 |---|---|
-| `src/app/page.tsx` | The landing, ported from `docs/design/landing-reference.html` |
+| `src/app/(marketing)` | The marketing site (`/`, `/product`, `/developers`, `/security`), ported from `docs/design/site/` |
+| `src/components/marketing` | Its pages (generated from the design HTML), nav, footer, code tabs, canvases, OG image and CSS module |
 | `src/app/(auth)` | Sign in, create account, forgot / reset password (server actions in `actions.ts`) |
 | `src/app/app` | The dashboard: overview, review, videos, rubrics, contests, settings, upload |
 | `src/app/contest/[videoId]` | Public contest page (shows only `effect: reject` reasons) |

@@ -77,7 +77,8 @@ export function HeroCanvas() {
       const inside = p.x > x && p.x < x + w && p.y > y && p.y < y + h;
       cx.font = '500 11px "JetBrains Mono", ui-monospace, monospace';
       cx.fillStyle = inside ? "rgba(126,214,168,0.8)" : "rgba(255,138,122,0.85)";
-      cx.fillText(inside ? "HANDS IN FRAME" : "HAND OUT OF FRAME", x, y - 10);
+      // On short canvases (mobile) the label goes under the frame so it never hits the HUD.
+      cx.fillText(inside ? "HANDS IN FRAME" : "HAND OUT OF FRAME", x, y - 10 < 44 ? y + h + 18 : y - 10);
     };
     const draw = (now: number) => {
       const t = (now - t0) / 1000;

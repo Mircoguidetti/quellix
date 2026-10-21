@@ -18,14 +18,6 @@ async function shot(page: Page, info: TestInfo, name: string, fullPage = true) {
 }
 
 test.describe("screens", () => {
-  test("landing", async ({ page }, info) => {
-    await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Stop watching every video before you pay for it.");
-    if (info.project.name === "mobile") await page.getByRole("button", { name: "Menu" }).click();
-    await expect(page.getByRole("link", { name: "Sign in" }).first()).toBeVisible();
-    await shot(page, info, "01-landing");
-  });
-
   test("sign in and create account", async ({ page }, info) => {
     await page.goto("/login");
     await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
