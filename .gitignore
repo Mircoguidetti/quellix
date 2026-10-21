@@ -24,7 +24,7 @@ __pycache__/
 !.env.example
 
 # data and models: large files stay out of git
-data/
+/data/
 eval/data/
 models/**/checkpoints/
 models/**/*.onnx
