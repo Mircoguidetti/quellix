@@ -1,15 +1,16 @@
 name: Eval
 
-# First real evaluation: Build AI Egocentric-10K clips + synthetic defects, worker engine.
-# Start it from the Actions tab (workflow_dispatch) or by pushing a file under eval/requests/
-# to main. A request file may contain {"clips": N}; without one the default is 20.
+# Evaluation: Build AI Egocentric-10K clips + synthetic defects, worker engine, plus Gemini
+# (cheapest Flash-Lite, free tier) when the GEMINI_API_KEY secret exists. The report is posted
+# on issue #16. Start it from the Actions tab (workflow_dispatch) or by pushing a file under
+# eval/requests/ to main. A request file may contain {"clips": N}; the default is 40.
 
 on:
   workflow_dispatch:
     inputs:
       clips:
         description: Number of source clips to download from Egocentric-10K
-        default: "20"
+        default: "40"
   push:
     branches: [main]
     paths:
@@ -25,21 +26,25 @@ permissions:
 
 jobs:
   eval:
-    name: Eval (worker engine)
+    name: Eval (worker + Gemini)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: eval
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      # Optional. Without it the Gemini engine is skipped and the report says so.
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       QUELLIX_FINGERPRINT_DB: ${{ github.workspace }}/eval/out/fingerprints.json
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --extra data
+      - run: uv sync --extra data --extra gemini
       - name: Decide how many clips
         id: n
         env:
@@ -47,10 +52,13 @@ jobs:
         run: |
           clips="${INPUT_CLIPS:-}"
           if [ -z "$clips" ]; then
-            req="$(ls -t requests/*.json 2>/dev/null | head -n 1 || true)"
-            if [ -n "$req" ]; then clips="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('clips', ''))" "$req")"; fi
+            # The request file(s) added or changed by this push (not the oldest file on disk).
+            req="$(git diff --name-only --diff-filter=AM HEAD^ HEAD -- ../eval/requests | tail -n 1 || true)"
+            if [ -n "$req" ] && [ -f "../$req" ]; then
+              clips="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('clips', ''))" "../$req")"
+            fi
           fi
-          clips="${clips:-20}"
+          clips="${clips:-40}"
           case "$clips" in ''|*[!0-9]*) echo "clips must be a positive integer, got '$clips'" >&2; exit 1;; esac
           echo "clips=$clips" >> "$GITHUB_OUTPUT"
       - name: Run evaluation
