@@ -36,11 +36,18 @@ Effect = Literal["reject", "review"]
 
 @dataclass(frozen=True)
 class CheckOutput:
-    """What a check produced. Exactly one of measurements / error is set."""
+    """What a check produced. Exactly one of measurements / error / skipped is set.
+
+    `skipped` is for checks deliberately not run because the decision is already a
+    reject (e.g. an undecodable file, or a critical check already failed). A skipped
+    check adds no reason. Use it only when another check has already rejected the
+    video; otherwise use `error`, which sends the video to review.
+    """
 
     measurements: Mapping[str, Any] | None = None
     error: str | None = None
     model: str | None = None
+    skipped: str | None = None
 
 
 @dataclass
@@ -267,6 +274,9 @@ def evaluate(
             checks[name] = CheckResult("skipped").to_dict()
             continue
         out = outputs.get(name)
+        if out is not None and out.skipped is not None:
+            checks[name] = CheckResult("skipped", {"reason": out.skipped}, out.model).to_dict()
+            continue
         if out is None or out.error is not None or out.measurements is None:
             detail = out.error if out is not None and out.error else "check did not run"
             checks[name] = CheckResult("error", {}, out.model if out else None).to_dict()
@@ -278,8 +288,17 @@ def evaluate(
         checks[name] = CheckResult(status, out.measurements, out.model).to_dict()
         reasons.extend(check_reasons)
 
+    skipped_any = any(
+        out.skipped is not None for out in outputs.values() if out is not None
+    )
     if any(r.effect == "reject" for r in reasons):
         decision = "reject"
+    elif skipped_any:
+        # Safety net: a skip is only legitimate when something else rejected.
+        decision = "review"
+        reasons.append(Reason("technical", "pipeline.skipped_without_reject",
+                              "Some checks were skipped without a rejection; "
+                              "a person should look at this video.", "review"))
     elif reasons:
         decision = "review"
     else:
