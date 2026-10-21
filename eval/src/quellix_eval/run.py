@@ -131,6 +131,14 @@ class EngineRun:
     failures: int
     excluded: dict[str, int]   # check -> clips skipped because their label is "unknown"
     decisions: dict[str, str] = field(default_factory=dict)   # clip_id -> decision | "failed"
+    latencies_s: list[float] = field(default_factory=list)    # wall time per clip
+    errors: list[str] = field(default_factory=list)           # failure messages (first few)
+
+    def latency_pct(self, q: float) -> float | None:
+        if not self.latencies_s:
+            return None
+        xs = sorted(self.latencies_s)
+        return xs[min(len(xs) - 1, round(q * (len(xs) - 1)))]
 
     @property
     def cost_per_hour(self) -> float | None:
@@ -150,8 +158,12 @@ def evaluate_engine(
     failures = 0
     decisions: dict[str, str] = {}
     excluded: dict[str, int] = defaultdict(int)
+    latencies: list[float] = []
+    errors: list[str] = []
     for clip in clips:
+        t0 = time.monotonic()
         res = engine(clip, rubric_for(base_rubric, clip))
+        latencies.append(time.monotonic() - t0)
         cost += res.cost_usd
         hours += video_duration_s(clip) / 3600
         for check, expected in clip.checks.items():
@@ -160,6 +172,8 @@ def evaluate_engine(
         decisions[clip.clip_id] = res.decision["decision"] if res.decision else "failed"
         if res.decision is None:
             failures += 1
+            if res.error and len(errors) < 5:
+                errors.append(f"{clip.clip_id}: {res.error}"[:300])
             pairs.append(("review", clip.truth))   # a failed run is never a silent accept/reject
             continue
         pairs.append((res.decision["decision"], clip.truth))
@@ -171,7 +185,7 @@ def evaluate_engine(
             got = status if status in ("pass", "fail") else "uncertain"
             confusion[check][(expected, got)] += 1
     return EngineRun(name, report(pairs, costs), {k: dict(v) for k, v in confusion.items()},
-                     cost, hours, failures, dict(excluded), decisions)
+                     cost, hours, failures, dict(excluded), decisions, latencies, errors)
 
 
 def _f(x: float | None) -> str:
@@ -195,6 +209,8 @@ def format_runs(runs: Sequence[EngineRun]) -> str:
         ("review rate", lambda r: _f(r.report.review_rate)),
         ("cost saving vs human", lambda r: _f(r.report.cost_saving)),
         ("cost USD / video hour", lambda r: _f(r.cost_per_hour)),
+        ("latency p50 (s/clip)", lambda r: _f(r.latency_pct(0.5))),
+        ("latency p95 (s/clip)", lambda r: _f(r.latency_pct(0.95))),
         ("failed runs", lambda r: str(r.failures)),
     ]
     for label, fn in rows:

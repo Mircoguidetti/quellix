@@ -68,3 +68,13 @@ def gemini_cost(
     out_p = tier.long_output_per_m if long else tier.output_per_m
     assert in_p is not None and out_p is not None
     return (input_tokens * in_p + output_tokens * out_p) / 1_000_000
+
+
+def cheapest_gemini_flash_lite(on: date | None = None) -> str:
+    """The Flash-Lite model with the lowest price (input + output) on a given day."""
+    on = on or date.today()
+
+    def cost(model: str) -> float:
+        return gemini_cost(model, 1_000_000, 1_000_000, on)
+
+    return min((m for m in GEMINI_PRICES if "flash-lite" in m), key=cost)

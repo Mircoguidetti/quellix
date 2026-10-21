@@ -53,12 +53,13 @@ def test_end_to_end_report(tmp_path, monkeypatch):
     rp = tmp_path / "rubric.json"
     rp.write_text(json.dumps(rubric))
     report = ci.run_ci(tmp_path / "out", 4, fake_source,
-                       worker_engine([sys.executable, str(FAKE)]), rp)
+                       {"worker": worker_engine([sys.executable, str(FAKE)])}, rp)
     assert report == (tmp_path / "out" / "report.md").read_text()
     assert summary.read_text() == report
-    for text in ("assumed acceptable", "Hands and task completion are not evaluated",
+    for text in ("assumed acceptable", "Checks that are OFF",
                  "Per-check confusion", "| technical |", "| originality |",
-                 "Decisions by variant", "base reject rate"):
+                 "Decisions by variant", "base reject rate", "Per check, side by side",
+                 "latency p50"):
         assert text in report
     assert (tmp_path / "out" / "manifest.jsonl").exists()
     assert not (tmp_path / "out" / "work").exists()        # media cleaned up

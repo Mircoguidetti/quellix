@@ -131,13 +131,17 @@ def build(
     width: int = 640,
     fps: float = 15.0,
     token: str | None = None,
+    min_factories: int = 1,
     lister: ShardLister = _hf_list_shards,
     opener: ShardOpener = _hf_open_shard,
 ) -> int:
     token = token or os.environ.get("HF_TOKEN")
     if not token:
         raise RuntimeError("HF_TOKEN is required (gated dataset)")
-    shards = pick_shards(lister(REPO_ID, token), -(-clips // per_shard))
+    all_shards = lister(REPO_ID, token)
+    shards = pick_shards(all_shards, max(-(-clips // per_shard), min_factories))
+    if len(shards) < min_factories:
+        raise RuntimeError(f"only {len(shards)} factories found, need at least {min_factories}")
     records: list[ClipRecord] = []
     with tempfile.TemporaryDirectory() as td:
         for shard in shards:
