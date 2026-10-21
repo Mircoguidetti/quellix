@@ -316,3 +316,46 @@ export async function completeUpload(db: SupabaseClient, orgId: string, videoId:
   }
   return getVideo(db, orgId, video.id);
 }
+
+export type ReviewItem = { video: VideoView; filename: string | null; playbackUrl: string | null };
+
+/**
+ * Videos whose newest decision is `review` and that have no review yet, with a short-lived
+ * signed download URL when the file still exists.
+ */
+export async function listReviewQueue(db: SupabaseClient, orgId: string): Promise<ReviewItem[]> {
+  const { data: decisions, error } = await db
+    .from("decisions")
+    .select("video_id")
+    .eq("org_id", orgId)
+    .eq("decision", "review")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw errors.internal();
+  const ids = [...new Set((decisions ?? []).map((d) => d.video_id as string))];
+  if (!ids.length) return [];
+
+  const { data: rows, error: vError } = await db
+    .from("videos")
+    .select(VIDEO_COLUMNS)
+    .eq("org_id", orgId)
+    .in("id", ids)
+    .order("created_at", { ascending: false });
+  if (vError) throw errors.internal();
+  const videos = (rows ?? []) as VideoRow[];
+  const views = await attachDetails(db, videos);
+
+  const items: ReviewItem[] = [];
+  for (let i = 0; i < views.length; i++) {
+    const view = views[i];
+    if (view.decision?.decision !== "review" || view.review) continue;
+    let playbackUrl: string | null = null;
+    const path = videos[i].storage_path;
+    if (path) {
+      const { data } = await db.storage.from(VIDEO_BUCKET).createSignedUrl(path, 300);
+      playbackUrl = data?.signedUrl ?? null;
+    }
+    items.push({ video: view, filename: videos[i].filename, playbackUrl });
+  }
+  return items;
+}
