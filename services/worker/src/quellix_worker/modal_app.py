@@ -1,27 +1,41 @@
-"""Modal app: a GPU function that processes one job and a scheduled poller.
+"""Modal app: a function that processes one job and a scheduled poller.
 
-Imports cleanly without Modal credentials or the ``modal`` package installed (then
-``app`` is None). Deploy (founder, later): ``modal deploy -m quellix_worker.modal_app``
-with the secret ``quellix-worker`` holding SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and
-optionally GEMINI_API_KEY / TWELVELABS_API_KEY / TWELVELABS_INDEX_ID /
-QUELLIX_ALLOW_EXTERNAL_MODELS (global kill switch; the per-org
-``organizations.allow_external_models`` must also be true), QUELLIX_GPU_USD_PER_SECOND.
+Imports cleanly without Modal credentials or the ``modal`` package installed (then ``app`` is
+None). Deployed by ``.github/workflows/worker.yml`` (``modal deploy -m quellix_worker.modal_app``).
+
+Compute: CPU by default (the v0 checks need no GPU). Set ``QUELLIX_WORKER_GPU`` (e.g. ``T4``)
+at deploy time to run on a GPU and install torch/transformers for the DINOv2 embedder.
+Containers scale to zero; ``max_containers`` caps spend.
+
+Modal secret ``quellix-supabase`` (created by the founder, never in git) holds
+``SUPABASE_URL`` and ``SUPABASE_SERVICE_ROLE_KEY``. It may also hold the optional keys of
+``.env.example`` (GEMINI_API_KEY, QUELLIX_ALLOW_EXTERNAL_MODELS, QUELLIX_COMPUTE_USD_PER_SECOND,
+QUELLIX_USE_DINOV2, ...).
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from .jobs import process_job
 from .pipeline import Dependencies, PipelineConfig
 
-GPU = "T4"
-# Real price of the GPU above (modal.com/pricing), per second. Not hard-coded: set the
-# QUELLIX_GPU_USD_PER_SECOND secret/env. Unset -> 0, i.e. jobs.cost_usd counts API spend only.
+SECRET_NAME = "quellix-supabase"
+GPU = os.environ.get("QUELLIX_WORKER_GPU") or None  # read at deploy time
+CPU_CORES = 2.0
+MEMORY_MB = 4096
+MAX_CONTAINERS = 5
+YUNET_URL = ("https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/"
+             "face_detection_yunet_2023mar.onnx")
+YUNET_PATH = "/models/face_detection_yunet_2023mar.onnx"
 
 
-def gpu_usd_per_second() -> float:
-    return float(os.environ.get("QUELLIX_GPU_USD_PER_SECOND") or 0.0)
+def compute_usd_per_second() -> float:
+    """Price of one second of this function's compute (CPU cores + memory, or the GPU), from
+    modal.com/pricing. Not hard-coded: unset -> 0, i.e. jobs.cost_usd counts API spend only."""
+    return float(os.environ.get("QUELLIX_COMPUTE_USD_PER_SECOND")
+                 or os.environ.get("QUELLIX_GPU_USD_PER_SECOND") or 0.0)
 
 
 def _external_judge():
@@ -48,9 +62,10 @@ def handle_job(msg_id: int, job_id: str, video_id: str) -> str:
     from .store import Job, SupabaseStore
 
     store = SupabaseStore()
-    config = PipelineConfig(allow_external_models=bool(_external_judge()),
-                            gpu_usd_per_second=gpu_usd_per_second())
-    deps = Dependencies(task_judge=_external_judge(), embedder=_embedder())
+    judge = _external_judge()
+    config = PipelineConfig(allow_external_models=judge is not None,
+                            compute_usd_per_second=compute_usd_per_second())
+    deps = Dependencies(task_judge=judge, embedder=_embedder())
     return process_job(store, Job(msg_id, job_id, video_id), SupabaseFingerprintStore(),
                        config, deps)
 
@@ -73,23 +88,30 @@ except ImportError:  # modal is an optional extra; keep the module importable
     modal = None
 
 if modal is not None:
+    _contracts = Path(__file__).resolve().parents[4] / "packages" / "contracts"
+    _pip = ["av", "numpy", "opencv-python-headless", "pdqhash", "httpx", "jsonschema"]
+    if GPU:
+        _pip += ["torch", "transformers"]  # DINOv2 embedder
     image = (
         modal.Image.debian_slim(python_version="3.12")
-        .apt_install("libgl1", "libglib2.0-0")
-        .pip_install("av", "numpy", "opencv-python-headless", "pdqhash", "httpx", "jsonschema",
-                     "torch", "transformers")
-        .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts"})
+        .apt_install("libgl1", "libglib2.0-0", "build-essential", "curl")
+        .pip_install(*_pip)
+        .run_commands(f"mkdir -p /models && curl -fsSL -o {YUNET_PATH} {YUNET_URL}")
+        .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
+              **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
+        .add_local_dir(str(_contracts), "/packages/contracts", copy=True)
         .add_local_python_source("quellix_worker")
-        .add_local_dir("../../packages/contracts", "/packages/contracts", copy=True)
     )
     app = modal.App("quellix-worker", image=image,
-                    secrets=[modal.Secret.from_name("quellix-worker")])
+                    secrets=[modal.Secret.from_name(SECRET_NAME)])
 
-    @app.function(gpu=GPU, timeout=1800, retries=0)
+    @app.function(gpu=GPU, cpu=None if GPU else CPU_CORES, memory=MEMORY_MB, timeout=1800,
+                  retries=0, max_containers=MAX_CONTAINERS)
     def process(msg_id: int, job_id: str, video_id: str) -> str:
         return handle_job(msg_id, job_id, video_id)
 
-    @app.function(schedule=modal.Period(minutes=1), timeout=120)
+    # Retries are handled by the queue (jobs.py), not by Modal.
+    @app.function(schedule=modal.Period(minutes=1), timeout=120, max_containers=1)
     def poller() -> int:
         return poll_once(lambda *a: process.spawn(*a))
 else:
