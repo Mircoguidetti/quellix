@@ -1,0 +1,16 @@
+# Minimal Supabase CLI config so `supabase link` / `supabase db push` work in CI.
+project_id = "quellix"
+
+[api]
+enabled = true
+# pgmq_public is exposed so the web app can enqueue through Supabase Queues.
+schemas = ["public", "graphql_public", "pgmq_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.migrations]
+enabled = true
