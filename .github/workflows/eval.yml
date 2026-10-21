@@ -21,6 +21,7 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   eval:
@@ -56,6 +57,17 @@ jobs:
         run: |
           mkdir -p out
           uv run python -m quellix_eval.ci --clips "${{ steps.n.outputs.clips }}" --out-dir out
+      - name: Post the report on issue #16
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f out/report.md ]; then
+            head -c 60000 out/report.md > out/comment.md
+            gh issue comment 16 -R "${{ github.repository }}" --body-file out/comment.md
+          else
+            gh issue comment 16 -R "${{ github.repository }}" --body "Eval run ${{ github.run_id }} produced no report.md."
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
