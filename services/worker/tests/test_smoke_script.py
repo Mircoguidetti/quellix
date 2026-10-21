@@ -36,7 +36,8 @@ def fake_supabase(decision_after: int):
                 return httpx.Response(200, json=[])
             return httpx.Response(200, json=[{
                 "video_id": req.url.params["video_id"].removeprefix("eq."),
-                "decision": "review" if kept["review"] else "accept", "reasons": [], "checks": {}, "rubric_id": "rub1",
+                "decision": "review" if kept["review"] else "accept", "reasons": [],
+                "checks": {}, "rubric_id": "rub1",
                 "rubric_version": 1, "engine_version": "0.1.0"}])
         if p.endswith("/videos") and m == "GET":
             if kept["review"]:
