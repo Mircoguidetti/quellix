@@ -13,8 +13,10 @@ one previously delivered video (the best such video).
 from __future__ import annotations
 
 import os
+import pickle
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 import cv2
@@ -171,6 +173,29 @@ class InMemoryFingerprintStore:
 
     def add(self, org_id: str, video_id: str, prints: Sequence[FrameFingerprint]) -> None:
         self._rows.setdefault(org_id, []).extend((video_id, fp) for fp in prints)
+
+
+class FileFingerprintStore(InMemoryFingerprintStore):
+    """In-memory store persisted to a local pickle file.
+
+    For local runs and `eval`, where every video is a separate CLI process: without it,
+    each video would be compared against an empty index and no duplicate could be found.
+    Not for production (production uses SupabaseFingerprintStore).
+    """
+
+    def __init__(self, path: str | Path) -> None:
+        super().__init__()
+        self._path = Path(path)
+        if self._path.exists():
+            with self._path.open("rb") as f:
+                self._rows = pickle.load(f)  # noqa: S301 - local file written by this class
+
+    def save(self) -> None:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self._path.with_suffix(self._path.suffix + ".tmp")
+        with tmp.open("wb") as f:
+            pickle.dump(self._rows, f)
+        tmp.replace(self._path)
 
 
 def _decode_bytea(value: str) -> bytes:

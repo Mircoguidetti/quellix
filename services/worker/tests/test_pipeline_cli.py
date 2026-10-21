@@ -157,3 +157,25 @@ def test_modal_app_imports_without_credentials():
     import quellix_worker.modal_app as m
 
     assert m.GPU and (m.app is None or m.app.name == "quellix-worker")
+
+
+def test_cli_fingerprint_db_finds_duplicate_across_runs(clip, tmp_path):
+    rub = tmp_path / "r.json"
+    rub.write_text(json.dumps(RUBRIC))
+    db = tmp_path / "fp.pkl"
+
+    def check(video_id: str) -> dict:
+        p = subprocess.run([sys.executable, "-m", "quellix_worker", "check", str(clip),
+                            "--rubric", str(rub), "--video-id", video_id,
+                            "--fingerprint-db", str(db)], capture_output=True, text=True)
+        assert p.returncode == 0, p.stderr
+        return json.loads(p.stdout)
+
+    first = check("original")
+    assert first["checks"]["originality"]["measurements"]["match_video_id"] is None
+    assert db.exists()
+    second = check("reupload")
+    m = second["checks"]["originality"]["measurements"]
+    assert m["match_video_id"] == "original" and m["max_similarity"] >= 0.9
+    assert second["decision"] == "reject"
+    assert any(r["code"] == "originality.duplicate" for r in second["reasons"])

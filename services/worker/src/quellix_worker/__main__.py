@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -31,6 +32,11 @@ def _parser() -> argparse.ArgumentParser:
     c.add_argument("--report", type=Path, default=None,
                    help="also write {decision, cost_usd, timings_ms, models} to this path")
     c.add_argument("--sample-fps", type=float, default=PipelineConfig.sample_fps)
+    c.add_argument("--fingerprint-db", type=Path,
+                   default=os.environ.get("QUELLIX_FINGERPRINT_DB") or None,
+                   help="local file that keeps fingerprints across runs (eval / local use); "
+                        "defaults to $QUELLIX_FINGERPRINT_DB")
+    c.add_argument("--org-id", default="local", help="fingerprints are matched within one org")
     c.add_argument("--task-model", choices=["none", "gemini", "twelvelabs"], default="none",
                    help="general model for task_completed; sends the video to a third party")
     return p
@@ -52,6 +58,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         deps = Dependencies()
+        store = None
+        if args.fingerprint_db:
+            from .checks.originality import FileFingerprintStore
+            store = FileFingerprintStore(args.fingerprint_db)
+            deps.fingerprints = store
         if args.task_model == "gemini":
             from .checks.task_baseline import GeminiJudge
             deps.task_judge = GeminiJudge()
@@ -59,8 +70,13 @@ def main(argv: list[str] | None = None) -> int:
             from .checks.task_baseline import TwelveLabsJudge
             deps.task_judge = TwelveLabsJudge()
         config = PipelineConfig(sample_fps=args.sample_fps,
-                                allow_external_models=args.task_model != "none")
-        result = run_pipeline(args.video, rubric, args.video_id or str(uuid.uuid4()), config, deps)
+                                allow_external_models=args.task_model != "none",
+                                org_id=args.org_id)
+        video_id = args.video_id or str(uuid.uuid4())
+        result = run_pipeline(args.video, rubric, video_id, config, deps)
+        if store is not None and result.fingerprints:
+            store.add(args.org_id, video_id, result.fingerprints)
+            store.save()
     except jsonschema.ValidationError as exc:
         log.error("invalid rubric: %s", exc.message)
         return 2
