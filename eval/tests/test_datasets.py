@@ -98,3 +98,38 @@ def test_min_factories_is_enforced(tmp_path):
     with pytest.raises(RuntimeError, match="only 3 factories"):
         egocentric10k.build(tmp_path / "m.jsonl", tmp_path, clips=4, token="t",
                             min_factories=8, lister=lambda *a: shards)
+
+
+def test_loader_reaches_the_requested_count_by_using_more_shards(tmp_path):
+    from quellix_eval.defects.generate import make_clean_clip, write_video
+
+    c = make_clean_clip(seed=3)
+    src = tmp_path / "src.mp4"
+    write_video(src, c.frames, c.fps)
+    bad = tmp_path / "bad.mp4"
+    bad.write_bytes(b"not a video")
+    # factory_001 has three shards; the first holds one undecodable and two good clips,
+    # the second cannot be opened, factory_002 has a single shard with one clip.
+    shards = [f"factory_001/workers/worker_00{i}/f1_w{i}_part00.tar" for i in (1, 2, 3)]
+    shards.append("factory_002/workers/worker_001/f2_w1_part00.tar")
+
+    def opener(repo, name, token):
+        if "worker_002" in name:
+            raise OSError("shard unavailable")
+        prefix = Path(name).stem
+        clips = [bad, src, src] if "worker_001/f1" in name else [src]
+        return open(_tar_with_clips(tmp_path / f"{prefix}.tar", clips, prefix), "rb")
+
+    n = egocentric10k.build(tmp_path / "m.jsonl", tmp_path / "d", clips=4, per_shard=2,
+                            seconds=1.0, width=64, fps=5, token="t", min_factories=2,
+                            lister=lambda *a: shards, opener=opener)
+    assert n == 4
+    recs = load_manifest(tmp_path / "m.jsonl")
+    assert len({r.clip_id for r in recs}) == 4
+    assert len({r.notes.split("/")[0] for r in recs}) == 2     # both factories present
+
+
+def test_shard_order_is_round_robin_across_factories():
+    shards = ["f1/a.tar", "f1/b.tar", "f2/a.tar", "f3/a.tar", "f3/b.tar", "f3/c.tar"]
+    assert egocentric10k.shard_order(shards) == [
+        "f1/a.tar", "f2/a.tar", "f3/a.tar", "f1/b.tar", "f3/b.tar", "f3/c.tar"]
