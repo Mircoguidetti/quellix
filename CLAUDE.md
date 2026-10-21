@@ -46,6 +46,7 @@ cd eval && uv sync && uv run pytest && uv run ruff check .
 
 ## Conventions
 
+- **Everything is in English:** code, comments, identifiers, UI copy, error messages, docs, commit messages, issue comments and pull requests. This applies even when the person or prompt talking to you writes in another language.
 - TypeScript strict. Validate every external input with Zod.
 - Python 3.12+, typed, `ruff` + `pytest`. No notebooks committed.
 - No secrets in git. Env vars are documented in each folder's `.env.example`.

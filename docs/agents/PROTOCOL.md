@@ -8,6 +8,7 @@ You get **one GitHub issue**. It is your full spec. Re-read it whenever you are 
 
 ## Rules
 
+0. **Language:** everything you write is in English: code, comments, UI copy, docs, commits, issue comments and PRs, even if your prompt is in another language.
 1. **Branch:** work on `agent/<area>` (the issue says which), created from the latest `main`. Never commit to `main`.
 2. **Scope:** change only the folder the issue gives you. Never edit `packages/contracts/`, `supabase/migrations/` or another agent's folder. If you need a change there, ask in the issue.
 3. **Start:** post a first comment on the issue with your plan (5-10 bullet points).
