@@ -47,6 +47,7 @@ class EngineResult:
     decision: dict[str, Any] | None   # None = the engine failed on this clip
     cost_usd: float = 0.0
     error: str | None = None
+    latency_s: float | None = None   # set when the result is replayed from an earlier run
 
 
 Engine = Callable[[ClipRecord, Mapping[str, Any]], EngineResult]
@@ -163,7 +164,7 @@ def evaluate_engine(
     for clip in clips:
         t0 = time.monotonic()
         res = engine(clip, rubric_for(base_rubric, clip))
-        latencies.append(time.monotonic() - t0)
+        latencies.append(res.latency_s if res.latency_s is not None else time.monotonic() - t0)
         cost += res.cost_usd
         hours += video_duration_s(clip) / 3600
         for check, expected in clip.checks.items():
