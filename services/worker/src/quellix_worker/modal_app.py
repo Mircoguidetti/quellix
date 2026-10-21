@@ -26,8 +26,11 @@ GPU = os.environ.get("QUELLIX_WORKER_GPU") or None  # read at deploy time
 CPU_CORES = 2.0
 MEMORY_MB = 4096
 MAX_CONTAINERS = 5
-YUNET_URL = ("https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/"
-             "face_detection_yunet_2023mar.onnx")
+# Pinned: opencv_zoo commit + sha256 of the weights (verified in the image build).
+YUNET_COMMIT = "48b10fa505aeb51fbd127fc60a5c660040e823b7"
+YUNET_SHA256 = "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4"
+YUNET_URL = (f"https://media.githubusercontent.com/media/opencv/opencv_zoo/{YUNET_COMMIT}/"
+             "models/face_detection_yunet/face_detection_yunet_2023mar.onnx")
 YUNET_PATH = "/models/face_detection_yunet_2023mar.onnx"
 
 
@@ -96,7 +99,10 @@ if modal is not None:
         modal.Image.debian_slim(python_version="3.12")
         .apt_install("libgl1", "libglib2.0-0", "build-essential", "curl")
         .pip_install(*_pip)
-        .run_commands(f"mkdir -p /models && curl -fsSL -o {YUNET_PATH} {YUNET_URL}")
+        .run_commands(
+            f"mkdir -p /models && curl -fsSL -o {YUNET_PATH} {YUNET_URL}",
+            f'echo "{YUNET_SHA256}  {YUNET_PATH}" | sha256sum -c -',
+        )
         .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
               **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
         .add_local_dir(str(_contracts), "/packages/contracts", copy=True)
