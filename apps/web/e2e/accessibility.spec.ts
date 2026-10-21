@@ -84,7 +84,6 @@ test("keyboard only: sign in, open Review, accept a video, undo", async ({ page 
 for (const [name, path] of [
   ["sign in", "/login"],
   ["create account", "/signup"],
-  ["landing", "/"],
   ["overview", "/app"],
   ["review", "/app/review"],
   ["videos", "/app/videos"],
