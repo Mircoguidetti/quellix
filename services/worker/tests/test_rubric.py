@@ -134,6 +134,24 @@ def test_reject_reasons_are_listed_before_review_reasons() -> None:
     assert [r["effect"] for r in d["reasons"]] == ["reject", "review"]
 
 
+def test_skipped_check_adds_no_reason_when_already_rejected() -> None:
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.3})
+    o["task_completed"] = CheckOutput(skipped="a critical check already failed")
+    d = run(o)
+    assert d["decision"] == "reject"
+    assert d["checks"]["task_completed"]["status"] == "skipped"
+    assert [r["check"] for r in d["reasons"]] == ["hands_visible"]
+
+
+def test_skip_without_any_reject_goes_to_review() -> None:
+    o = good_outputs()
+    o["task_completed"] = CheckOutput(skipped="should not happen")
+    d = run(o)
+    assert d["decision"] == "review"
+    assert d["reasons"][0]["code"] == "pipeline.skipped_without_reject"
+
+
 @pytest.mark.parametrize("duration,code", [(5, "technical.too_short"), (900, "technical.too_long")])
 def test_duration_limits(duration: float, code: str) -> None:
     o = good_outputs()
