@@ -18,7 +18,7 @@ You get **one GitHub issue**. It is your full spec. Re-read it whenever you are 
 6. **Reading replies:** before each milestone, read the new comments on your issue:
    `gh api repos/Mircoguidetti/quellix/issues/<N>/comments --jq '.[] | {user: .user.login, created_at, body}'`
 7. **Done:** push your branch and open a pull request into `main` whose body starts with `Closes #<N>` and contains the final report (template below). Do not merge it yourself.
-8. **Review:** the coordinator comments on the PR. Fix, push, and reply on the PR.
+8. **Review:** opening the PR is not the end. After opening it, check the PR comments every few minutes (`gh api repos/Mircoguidetti/quellix/issues/<PR>/comments`). When the coordinator requests changes, make them, push to the same branch and reply on the PR. You are done only when the PR is merged or the coordinator writes `APPROVED, no further changes`.
 9. **Commits:** small and focused. Every commit message ends with:
    ```
    Co-Authored-By: Claude <noreply@anthropic.com>
