@@ -689,8 +689,8 @@ function Privacy({ allowExternal, trainingOptIn, canEdit }: { allowExternal: boo
             <h3 className="text-[15px] font-medium">Training on your videos</h3>
             <p className="max-w-[60ch] text-[13.5px] text-muted-foreground">
               {trainingOptIn
-                ? "Your organization opted in. Contact us to opt out; it takes effect for every future video."
-                : "Never. Your videos are not used to train any model. Opting in is a separate written agreement."}
+                ? "Your organization opted in: your videos train Quellix's own models only, never anyone else's. Contact us to opt out; it applies to every future video."
+                : "Never. Your videos are not used to train any model, resold or shown to another customer. Opting in is a separate agreement, with a discount, and only trains Quellix's own models."}
             </p>
           </div>
           <Badge tone={trainingOptIn ? "review" : "accept"}>{trainingOptIn ? "opted in" : "off"}</Badge>
@@ -700,7 +700,9 @@ function Privacy({ allowExternal, trainingOptIn, canEdit }: { allowExternal: boo
         <h3 className="text-[15px] font-medium">Retention</h3>
         <ul className="grid gap-1.5 pl-5 text-[13.5px] text-muted-foreground">
           <li className="list-disc">Videos are deleted from storage right after the analysis.</li>
-          <li className="list-disc">We keep the decision, its reasons, every measurement and the rubric version.</li>
+          <li className="list-disc">A video sent to review is kept until a person decides it, at most 14 days, then deleted anyway.</li>
+          <li className="list-disc">A video that fails processing is deleted after the last attempt.</li>
+          <li className="list-disc">We keep the decision, its reasons, every measurement, the rubric version, reviewer overrides and lab outcomes.</li>
           <li className="list-disc">Fingerprints that cannot be turned back into video are kept to catch re-uploads, within your organization only.</li>
         </ul>
         <div className="flex flex-wrap gap-2 pt-1">

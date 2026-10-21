@@ -3,7 +3,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, type FullConfig } from "@playwright/test";
 
-const OUT = path.join(__dirname, ".cache", "demo-clip.webm");
+const OUT = path.join(__dirname, ".cache", "demo-clip-v2.webm");
 const FPS = 6;
 const SECONDS = 170;
 const W = 640;
@@ -70,12 +70,12 @@ export default async function globalSetup(config: FullConfig) {
           };
           hand(0, -1);
           hand(1.7, 1);
+          // Bottom-right, away from the player's own time pill (top-left).
           g.fillStyle = "rgba(0,0,0,0.55)";
-          g.fillRect(12, 12, 172, 26);
+          g.fillRect(W - 112, H - 34, 100, 22);
           g.fillStyle = "#f2f3f5";
-          g.font = "500 13px monospace";
-          const s = Math.floor(t);
-          g.fillText(`DEMO FOOTAGE ${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`, 20, 30);
+          g.font = "500 12px monospace";
+          g.fillText("DEMO FOOTAGE", W - 104, H - 19);
           out.push(c.toDataURL("image/jpeg", 0.8).split(",")[1]);
         }
         return out;

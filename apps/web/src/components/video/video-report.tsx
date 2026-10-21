@@ -7,9 +7,9 @@ import { ChevronRight, CircleCheck, CircleDot, CircleMinus, CircleX, Clock, Tria
 import { DecisionBadge } from "@/components/app/decision-badge";
 import { Badge } from "@/components/ui/badge";
 import { Kbd } from "@/components/ui/kbd";
-import { checkLabel, formatAge, formatClock, formatDateTime } from "@/lib/format";
+import { checkLabel, formatAge, formatDateTime } from "@/lib/format";
 import { formatMeasurement, measurementLabel } from "@/lib/measurements";
-import { flaggedMoments, videoDuration, type StoredCheck, type TimelineReason } from "@/lib/timeline";
+import { flaggedMoments, momentClock, videoDuration, type StoredCheck, type TimelineReason } from "@/lib/timeline";
 import type { ReviewItem } from "@/lib/domain/videos";
 import { cn } from "@/lib/utils";
 import { VideoPlayer, type PlayerHandle } from "./video-player";
@@ -85,7 +85,7 @@ export function VideoReport({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <Heading className="truncate font-mono text-[19px] font-medium tracking-[-0.01em]">{videoTitle(item)}</Heading>
-            <DecisionBadge value={decision?.decision} />
+            <DecisionBadge value={decision?.decision} status={item.video.status} error={item.failureReason} />
             {item.video.review && (
               <Badge tone="outline">
                 <UserRound aria-hidden />
@@ -130,7 +130,11 @@ export function VideoReport({
           )}
         </div>
         {!decision ? (
-          <p className="text-[14px] text-muted-foreground">No decision yet. The analysis usually takes under a minute.</p>
+          <p className="text-[14px] text-muted-foreground">
+            {item.video.status === "failed"
+              ? `The analysis failed${item.failureReason ? `: ${item.failureReason}` : "."} Upload the video again to retry.`
+              : "No decision yet. The analysis usually takes under a minute."}
+          </p>
         ) : moments.length === 0 ? (
           <p className="text-[14px] text-muted-foreground">Nothing was flagged: every enabled check passed.</p>
         ) : (
@@ -148,7 +152,7 @@ export function VideoReport({
                   )}
                 >
                   <span className="w-[4.25rem] shrink-0 rounded-md bg-muted px-1.5 text-center font-mono text-[11.5px] leading-5 tabular-nums">
-                    {m.t === null ? "whole" : formatClock(m.t)}
+                    {m.t === null ? "whole" : momentClock(m.t)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2 text-[14px] font-medium leading-snug">

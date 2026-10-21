@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
-export const DEMO_VIDEO = path.join(__dirname, "e2e", ".cache", "demo-clip.webm");
+export const DEMO_VIDEO = path.join(__dirname, "e2e", ".cache", "demo-clip-v2.webm");
 // The environment ships Chromium here; elsewhere Playwright's own download is used.
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? (process.env.PLAYWRIGHT_BROWSERS_PATH ? "/opt/pw-browsers/chromium" : undefined);
 

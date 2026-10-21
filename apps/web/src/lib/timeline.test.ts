@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flaggedMoments, videoDuration } from "./timeline";
+import { flaggedMoments, momentClock, videoDuration } from "./timeline";
 
 const reasons = [
   { check: "hands_visible", code: "hands_visible.below_min", message: "Both hands visible 61%", effect: "reject" },
@@ -43,5 +43,12 @@ describe("flagged moments", () => {
       40,
     );
     expect(m).toMatchObject({ t: 31, detail: "Completed yes · confidence 54% · task 00:03–00:31" });
+  });
+});
+
+describe("moment times", () => {
+  it("round like the worker's messages", () => {
+    expect(momentClock(28.6)).toBe("00:29");
+    expect(momentClock(12.4)).toBe("00:12");
   });
 });

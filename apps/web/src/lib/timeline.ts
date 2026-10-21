@@ -1,4 +1,5 @@
 import { reasonLabel } from "@/lib/format";
+import { fmtSeconds } from "@/lib/rubric-eval";
 
 export type TimelineReason = { check: string; code: string; message: string; effect: string };
 export type StoredCheck = { status?: string; measurements?: Record<string, unknown> };
@@ -26,10 +27,9 @@ export type Moment = {
 };
 
 const pct = (x: unknown) => (typeof x === "number" ? `${Math.round(x * 100)}%` : "—");
-const clock = (t: number) => {
-  const s = Math.max(0, Math.floor(t));
-  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-};
+// Round like the worker's reason messages ("visible at 00:29"), so the list and the text agree.
+const clock = (t: number) => fmtSeconds(Math.max(0, t));
+export const momentClock = clock;
 const MAX_DETECTIONS = 12;
 
 function wholeVideoDetail(r: TimelineReason, m: Record<string, unknown>): string {

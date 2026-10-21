@@ -256,7 +256,7 @@ export function seedDemo(): DemoStore {
           rubric_id: rubric.id,
           rubric_version: version.version,
           status,
-          storage_path: status === "decided" && !pendingReview ? null : `org/${orgId}/${id}/${externalId}.mp4`,
+          storage_path: status === "failed" || (status === "decided" && !pendingReview) ? null : `org/${orgId}/${id}/${externalId}.mp4`,
           filename: `${externalId}.mp4`,
           content_type: "video/mp4",
           size_bytes: Math.round(duration * 1.1e6),
@@ -264,6 +264,17 @@ export function seedDemo(): DemoStore {
           created_at: iso(created),
           file_deleted_at: status === "decided" && !pendingReview ? iso(decisionAt) : null,
         });
+        if (status === "failed") {
+          tables.jobs.push({
+            id: randomUuid(rand),
+            video_id: id,
+            status: "failed",
+            attempts: 3,
+            error: "the file could not be decoded after 3 attempts",
+            queued_at: iso(created),
+            finished_at: iso(created + 5 * 60 * 1000),
+          });
+        }
         if (status !== "decided") continue;
         tables.decisions.push({
           id: randomUuid(rand),

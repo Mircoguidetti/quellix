@@ -383,7 +383,23 @@ export type ReviewItem = {
   contributorRef: string | null;
   durationS: number | null;
   playbackUrl: string | null;
+  /** Why processing failed (latest job error), for videos with status `failed`. */
+  failureReason?: string | null;
 };
+
+/** The latest job error of each video, for the ones that failed. */
+export async function failureReasons(db: SupabaseClient, videoIds: string[]): Promise<Map<string, string | null>> {
+  if (!videoIds.length) return new Map();
+  const { data, error } = await db
+    .from("jobs")
+    .select("video_id, error, queued_at")
+    .in("video_id", videoIds)
+    .order("queued_at", { ascending: false });
+  if (error) throw errors.internal();
+  const map = new Map<string, string | null>();
+  for (const j of data ?? []) if (!map.has(j.video_id as string)) map.set(j.video_id as string, (j.error as string | null) ?? null);
+  return map;
+}
 
 /** Videos whose newest decision is `review` and that have no human review yet, newest first. */
 async function pendingReviewRows(db: SupabaseClient, orgId: string, limit = 100) {
@@ -438,11 +454,13 @@ export async function signedPlayback(db: SupabaseClient, path: string | null): P
 export async function getVideoItem(db: SupabaseClient, orgId: string, videoId: string): Promise<ReviewItem> {
   const row = await findVideoRow(db, orgId, videoId);
   const [view] = await attachDetails(db, [row]);
+  const failure = row.status === "failed" ? (await failureReasons(db, [row.id])).get(row.id) ?? null : null;
   return {
     video: view,
     filename: row.filename,
     contributorRef: row.contributor_ref,
     durationS: row.duration_s ?? null,
     playbackUrl: await signedPlayback(db, row.storage_path),
+    failureReason: failure,
   };
 }

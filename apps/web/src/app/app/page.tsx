@@ -164,7 +164,7 @@ function Stat({ label, value, detail, hint, href }: { label: string; value: stri
           </Tooltip>
         )}
       </div>
-      <p className="mt-3 text-[32px] font-medium leading-none tracking-[-0.03em] tabular-nums">{value}</p>
+      <p className="mt-3 text-[32px] font-medium leading-none tracking-[-0.03em] [font-variant-numeric:proportional-nums]">{value}</p>
       <div className="mt-2.5 text-[13px] text-muted-foreground">{detail}</div>
     </>
   );

@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { dashboardContext } from "@/lib/dashboard";
 import { listRubrics } from "@/lib/domain/rubrics";
-import { listVideoItems } from "@/lib/domain/videos";
+import { failureReasons, listVideoItems } from "@/lib/domain/videos";
 import { explainStatus, formatDateTime } from "@/lib/format";
 import { rangeStart, videosQuerySchema, type VideosQuery } from "./params";
 import { VideoFilters } from "./video-filters";
@@ -59,6 +59,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/app/videos"
     throw e;
   });
   const names = new Map(rubrics.map((r) => [r.id, r.name]));
+  const failures = await failureReasons(db, items.filter((i) => i.view.status === "failed").map((i) => i.view.id));
   const filtered = Boolean(query.decision || query.status || query.rubric || query.range || query.q);
   const prev = query.prev ? query.prev.split(",").filter(Boolean) : [];
   const page = prev.length + (query.cursor ? 1 : 0) + 1;
@@ -122,7 +123,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/app/videos"
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">
-                        <DecisionBadge value={view.decision?.decision} />
+                        <DecisionBadge value={view.decision?.decision} status={view.status} error={failures.get(view.id)} />
                         {view.review && <span className="text-[12px] text-muted-foreground">reviewed: {view.review.decision}</span>}
                       </span>
                     </TableCell>

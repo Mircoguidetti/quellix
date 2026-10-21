@@ -83,6 +83,16 @@ test.describe("screens", () => {
     await expect(page.getByRole("table")).toBeVisible();
     await shot(page, info, "07-videos");
 
+    // A video whose processing failed says so, never "pending", and explains why on focus.
+    await page.goto("/app/videos?status=failed");
+    const failed = page.getByRole("table").getByLabel(/^Failed:/).first();
+    await expect(failed).toBeVisible();
+    await expect(page.getByRole("table").getByText("pending")).toHaveCount(0);
+    await failed.focus();
+    await expect(page.getByRole("tooltip")).toContainText("could not be decoded");
+    await page.goto("/app/videos");
+    await settle(page);
+
     await page.getByRole("combobox", { name: "Decision" }).click();
     await page.getByRole("option", { name: "Rejected" }).click();
     await page.waitForURL(/decision=reject/);
