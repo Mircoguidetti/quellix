@@ -14,6 +14,7 @@ type VideoRow = {
   status: string;
   storage_path: string | null;
   filename: string | null;
+  duration_s?: number | null;
   created_at: string;
 };
 type DecisionRow = {
@@ -30,7 +31,7 @@ type ReviewRow = { video_id: string; decision: string; note: string | null; crea
 type LabRow = { video_id: string; outcome: string; reason: string | null };
 
 const VIDEO_COLUMNS =
-  "id, org_id, external_id, contributor_ref, rubric_id, rubric_version, status, storage_path, filename, created_at";
+  "id, org_id, external_id, contributor_ref, rubric_id, rubric_version, status, storage_path, filename, duration_s, created_at";
 
 export type VideoView = ReturnType<typeof serializeVideo>;
 
@@ -114,22 +115,41 @@ function decodeCursor(cursor: string): { createdAt: string; id: string } {
   return { createdAt, id };
 }
 
-export type ListFilters = { status?: string; decision?: string; cursor?: string; limit: number };
+export type ListFilters = {
+  status?: string;
+  decision?: string;
+  cursor?: string;
+  limit: number;
+  /** Dashboard-only filters. */
+  rubricId?: string;
+  createdFrom?: string;
+  search?: string;
+};
+
+/** A video as the API returns it, plus the row fields only the dashboard shows. */
+export type VideoItem = { view: VideoView; row: VideoRow };
+
+/** Escape LIKE wildcards in user input so a search is always a plain substring match. */
+export function likeSubstring(input: string): string {
+  return `%${input.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
 
 /**
  * Newest first, keyset pagination. The `decision` filter applies to the latest decision, which
  * PostgREST cannot express, so we scan batches until the page is full (bounded).
  */
-export async function listVideos(db: SupabaseClient, orgId: string, f: ListFilters) {
+export async function listVideoItems(db: SupabaseClient, orgId: string, f: ListFilters) {
   const batch = f.decision ? 100 : f.limit + 1;
   const maxBatches = f.decision ? 20 : 1;
   let cursor = f.cursor ? decodeCursor(f.cursor) : null;
-  const page: VideoView[] = [];
-  let nextCursor: string | null = null;
+  const page: VideoItem[] = [];
 
   for (let i = 0; i < maxBatches && page.length <= f.limit; i++) {
     let q = db.from("videos").select(VIDEO_COLUMNS).eq("org_id", orgId);
     if (f.status) q = q.eq("status", f.status);
+    if (f.rubricId) q = q.eq("rubric_id", f.rubricId);
+    if (f.createdFrom) q = q.gte("created_at", f.createdFrom);
+    if (f.search) q = q.ilike("external_id", likeSubstring(f.search));
     if (cursor) {
       q = q.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
     }
@@ -145,16 +165,20 @@ export async function listVideos(db: SupabaseClient, orgId: string, f: ListFilte
       if (f.decision && views[j].decision?.decision !== f.decision) continue;
       if (page.length === f.limit) {
         // One more match exists beyond the page: continue from the last item returned.
-        const last = page[page.length - 1];
-        nextCursor = encodeCursor({ created_at: last.created_at, id: last.id });
-        return { data: page, next_cursor: nextCursor };
+        const last = page[page.length - 1].view;
+        return { items: page, next_cursor: encodeCursor({ created_at: last.created_at, id: last.id }) };
       }
-      page.push(views[j]);
+      page.push({ view: views[j], row: rows[j] });
     }
     if (rows.length < batch) break;
     cursor = { createdAt: rows[rows.length - 1].created_at, id: rows[rows.length - 1].id };
   }
-  return { data: page, next_cursor: nextCursor };
+  return { items: page, next_cursor: null as string | null };
+}
+
+export async function listVideos(db: SupabaseClient, orgId: string, f: ListFilters) {
+  const { items, next_cursor } = await listVideoItems(db, orgId, f);
+  return { data: items.map((i) => i.view), next_cursor };
 }
 
 export async function createVideo(db: SupabaseClient, orgId: string, input: CreateVideoInput) {
@@ -269,6 +293,42 @@ export async function reviewVideo(
   return getVideo(db, orgId, videoId);
 }
 
+/** Records a human decision; returns the review id so the dashboard can offer Undo. */
+export async function insertReview(
+  db: SupabaseClient,
+  orgId: string,
+  videoId: string,
+  input: { decision: string; note?: string },
+  reviewerId: string | null,
+): Promise<string> {
+  await findVideoRow(db, orgId, videoId);
+  const { data, error } = await db
+    .from("reviews")
+    .insert({ video_id: videoId, org_id: orgId, reviewer_id: reviewerId, decision: input.decision, note: input.note ?? null })
+    .select("id")
+    .single();
+  if (error || !data) throw errors.internal();
+  return data.id as string;
+}
+
+export const UNDO_WINDOW_MS = 10 * 60 * 1000;
+
+/** Undo a review the same person made a few minutes ago. Older reviews stay: they are history. */
+export async function undoReview(db: SupabaseClient, orgId: string, reviewId: string, reviewerId: string) {
+  requireUuid(reviewId, "Review");
+  const since = new Date(Date.now() - UNDO_WINDOW_MS).toISOString();
+  const { data, error } = await db
+    .from("reviews")
+    .delete()
+    .eq("id", reviewId)
+    .eq("org_id", orgId)
+    .eq("reviewer_id", reviewerId)
+    .gte("created_at", since)
+    .select("id");
+  if (error) throw errors.internal();
+  if (!data?.length) throw errors.conflict("This review can no longer be undone");
+}
+
 /**
  * Mark the upload finished and queue the analysis. 409 unless the video is awaiting_upload and
  * the file really is in Storage.
@@ -317,20 +377,39 @@ export async function completeUpload(db: SupabaseClient, orgId: string, videoId:
   return getVideo(db, orgId, video.id);
 }
 
-export type ReviewItem = { video: VideoView; filename: string | null; playbackUrl: string | null };
+export type ReviewItem = {
+  video: VideoView;
+  filename: string | null;
+  contributorRef: string | null;
+  durationS: number | null;
+  playbackUrl: string | null;
+  /** Why processing failed (latest job error), for videos with status `failed`. */
+  failureReason?: string | null;
+};
 
-/**
- * Videos whose newest decision is `review` and that have no review yet, with a short-lived
- * signed download URL when the file still exists.
- */
-export async function listReviewQueue(db: SupabaseClient, orgId: string): Promise<ReviewItem[]> {
+/** The latest job error of each video, for the ones that failed. */
+export async function failureReasons(db: SupabaseClient, videoIds: string[]): Promise<Map<string, string | null>> {
+  if (!videoIds.length) return new Map();
+  const { data, error } = await db
+    .from("jobs")
+    .select("video_id, error, queued_at")
+    .in("video_id", videoIds)
+    .order("queued_at", { ascending: false });
+  if (error) throw errors.internal();
+  const map = new Map<string, string | null>();
+  for (const j of data ?? []) if (!map.has(j.video_id as string)) map.set(j.video_id as string, (j.error as string | null) ?? null);
+  return map;
+}
+
+/** Videos whose newest decision is `review` and that have no human review yet, newest first. */
+async function pendingReviewRows(db: SupabaseClient, orgId: string, limit = 100) {
   const { data: decisions, error } = await db
     .from("decisions")
     .select("video_id")
     .eq("org_id", orgId)
     .eq("decision", "review")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(limit);
   if (error) throw errors.internal();
   const ids = [...new Set((decisions ?? []).map((d) => d.video_id as string))];
   if (!ids.length) return [];
@@ -344,18 +423,44 @@ export async function listReviewQueue(db: SupabaseClient, orgId: string): Promis
   if (vError) throw errors.internal();
   const videos = (rows ?? []) as VideoRow[];
   const views = await attachDetails(db, videos);
+  return views.flatMap((view, i) => (view.decision?.decision === "review" && !view.review ? [{ view, row: videos[i] }] : []));
+}
 
-  const items: ReviewItem[] = [];
-  for (let i = 0; i < views.length; i++) {
-    const view = views[i];
-    if (view.decision?.decision !== "review" || view.review) continue;
-    let playbackUrl: string | null = null;
-    const path = videos[i].storage_path;
-    if (path) {
-      const { data } = await db.storage.from(VIDEO_BUCKET).createSignedUrl(path, 300);
-      playbackUrl = data?.signedUrl ?? null;
-    }
-    items.push({ video: view, filename: videos[i].filename, playbackUrl });
-  }
-  return items;
+export async function countReviewQueue(db: SupabaseClient, orgId: string): Promise<number> {
+  return (await pendingReviewRows(db, orgId)).length;
+}
+
+/** The review queue with a short-lived signed download URL when the file still exists. */
+export async function listReviewQueue(db: SupabaseClient, orgId: string): Promise<ReviewItem[]> {
+  const pending = await pendingReviewRows(db, orgId);
+  return Promise.all(
+    pending.map(async ({ view, row }) => ({
+      video: view,
+      filename: row.filename,
+      contributorRef: row.contributor_ref,
+      durationS: row.duration_s ?? null,
+      playbackUrl: await signedPlayback(db, row.storage_path),
+    })),
+  );
+}
+
+export async function signedPlayback(db: SupabaseClient, path: string | null): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await db.storage.from(VIDEO_BUCKET).createSignedUrl(path, 600);
+  return data?.signedUrl ?? null;
+}
+
+/** One video for the dashboard report: the API view plus row fields and playback. */
+export async function getVideoItem(db: SupabaseClient, orgId: string, videoId: string): Promise<ReviewItem> {
+  const row = await findVideoRow(db, orgId, videoId);
+  const [view] = await attachDetails(db, [row]);
+  const failure = row.status === "failed" ? (await failureReasons(db, [row.id])).get(row.id) ?? null : null;
+  return {
+    video: view,
+    filename: row.filename,
+    contributorRef: row.contributor_ref,
+    durationS: row.duration_s ?? null,
+    playbackUrl: await signedPlayback(db, row.storage_path),
+    failureReason: failure,
+  };
 }

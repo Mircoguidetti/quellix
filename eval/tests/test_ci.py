@@ -74,3 +74,18 @@ def test_eval_rubric_is_valid_and_matches_the_issue():
     assert not c["hands_visible"]["enabled"] and not c["task_completed"]["enabled"]
     assert "min_width" not in c["technical"]
     assert {c["privacy"][k] for k in ("faces", "documents", "screens")} == {"reject"}
+
+
+def test_report_starts_with_requested_and_actual_count(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    report = ci.run_ci(tmp_path / "out", 6, fake_source,
+                       {"worker": worker_engine([sys.executable, str(FAKE)])}, ci.DEFAULT_RUBRIC)
+    assert report.splitlines()[2] == ("**Source clips: requested **6**, got 6** "
+                                      "(24 clips with synthetic defects).")
+
+    def short_source(out, data_dir, n):
+        return fake_source(out, data_dir, 2)
+
+    report = ci.run_ci(tmp_path / "out2", 5, short_source,
+                       {"worker": worker_engine([sys.executable, str(FAKE)])}, ci.DEFAULT_RUBRIC)
+    assert "requested **5**, got 2" in report and "WARNING: 3 fewer than requested" in report

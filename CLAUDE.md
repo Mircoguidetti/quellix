@@ -31,7 +31,10 @@ Each folder has its own `CLAUDE.md`. Read it before working there. **Stay inside
 
 - Every decision carries: the decision, a list of reasons, every measurement, and the rubric id + version used.
 - A false reject costs an honest contributor money. A doubtful case goes to `review`, never silently to `reject`.
-- Customer videos are deleted after analysis. They are never used for training unless the customer has opted in (`organizations.training_opt_in`).
+- **Data rule (founder-approved, 2026-10-21): we keep what surrounds the video, not the video.**
+  - Customer videos are deleted after analysis. Exception: a video whose decision is `review` is kept until a person decides it, at most 14 days, then deleted anyway. A video that fails processing is deleted after the last attempt.
+  - Videos are never used for training, resold or shown to another customer, unless the customer has opted in (`organizations.training_opt_in`, which earns a discount). Opted-in videos train Quellix's own models only.
+  - We always keep, per customer: decisions, reasons, every measurement, rubric versions, reviewer overrides (with their note), lab outcomes, and fingerprints. These are our labels and our moat; they are never shared across customers in v1.
 - Fingerprints are scoped to the customer that produced them. No cross-customer matching in v1.
 - Main metric: **precision and recall on rejections**, compared against the customer's base rate. Generic "agreement" is not a metric we report.
 

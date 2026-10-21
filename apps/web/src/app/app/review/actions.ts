@@ -1,16 +1,31 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { dashboardContext } from "@/lib/dashboard";
+import { ApiError } from "@/lib/api/errors";
 import { reviewSchema } from "@/lib/api/schemas";
-import { reviewVideo } from "@/lib/domain/videos";
+import { dashboardContext } from "@/lib/dashboard";
+import { insertReview, undoReview } from "@/lib/domain/videos";
 
-export async function submitReview(formData: FormData) {
-  const { db, orgId, session } = await dashboardContext();
-  const videoId = z.string().uuid().parse(formData.get("video_id"));
-  const note = String(formData.get("note") ?? "").trim();
-  const input = reviewSchema.parse({ decision: formData.get("decision"), note: note || undefined });
-  await reviewVideo(db, orgId, videoId, input, session.userId);
-  revalidatePath("/app/review");
+export type ReviewResult = { ok: true; reviewId: string } | { ok: false; error: string };
+
+export async function submitReview(videoId: string, raw: unknown): Promise<ReviewResult> {
+  try {
+    const { db, orgId, session } = await dashboardContext();
+    const id = z.string().uuid().parse(videoId);
+    const input = reviewSchema.parse(raw);
+    const reviewId = await insertReview(db, orgId, id, { decision: input.decision, note: input.note?.trim() || undefined }, session.userId);
+    return { ok: true, reviewId };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError && e.status === 404 ? "This video no longer exists." : "We could not save the review. Try again." };
+  }
+}
+
+export async function undoReviewAction(reviewId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { db, orgId, session } = await dashboardContext();
+    await undoReview(db, orgId, z.string().uuid().parse(reviewId), session.userId);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError && e.status === 409 ? "Too late to undo: the review is already recorded." : "We could not undo the review." };
+  }
 }

@@ -10,6 +10,7 @@ You get **one GitHub issue**. It is your full spec. Re-read it whenever you are 
 
 0. **Language:** everything you write is in English: code, comments, UI copy, docs, commits, issue comments and PRs, even if your prompt is in another language.
 0b. **Work autonomously:** your plan is approved the moment you post it, unless the coordinator objects in the issue. Do not stop to ask the person in your chat for confirmation between milestones; keep going until the PR is open. The only reasons to stop: a decision that cannot be undone, a missing secret or account, or a coordinator comment telling you to stop. Questions go in the issue (`QUESTION:`), not in the chat.
+0c. **The coordinator cannot see your chat, only GitHub.** Before you end any turn for any reason (done, blocked, waiting, error), post a comment on your issue saying what you did, what is next, and whether you are blocked. A turn that ends without a GitHub comment is invisible and counts as lost work. When your PR is merged or you finish a job, check your issue and PR comments for the next job before stopping.
 1. **Branch:** work on `agent/<area>` (the issue says which), created from the latest `main`. Never commit to `main`.
 2. **Scope:** change only the folder the issue gives you. Never edit `packages/contracts/`, `supabase/migrations/` or another agent's folder. If you need a change there, ask in the issue.
 3. **Start:** post a first comment on the issue with your plan (5-10 bullet points).

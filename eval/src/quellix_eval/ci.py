@@ -123,13 +123,26 @@ def _factories(clips: Sequence[ClipRecord]) -> int:
     return len({m.group(0) for c in clips if (m := re.search(r"factory_\d+", c.notes))})
 
 
+def _count_line(requested: int | None, n_src: int, total: int) -> str:
+    asked = "" if requested is None else f"requested **{requested}**, "
+    line = f"**Source clips: {asked}got {n_src}** ({total} clips with synthetic defects)."
+    if requested is not None and n_src < requested:
+        line += f" **WARNING: {requested - n_src} fewer than requested.**"
+    return line
+
+
 def render_report(
-    runs: Sequence[EngineRun], clips: Sequence[ClipRecord], notes: Sequence[str] = ()
+    runs: Sequence[EngineRun],
+    clips: Sequence[ClipRecord],
+    notes: Sequence[str] = (),
+    requested: int | None = None,
 ) -> str:
     n_src = sum(1 for c in clips if "__" not in c.clip_id)
     factories = _factories(clips)
     lines = [
         "# Quellix eval: worker vs. general model",
+        "",
+        _count_line(requested, n_src, len(clips)),
         "",
         "## Read this first",
         f"- **{n_src} source clips** from Build AI Egocentric-10K (Apache 2.0)"
@@ -237,7 +250,7 @@ def run_ci(
     write_manifest(manifest, out_dir / "manifest.jsonl")
     rubric = json.loads(rubric_path.read_text())
     runs = [evaluate_engine(name, engine, manifest, rubric) for name, engine in engines.items()]
-    report = render_report(runs, manifest, notes)
+    report = render_report(runs, manifest, notes, requested=clips)
     (out_dir / "report.md").write_text(report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:

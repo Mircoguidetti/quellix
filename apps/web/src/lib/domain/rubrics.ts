@@ -112,3 +112,79 @@ export async function updateRubric(
   if (uError) throw errors.internal();
   return body;
 }
+
+export type RubricSummary = { id: string; name: string; version: number; description: string; libraryId: string | null; updatedAt: string };
+
+/** The list page: current version of each rubric with when it was last saved. */
+export async function listRubricSummaries(db: SupabaseClient, orgId: string): Promise<RubricSummary[]> {
+  const { data: rubrics, error } = await db
+    .from("rubrics")
+    .select("id, name, current_version, created_at")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false });
+  if (error) throw errors.internal();
+  if (!rubrics?.length) return [];
+  const { data: versions, error: vError } = await db
+    .from("rubric_versions")
+    .select("rubric_id, version, body, created_at")
+    .in("rubric_id", rubrics.map((r) => r.id));
+  if (vError) throw errors.internal();
+  const byKey = new Map((versions ?? []).map((v) => [`${v.rubric_id}:${v.version}`, v]));
+  return rubrics.flatMap((r) => {
+    const v = byKey.get(`${r.id}:${r.current_version}`);
+    if (!v) return [];
+    const body = v.body as RubricBody;
+    return [
+      {
+        id: r.id as string,
+        name: body.name,
+        version: body.version,
+        description: String((body.task as { description?: string }).description ?? ""),
+        libraryId: ((body.task as { library_id?: string }).library_id as string | undefined) ?? null,
+        updatedAt: v.created_at as string,
+      },
+    ];
+  });
+}
+
+export type RubricVersion = { version: number; created_at: string; body: RubricBody };
+
+/** Every version with its body, newest first, for the editor's history. */
+export async function listRubricHistory(db: SupabaseClient, orgId: string, rubricId: string): Promise<RubricVersion[]> {
+  const rubric = await findRubric(db, orgId, rubricId);
+  const { data, error } = await db
+    .from("rubric_versions")
+    .select("version, created_at, body")
+    .eq("rubric_id", rubric.id)
+    .order("version", { ascending: false });
+  if (error) throw errors.internal();
+  return (data ?? []) as RubricVersion[];
+}
+
+export type StoredDecisionChecks = { decision: string; checks: Record<string, { status?: string; measurements?: Record<string, unknown>; model?: string }> };
+
+/**
+ * Recent decisions to preview an edited rubric on: this rubric's when it has any, otherwise the
+ * organization's. Measurements do not depend on the rubric, so any of them can be re-evaluated.
+ */
+export async function recentDecisionChecks(db: SupabaseClient, orgId: string, rubricId: string | null, limit = 200): Promise<{ scope: "rubric" | "organization"; rows: StoredDecisionChecks[] }> {
+  if (rubricId) {
+    const { data, error } = await db
+      .from("decisions")
+      .select("decision, checks, created_at")
+      .eq("org_id", orgId)
+      .eq("rubric_id", rubricId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw errors.internal();
+    if (data?.length) return { scope: "rubric", rows: data as StoredDecisionChecks[] };
+  }
+  const { data, error } = await db
+    .from("decisions")
+    .select("decision, checks, created_at")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw errors.internal();
+  return { scope: "organization", rows: (data ?? []) as StoredDecisionChecks[] };
+}

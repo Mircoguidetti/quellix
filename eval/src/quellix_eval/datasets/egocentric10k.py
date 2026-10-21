@@ -20,7 +20,9 @@ defects are added with `defects/`. Network access is injectable so tests stay of
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
+import sys
 import tarfile
 import tempfile
 from collections.abc import Callable, Iterator, Sequence
@@ -59,11 +61,19 @@ def _hf_open_shard(repo_id: str, shard: str, token: str) -> BinaryIO:  # pragma:
 
 def pick_shards(shards: Sequence[str], n: int) -> list[str]:
     """One shard per factory (the first worker's first part), up to n, for diversity."""
-    by_factory: dict[str, str] = {}
+    return shard_order(shards)[: min(n, len({s.split("/", 1)[0] for s in shards}))]
+
+
+def shard_order(shards: Sequence[str]) -> list[str]:
+    """Every shard, round-robin across factories: first shard of each factory, then the second
+    of each, and so on. Taking a prefix is always as diverse as possible."""
+    by_factory: dict[str, list[str]] = {}
     for s in sorted(shards):
-        factory = s.split("/", 1)[0]
-        by_factory.setdefault(factory, s)
-    return list(by_factory.values())[:n]
+        by_factory.setdefault(s.split("/", 1)[0], []).append(s)
+    order: list[str] = []
+    for depth in range(max((len(v) for v in by_factory.values()), default=0)):
+        order += [v[depth] for v in by_factory.values() if depth < len(v)]
+    return order
 
 
 def iter_tar_videos(stream: BinaryIO, limit: int) -> Iterator[tuple[str, bytes]]:
@@ -138,21 +148,42 @@ def build(
     token = token or os.environ.get("HF_TOKEN")
     if not token:
         raise RuntimeError("HF_TOKEN is required (gated dataset)")
-    all_shards = lister(REPO_ID, token)
-    shards = pick_shards(all_shards, max(-(-clips // per_shard), min_factories))
-    if len(shards) < min_factories:
-        raise RuntimeError(f"only {len(shards)} factories found, need at least {min_factories}")
+    order = shard_order(lister(REPO_ID, token))
+    factories = len({s.split("/", 1)[0] for s in order})
+    if factories < min_factories:
+        raise RuntimeError(f"only {factories} factories found, need at least {min_factories}")
+    # Spread over at least `min_factories` shards first; keep going through further shards
+    # (more workers, more parts) until the requested number of clips is reached.
+    first_pass = max(-(-clips // per_shard), min_factories)
+    max_shards = max(first_pass * 4, 40)
     records: list[ClipRecord] = []
+    tried = 0
     with tempfile.TemporaryDirectory() as td:
-        for shard in shards:
-            stream = opener(REPO_ID, shard, token)
+        for shard in order:
+            if len(records) >= clips or tried >= max_shards:
+                break
+            tried += 1
             try:
-                for key, data in iter_tar_videos(stream, per_shard):
+                stream = opener(REPO_ID, shard, token)
+            except Exception as e:  # noqa: BLE001 - one bad shard must not stop the run
+                print(f"skip shard {shard}: {e}", file=sys.stderr)
+                continue
+            taken = 0
+            try:
+                for key, data in iter_tar_videos(stream, per_shard + 2):
+                    if taken >= per_shard or len(records) >= clips:
+                        break
                     raw = Path(td) / f"{key}.mp4"
                     raw.write_bytes(data)
                     dst = data_dir / f"{key}.mp4"
-                    duration = transcode(raw, dst, seconds, width, fps)
-                    raw.unlink()
+                    try:
+                        duration = transcode(raw, dst, seconds, width, fps)
+                    except Exception as e:  # noqa: BLE001 - undecodable clip: try the next one
+                        print(f"skip clip {key}: {e}", file=sys.stderr)
+                        continue
+                    finally:
+                        raw.unlink(missing_ok=True)
+                    taken += 1
                     records.append(ClipRecord(
                         clip_id=f"ego10k_{key}",
                         source=REPO_ID,
@@ -164,12 +195,14 @@ def build(
                         duration_s=duration,
                         notes=f"from {shard}; truth=accept is assumed, not human-reviewed",
                     ))
-                    if len(records) >= clips:
-                        break
+            except Exception as e:  # noqa: BLE001 - broken tar stream: keep what we have
+                print(f"stream error in {shard}: {e}", file=sys.stderr)
             finally:
-                stream.close()
-            if len(records) >= clips:
-                break
+                with contextlib.suppress(Exception):
+                    stream.close()
+    if len(records) < clips:
+        print(f"WARNING: wanted {clips} clips, got {len(records)} after {tried} shards",
+              file=sys.stderr)
     return write_manifest(records, out)
 
 

@@ -1,35 +1,41 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/server";
+import { ORG_COOKIE } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const nameSchema = z.string().trim().min(1).max(200);
+const schema = z.object({ name: z.string().trim().min(2, "Use at least 2 characters.").max(200, "Use at most 200 characters.") });
 
-export async function createOrganization(formData: FormData) {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
+export type OnboardingResult = { ok: false; error: string };
 
-  const name = nameSchema.parse(formData.get("name"));
+/**
+ * Creates an organization with the user as owner. Without `additional`, it is the first-run
+ * bootstrap: a user who already belongs to an organization is just sent to the app.
+ */
+export async function createOrganization(raw: unknown, additional: boolean): Promise<OnboardingResult> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const input = schema.safeParse(raw);
+  if (!input.success) return { ok: false, error: input.error.issues[0]?.message ?? "Check the name." };
+
   const admin = createAdminClient();
-
-  // One organization per user at bootstrap: do nothing if they already belong to one.
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from("members")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", data.user.id);
-  if (!count) {
-    const { data: org, error } = await admin.from("organizations").insert({ name }).select("id").single();
-    if (error || !org) throw new Error("Could not create the organization");
-    const { error: memberError } = await admin
-      .from("members")
-      .insert({ org_id: org.id, user_id: data.user.id, role: "owner" });
-    if (memberError) {
-      await admin.from("organizations").delete().eq("id", org.id);
-      throw new Error("Could not create the membership");
-    }
+    .eq("user_id", user.id);
+  if (countError) return { ok: false, error: "We could not reach the database. Try again in a moment." };
+  if (count && !additional) redirect("/app");
+
+  const { data: org, error } = await admin.from("organizations").insert({ name: input.data.name }).select("id").single();
+  if (error || !org) return { ok: false, error: "We could not create the organization. Try again in a moment." };
+  const { error: memberError } = await admin.from("members").insert({ org_id: org.id, user_id: user.id, role: "owner" });
+  if (memberError) {
+    await admin.from("organizations").delete().eq("id", org.id);
+    return { ok: false, error: "We could not create the organization. Try again in a moment." };
   }
+  (await cookies()).set(ORG_COOKIE, org.id as string, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
   redirect("/app");
 }

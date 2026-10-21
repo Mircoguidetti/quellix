@@ -1,6 +1,6 @@
 import { PublicPage } from "@/components/public-page";
 
-export const metadata = { title: "How we handle your data · Quellix" };
+export const metadata = { title: "How we handle your data" };
 
 export default function DataPage() {
   return (
@@ -9,8 +9,9 @@ export default function DataPage() {
 
       <h2>Videos are analysed, then deleted</h2>
       <p>
-        A video is kept only while it is being analysed and while it waits in your review list, so a person can watch it.
-        After that the file is deleted. Decisions, reasons and measurements stay in your account.
+        A video is kept only while it is being analysed and while it waits in your review list, so a person can watch it:
+        at most 14 days, then it is deleted even if nobody reviewed it. A video that fails processing is deleted after the
+        last attempt. Decisions, reasons and measurements stay in your account.
       </p>
 
       <h2>No training without your opt-in</h2>
@@ -40,7 +41,7 @@ export default function DataPage() {
 
       <h2>Questions</h2>
       <p>
-        See the <a className="underline" href="/dpa">data processing agreement</a> (draft) for the terms we propose.
+        See the <a href="/dpa">data processing agreement</a> (draft) for the terms we propose.
       </p>
     </PublicPage>
   );

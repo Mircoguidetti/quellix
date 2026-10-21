@@ -2,276 +2,638 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm, useWatch, type Control, type FieldPath } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { CircleCheck, CircleDot, CircleX, History, Lock, Save, TriangleAlert } from "lucide-react";
+import { FormAlert } from "@/components/auth/form-alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input, Textarea } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { formatDate } from "@/lib/format";
 import { validateRubric } from "@/lib/rubric";
+import { CHECK_NAMES, evaluate, outputsFromStoredChecks, checkConfig } from "@/lib/rubric-eval";
+import { rubricFormSchema, summarizeRules, toFormValues, toRubricInput, type RubricFormValues } from "@/lib/rubric-form";
+import { cn } from "@/lib/utils";
 import { saveRubric } from "./actions";
-import { button, card, input, muted } from "@/components/ui";
 
-type Json = Record<string, unknown>;
-type Value = string | number | boolean | undefined;
-type Field =
-  | { key: string; label: string; kind: "number"; min?: number; max?: number; step?: number }
-  | { key: string; label: string; kind: "bool" }
-  | { key: string; label: string; kind: "select"; options: string[] };
+type Body = { name: string; task: Record<string, unknown>; checks: Record<string, unknown> };
+type Sample = { decision: string; checks: Record<string, { status?: string; measurements?: Record<string, unknown>; model?: string }> };
+type Version = { version: number; created_at: string; body: Body & { version: number } };
 
-const RATIO = { min: 0, max: 1, step: 0.01 } as const;
-const HANDLING = ["reject", "review", "ignore"];
+type Props = {
+  rubricId: string | null;
+  currentVersion: number | null;
+  initial: Body;
+  history: Version[];
+  samples: Sample[];
+  sampleScope: "rubric" | "organization";
+  canEdit: boolean;
+};
 
-const CHECKS: { name: string; title: string; help: string; critical: boolean; fields: Field[] }[] = [
-  {
-    name: "task_completed",
-    title: "Task completed",
-    help: "Did the contributor finish the task described above?",
-    critical: true,
-    fields: [{ key: "min_confidence", label: "Minimum confidence", kind: "number", ...RATIO }],
-  },
-  {
-    name: "hands_visible",
-    title: "Hands visible",
-    help: "Hands must stay in view.",
-    critical: true,
-    fields: [
-      { key: "scope", label: "Scope", kind: "select", options: ["manipulation", "whole_video"] },
-      { key: "require_both", label: "Both hands required", kind: "bool" },
-      { key: "min_ratio", label: "Minimum visible ratio", kind: "number", ...RATIO },
-    ],
-  },
-  {
-    name: "framing",
-    title: "Framing and stability",
-    help: "Camera pointed at the work, steady.",
-    critical: true,
-    fields: [
-      { key: "max_off_target_ratio", label: "Max off-target ratio", kind: "number", ...RATIO },
-      { key: "max_unstable_ratio", label: "Max unstable ratio", kind: "number", ...RATIO },
-    ],
-  },
-  {
-    name: "technical",
-    title: "Technical quality",
-    help: "Duration, resolution, frame rate, blur and exposure.",
-    critical: true,
-    fields: [
-      { key: "min_duration_s", label: "Min duration (s)", kind: "number", min: 0 },
-      { key: "max_duration_s", label: "Max duration (s)", kind: "number", min: 0 },
-      { key: "min_width", label: "Min width (px)", kind: "number", min: 1, step: 1 },
-      { key: "min_height", label: "Min height (px)", kind: "number", min: 1, step: 1 },
-      { key: "min_fps", label: "Min frames per second", kind: "number", min: 1 },
-      { key: "max_blur_ratio", label: "Max blur ratio", kind: "number", ...RATIO },
-      { key: "max_bad_exposure_ratio", label: "Max bad-exposure ratio", kind: "number", ...RATIO },
-    ],
-  },
-  {
-    name: "privacy",
-    title: "Privacy",
-    help: "What to do when faces, documents or screens appear.",
-    critical: false,
-    fields: [
-      { key: "faces", label: "Faces", kind: "select", options: HANDLING },
-      { key: "documents", label: "Documents", kind: "select", options: HANDLING },
-      { key: "screens", label: "Screens", kind: "select", options: HANDLING },
-    ],
-  },
-  {
-    name: "originality",
-    title: "Originality",
-    help: "Duplicates of earlier videos from your organization.",
-    critical: false,
-    fields: [
-      { key: "similarity_threshold", label: "Similarity threshold", kind: "number", ...RATIO },
-      { key: "on_duplicate", label: "On duplicate", kind: "select", options: ["reject", "review"] },
-    ],
-  },
-];
-
-export function RubricEditor({
-  rubricId = null,
-  initial,
-}: {
-  rubricId?: string | null;
-  initial: { name: string; task: Json; checks: Json };
-}) {
+export function RubricEditor({ rubricId, currentVersion, initial, history, samples, sampleScope, canEdit }: Props) {
   const router = useRouter();
-  const [name, setName] = useState(initial.name);
-  const [task, setTask] = useState<Json>(initial.task);
-  const [checks, setChecks] = useState<Json>(initial.checks);
-  const [error, setError] = useState<string | null>(null);
+  const form = useForm<RubricFormValues>({ resolver: zodResolver(rubricFormSchema), defaultValues: toFormValues(initial), mode: "onChange" });
+  const values = useWatch({ control: form.control }) as RubricFormValues;
+  const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadedVersion, setLoadedVersion] = useState<number | null>(null);
 
-  const body = useMemo(() => ({ name, task, checks }), [name, task, checks]);
-  const problems = useMemo(() => validateRubric({ id: "preview", version: 1, ...body }), [body]);
+  const input = useMemo(() => toRubricInput(values), [values]);
+  const problems = useMemo(() => validateRubric({ id: rubricId ?? "new", version: (currentVersion ?? 0) + 1, ...input }), [input, rubricId, currentVersion]);
+  const preview = useMemo(() => previewOn(samples, input), [samples, input]);
+  const rules = useMemo(() => summarizeRules(values), [values]);
+  const nextVersion = (currentVersion ?? 0) + 1;
+  const dirty = form.formState.isDirty || loadedVersion !== null;
 
-  const setTaskField = (key: string, value: string | string[]) =>
-    setTask((t) => {
-      const next = { ...t };
-      if (value === "" || (Array.isArray(value) && value.length === 0)) delete next[key];
-      else next[key] = value;
-      return next;
-    });
+  const openConfirm = form.handleSubmit(
+    () => {
+      if (problems.length) return toast.error("The rubric does not match the schema yet. See Validation.");
+      setSaveError(null);
+      setConfirming(true);
+    },
+    () => toast.error("Fix the highlighted fields first."),
+  );
 
-  const setCheckField = (check: string, key: string, value: Value) =>
-    setChecks((c) => {
-      const current = { ...((c[check] as Json | undefined) ?? {}) };
-      if (value === undefined || value === "") delete current[key];
-      else current[key] = value;
-      return { ...c, [check]: current };
-    });
-
-  async function save() {
+  const save = async () => {
     setSaving(true);
-    setError(null);
-    const res = await saveRubric(rubricId, body);
+    setSaveError(null);
+    const res = await saveRubric(rubricId, input).catch(() => ({ ok: false as const, error: "We could not reach Quellix. Try again." }));
     setSaving(false);
-    if (!res.ok) return setError(res.error);
+    if (!res.ok) return setSaveError(res.error);
+    setConfirming(false);
+    toast.success(rubricId ? `Saved version ${res.version}` : "Rubric created");
+    form.reset(values);
+    setLoadedVersion(null);
     router.push(`/app/rubrics/${res.id}`);
     router.refresh();
-  }
-
-  const steps = Array.isArray(task.steps) ? (task.steps as string[]) : [];
+  };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-      <div className="flex flex-col gap-4">
-        <section className={card + " flex flex-col gap-3"}>
-          <label className="flex flex-col gap-1 text-sm">
-            Name
-            <input className={input} value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Task description
-            <textarea
-              className={input}
-              rows={2}
-              value={(task.description as string) ?? ""}
-              onChange={(e) => setTask((t) => ({ ...t, description: e.target.value }))}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Task library id (optional, e.g. load_dishwasher)
-            <input
-              className={input}
-              value={(task.library_id as string) ?? ""}
-              onChange={(e) => setTaskField("library_id", e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Steps (one per line)
-            <textarea
-              className={input}
-              rows={3}
-              value={steps.join("\n")}
-              onChange={(e) => setTaskField("steps", e.target.value.split("\n"))}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Final state (optional)
-            <input
-              className={input}
-              value={(task.final_state as string) ?? ""}
-              onChange={(e) => setTaskField("final_state", e.target.value)}
-            />
-          </label>
-        </section>
-
-        {CHECKS.map((spec) => {
-          const c = (checks[spec.name] as Json | undefined) ?? {};
-          const enabled = c.enabled !== false;
-          return (
-            <section key={spec.name} className={card + " flex flex-col gap-3"}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="font-medium">{spec.title}</h2>
-                  <p className={"text-xs " + muted}>{spec.help}</p>
-                </div>
-                <div className="flex gap-4 text-sm">
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" checked={enabled} onChange={(e) => setCheckField(spec.name, "enabled", e.target.checked)} />
-                    Enabled
-                  </label>
-                  {spec.critical && (
-                    <label className="flex items-center gap-1" title="A failed critical check rejects the video">
-                      <input
-                        type="checkbox"
-                        checked={c.critical !== undefined ? c.critical === true : spec.name !== "framing"}
-                        onChange={(e) => setCheckField(spec.name, "critical", e.target.checked)}
-                      />
-                      Critical
-                    </label>
-                  )}
-                </div>
-              </div>
-              {enabled && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {spec.fields.map((f) => (
-                    <FieldInput key={f.key} field={f} value={c[f.key] as Value} onChange={(v) => setCheckField(spec.name, f.key, v)} />
-                  ))}
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
-
-      <aside className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start">
-        <div className={card}>
-          <h2 className="mb-2 font-medium">Validation</h2>
-          {problems.length === 0 ? (
-            <p className="text-sm text-emerald-700 dark:text-emerald-400">Valid against the rubric schema.</p>
-          ) : (
-            <ul className="list-disc pl-5 text-sm text-red-600 dark:text-red-400">
-              {problems.map((p, i) => (
-                <li key={i}>{p}</li>
-              ))}
-            </ul>
+    <Form {...form}>
+      <form onSubmit={(e) => e.preventDefault()} noValidate className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <fieldset disabled={!canEdit} className="grid min-w-0 content-start gap-4">
+          {!canEdit && (
+            <FormAlert tone="info">
+              <span className="inline-flex items-center gap-1.5">
+                <Lock className="size-3.5" aria-hidden />
+                Only owners and admins can change rubrics. You are viewing it read-only.
+              </span>
+            </FormAlert>
           )}
-        </div>
-        <button className={button("primary")} disabled={saving || problems.length > 0} onClick={save}>
-          {saving ? "Saving…" : rubricId ? "Save as new version" : "Create rubric"}
-        </button>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        <details className={card} open>
-          <summary className="cursor-pointer font-medium">JSON preview</summary>
-          <pre className="mt-2 max-h-96 overflow-auto text-xs">{JSON.stringify(body, null, 2)}</pre>
-        </details>
-      </aside>
+          <Section title="Task" description="What the contributor films. Copy it from the lab's spec.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField control={form.control} name="name" label="Rubric name" placeholder="Load the dishwasher" />
+              <TextField
+                control={form.control}
+                name="task.library_id"
+                label="Task library id"
+                placeholder="load_dishwasher"
+                description="Optional. Uses our specialised task model; without it a general model judges completion."
+                mono
+              />
+            </div>
+            <TextField control={form.control} name="task.description" label="Task description" multiline placeholder="Load dirty plates and glasses into the dishwasher and close the door." />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField control={form.control} name="task.steps" label="Steps" multiline description="One per line, in order." />
+              <TextField control={form.control} name="task.final_state" label="Final state" multiline description="What the scene looks like when the task is done." />
+            </div>
+          </Section>
+
+          <CheckSection control={form.control} name="task_completed" title="Task completed" help="Did the contributor finish the task described above?" critical>
+            <SliderField control={form.control} name="checks.task_completed.min_confidence" label="Minimum confidence" help="Below this, the video goes to review instead of being decided." />
+          </CheckSection>
+
+          <CheckSection control={form.control} name="hands_visible" title="Hands visible" help="Hands fully in frame, wrist to fingertips, not cut by the edge." critical>
+            <SliderField control={form.control} name="checks.hands_visible.min_ratio" label="Minimum time visible" help="Share of frames where the hands are fully visible." />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SelectField
+                control={form.control}
+                name="checks.hands_visible.scope"
+                label="Measured over"
+                options={[
+                  ["manipulation", "Only while handling objects"],
+                  ["whole_video", "The whole video"],
+                ]}
+              />
+              <SwitchField control={form.control} name="checks.hands_visible.require_both" label="Both hands required" help="Off: one hand in frame is enough." />
+            </div>
+          </CheckSection>
+
+          <CheckSection control={form.control} name="framing" title="Framing and stability" help="Camera pointed at the work and steady." critical>
+            <SliderField control={form.control} name="checks.framing.max_off_target_ratio" label="Maximum time off target" help="Share of frames where the camera points away from the work." />
+            <SliderField control={form.control} name="checks.framing.max_unstable_ratio" label="Maximum unstable time" help="Share of frames with a shaking or jumping camera." />
+          </CheckSection>
+
+          <CheckSection control={form.control} name="technical" title="Technical quality" help="Length, resolution, frame rate, blur and exposure." critical>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <NumberField control={form.control} name="checks.technical.min_duration_s" label="Minimum duration" unit="s" />
+              <NumberField control={form.control} name="checks.technical.max_duration_s" label="Maximum duration" unit="s" />
+              <NumberField control={form.control} name="checks.technical.min_width" label="Minimum width" unit="px" step={1} />
+              <NumberField control={form.control} name="checks.technical.min_height" label="Minimum height" unit="px" step={1} />
+              <NumberField control={form.control} name="checks.technical.min_fps" label="Minimum frame rate" unit="fps" />
+            </div>
+            <SliderField control={form.control} name="checks.technical.max_blur_ratio" label="Maximum blurry frames" />
+            <SliderField control={form.control} name="checks.technical.max_bad_exposure_ratio" label="Maximum too dark or bright" />
+          </CheckSection>
+
+          <CheckSection control={form.control} name="privacy" title="Privacy" help="What to do when personal data is visible. Doubtful cases should go to review.">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {(
+                [
+                  ["faces", "Faces"],
+                  ["documents", "Readable documents"],
+                  ["screens", "Readable screens"],
+                ] as const
+              ).map(([k, label]) => (
+                <SelectField
+                  key={k}
+                  control={form.control}
+                  name={`checks.privacy.${k}`}
+                  label={label}
+                  options={[
+                    ["review", "Send to review"],
+                    ["reject", "Reject"],
+                    ["ignore", "Ignore"],
+                  ]}
+                />
+              ))}
+            </div>
+          </CheckSection>
+
+          <CheckSection control={form.control} name="originality" title="Originality" help="Matches against videos your organization received before. Never across customers.">
+            <SliderField
+              control={form.control}
+              name="checks.originality.similarity_threshold"
+              label="Similarity threshold"
+              help="At or above this, the video counts as already delivered."
+              format={(v) => v.toFixed(2)}
+            />
+            <SelectField
+              control={form.control}
+              name="checks.originality.on_duplicate"
+              label="When it is a duplicate"
+              options={[
+                ["reject", "Reject"],
+                ["review", "Send to review"],
+              ]}
+            />
+          </CheckSection>
+        </fieldset>
+
+        <aside className="grid content-start gap-4 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto xl:pb-2">
+          <Card className="grid gap-3 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[14px] font-medium">{rubricId ? `Version ${currentVersion}` : "New rubric"}</h2>
+              {dirty && <Badge tone="review">unsaved changes</Badge>}
+            </div>
+            <p className="text-[13px] text-muted-foreground">
+              {rubricId
+                ? `Saving creates version ${nextVersion}. Videos already decided keep the version they used.`
+                : "Saving creates version 1. Uploads choose it by name."}
+            </p>
+            <Button type="button" onClick={openConfirm} disabled={!canEdit}>
+              <Save aria-hidden />
+              {rubricId ? `Save as version ${nextVersion}` : "Create rubric"}
+            </Button>
+          </Card>
+
+          <Card className="grid gap-4 p-4">
+            <div>
+              <h2 className="text-[14px] font-medium">Live preview</h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {preview.compared
+                  ? `These settings applied to the last ${preview.compared} decided videos${sampleScope === "organization" ? " of your organization" : ""}.`
+                  : "No decided videos yet to preview on."}
+              </p>
+            </div>
+            {preview.compared > 0 && (
+              <>
+                <dl className="grid grid-cols-3 gap-2">
+                  {(["accept", "review", "reject"] as const).map((k) => (
+                    <div key={k} className="rounded-lg border border-border p-2.5">
+                      <dt className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">{k}</dt>
+                      <dd className="mt-1 text-[20px] font-medium leading-none tabular-nums">{preview.next[k]}</dd>
+                      <dd className={cn("mt-1 font-mono text-[11.5px] tabular-nums", delta(preview.next[k], preview.now[k]).tone)}>
+                        {delta(preview.next[k], preview.now[k]).text}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="text-[13px]">
+                  {preview.changed ? (
+                    <>
+                      <span className="font-medium tabular-nums">{preview.changed}</span> of {preview.compared} decisions would change.
+                    </>
+                  ) : (
+                    "No decision would change."
+                  )}
+                  {preview.skipped > 0 && <span className="text-muted-foreground"> {preview.skipped} could not be compared because a check was off when they were analysed.</span>}
+                </p>
+              </>
+            )}
+            <RuleList icon={CircleX} tone="text-reject-fg" title="Rejects when" items={rules.rejects} />
+            <RuleList icon={CircleDot} tone="text-review-fg" title="Sends to review when" items={rules.reviews} />
+            {rules.off.length > 0 && <p className="text-[12.5px] text-muted-foreground">Off: {rules.off.join(", ")}.</p>}
+          </Card>
+
+          <Card className="grid gap-2 p-4">
+            <h2 className="text-[14px] font-medium">Validation</h2>
+            {problems.length === 0 ? (
+              <p className="flex items-center gap-1.5 text-[13px] text-accept-fg">
+                <CircleCheck className="size-4" aria-hidden />
+                Matches the rubric schema.
+              </p>
+            ) : (
+              <ul className="grid gap-1 text-[13px] text-reject-fg">
+                {problems.map((p) => (
+                  <li key={p} className="flex gap-1.5">
+                    <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                    <span className="font-mono text-[12px]">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {history.length > 0 && (
+            <Card className="grid gap-2 p-4">
+              <h2 className="flex items-center gap-1.5 text-[14px] font-medium">
+                <History className="size-4 text-muted-foreground" aria-hidden />
+                Version history
+              </h2>
+              <ol className="grid">
+                {history.map((v) => (
+                  <li key={v.version} className="flex items-center justify-between gap-2 border-t border-border py-2 first:border-t-0">
+                    <span className="text-[13px]">
+                      <span className="font-mono font-medium">v{v.version}</span>
+                      <span className="text-muted-foreground"> · {formatDate(v.created_at)}</span>
+                      {v.version === currentVersion && <span className="text-muted-foreground"> · current</span>}
+                      {v.version === loadedVersion && <span className="text-accent-foreground"> · in editor</span>}
+                    </span>
+                    {canEdit && v.version !== currentVersion && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          form.reset(toFormValues(v.body), { keepDefaultValues: true });
+                          setLoadedVersion(v.version);
+                          toast(`Version ${v.version} loaded into the editor`, { description: `Save to make it version ${nextVersion}.` });
+                        }}
+                      >
+                        Restore
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          )}
+        </aside>
+
+        <Dialog open={confirming} onOpenChange={(o) => !saving && setConfirming(o)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{rubricId ? `Save as version ${nextVersion}?` : `Create “${values.name}”?`}</DialogTitle>
+              <DialogDescription>
+                {rubricId
+                  ? `New uploads will use version ${nextVersion}. Videos already decided keep version ${currentVersion}, so their decisions stay explainable.`
+                  : "New uploads can use this rubric as soon as it is saved."}
+              </DialogDescription>
+            </DialogHeader>
+            {preview.compared > 0 && (
+              <p className="rounded-lg bg-subtle px-3 py-2.5 text-[13.5px]">
+                On the last {preview.compared} videos: <b className="font-medium tabular-nums">{preview.next.reject}</b> rejected,{" "}
+                <b className="font-medium tabular-nums">{preview.next.review}</b> to review, <b className="font-medium tabular-nums">{preview.next.accept}</b> accepted
+                {preview.changed ? ` (${preview.changed} different from today).` : "."}
+              </p>
+            )}
+            {saveError && <FormAlert>{saveError}</FormAlert>}
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={saving}>
+                Keep editing
+              </Button>
+              <Button type="button" onClick={save} loading={saving}>
+                {rubricId ? `Save version ${nextVersion}` : "Create rubric"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </form>
+    </Form>
+  );
+}
+
+function previewOn(samples: Sample[], input: Body) {
+  const now = { accept: 0, review: 0, reject: 0 };
+  const next = { accept: 0, review: 0, reject: 0 };
+  let changed = 0;
+  let skipped = 0;
+  for (const s of samples) {
+    const outputs = outputsFromStoredChecks(s.checks);
+    const missing = CHECK_NAMES.some((name) => checkConfig(input, name).enabled !== false && !outputs[name]);
+    if (missing) {
+      skipped++;
+      continue;
+    }
+    const result = evaluate(input, outputs).decision;
+    const before = s.decision as keyof typeof now;
+    if (before in now) now[before]++;
+    next[result]++;
+    if (result !== before) changed++;
+  }
+  return { now, next, changed, skipped, compared: samples.length - skipped };
+}
+
+function delta(next: number, now: number): { text: string; tone: string } {
+  const d = next - now;
+  if (!d) return { text: "no change", tone: "text-muted-foreground" };
+  return { text: `${d > 0 ? "+" : "−"}${Math.abs(d)} vs now`, tone: "text-foreground" };
+}
+
+function RuleList({ icon: Icon, tone, title, items }: { icon: typeof CircleX; tone: string; title: string; items: string[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="grid gap-1.5">
+      <h3 className={cn("flex items-center gap-1.5 text-[13px] font-medium", tone)}>
+        <Icon className="size-4" aria-hidden />
+        {title}
+      </h3>
+      <ul className="grid gap-1 pl-[22px] text-[13px] text-muted-foreground">
+        {items.map((t) => (
+          <li key={t} className="list-disc">
+            {t}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function FieldInput({ field, value, onChange }: { field: Field; value: Value; onChange: (v: Value) => void }) {
-  if (field.kind === "bool") {
-    return (
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={value === undefined ? true : value === true} onChange={(e) => onChange(e.target.checked)} />
-        {field.label}
-      </label>
-    );
-  }
-  if (field.kind === "select") {
-    return (
-      <label className="flex flex-col gap-1 text-sm">
-        {field.label}
-        <select className={input} value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value || undefined)}>
-          <option value="">Default</option>
-          {field.options.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
-      </label>
-    );
-  }
+function Section({ title, description, children, aside }: { title: string; description: string; children: React.ReactNode; aside?: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      {field.label}
-      <input
-        type="number"
-        className={input}
-        min={field.min}
-        max={field.max}
-        step={field.step ?? "any"}
-        placeholder="Default"
-        value={value === undefined ? "" : String(value)}
-        onChange={(e) => onChange(e.target.value === "" ? undefined : Number(e.target.value))}
-      />
-    </label>
+    <Card className="grid gap-4 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-medium">{title}</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">{description}</p>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+type CheckKey = "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality";
+
+function CheckSection({
+  control,
+  name,
+  title,
+  help,
+  critical = false,
+  children,
+}: {
+  control: Control<RubricFormValues>;
+  name: CheckKey;
+  title: string;
+  help: string;
+  critical?: boolean;
+  children: React.ReactNode;
+}) {
+  const enabled = useWatch({ control, name: `checks.${name}.enabled` });
+  return (
+    <Section
+      title={title}
+      description={help}
+      aside={
+        <div className="flex flex-wrap items-center gap-4">
+          {critical && enabled && (
+            <FormField
+              control={control}
+              name={`checks.${name}.critical` as FieldPath<RubricFormValues>}
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="text-[13px] font-normal">
+                    Critical <span className="text-muted-foreground">· {field.value ? "a failure rejects" : "a failure goes to review"}</span>
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+          )}
+          <FormField
+            control={control}
+            name={`checks.${name}.enabled` as FieldPath<RubricFormValues>}
+            render={({ field }) => (
+              <FormItem className="flex items-center gap-2 space-y-0">
+                <FormControl>
+                  <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormLabel className="text-[13px] font-normal">{field.value ? "On" : "Off"}</FormLabel>
+              </FormItem>
+            )}
+          />
+        </div>
+      }
+    >
+      {enabled ? <div className="grid gap-5">{children}</div> : <p className="text-[13px] text-muted-foreground">This check does not run for this rubric.</p>}
+    </Section>
+  );
+}
+
+function TextField({
+  control,
+  name,
+  label,
+  description,
+  placeholder,
+  multiline,
+  mono,
+}: {
+  control: Control<RubricFormValues>;
+  name: FieldPath<RubricFormValues>;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  multiline?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            {multiline ? (
+              <Textarea rows={3} placeholder={placeholder} {...field} value={(field.value as string) ?? ""} />
+            ) : (
+              <Input placeholder={placeholder} className={mono ? "font-mono text-[13px]" : undefined} {...field} value={(field.value as string) ?? ""} />
+            )}
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function SliderField({
+  control,
+  name,
+  label,
+  help,
+  format = (v) => `${Math.round(v * 100)}%`,
+}: {
+  control: Control<RubricFormValues>;
+  name: FieldPath<RubricFormValues>;
+  label: string;
+  help?: string;
+  format?: (v: number) => string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="gap-1.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <FormLabel>{label}</FormLabel>
+            <span className="rounded-md bg-muted px-1.5 font-mono text-[12.5px] leading-6 tabular-nums">{format(field.value as number)}</span>
+          </div>
+          <FormControl>
+            <Slider
+              min={0}
+              max={1}
+              step={0.01}
+              value={[field.value as number]}
+              onValueChange={([v]) => field.onChange(Math.round(v * 100) / 100)}
+              aria-label={label}
+              aria-valuetext={format(field.value as number)}
+            />
+          </FormControl>
+          {help && <FormDescription>{help}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function NumberField({
+  control,
+  name,
+  label,
+  unit,
+  step,
+}: {
+  control: Control<RubricFormValues>;
+  name: FieldPath<RubricFormValues>;
+  label: string;
+  unit: string;
+  step?: number;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <div className="relative">
+            <FormControl>
+              <Input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step={step ?? "any"}
+                placeholder="No limit"
+                className="pr-12 font-mono text-[13px] tabular-nums"
+                name={field.name}
+                ref={field.ref}
+                onBlur={field.onBlur}
+                value={field.value === undefined ? "" : String(field.value)}
+                onChange={(e) => field.onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)}
+              />
+            </FormControl>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[12px] text-muted-foreground">{unit}</span>
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function SelectField({
+  control,
+  name,
+  label,
+  options,
+}: {
+  control: Control<RubricFormValues>;
+  name: FieldPath<RubricFormValues>;
+  label: string;
+  options: [string, string][];
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <Select value={field.value as string} onValueChange={field.onChange}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {options.map(([v, l]) => (
+                <SelectItem key={v} value={v}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function SwitchField({ control, name, label, help }: { control: Control<RubricFormValues>; name: FieldPath<RubricFormValues>; label: string; help?: string }) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="content-start">
+          <div className="flex items-center gap-2 pt-6">
+            <FormControl>
+              <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
+            </FormControl>
+            <FormLabel className="font-normal">{label}</FormLabel>
+          </div>
+          {help && <FormDescription>{help}</FormDescription>}
+        </FormItem>
+      )}
+    />
   );
 }
