@@ -1,0 +1,43 @@
+[project]
+name = "quellix"
+version = "0.1.0"
+description = "Python SDK for the Quellix API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27,<1", "pydantic>=2.7,<3"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "datamodel-code-generator>=0.26",
+  "pyyaml>=6",
+  "types-pyyaml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quellix"]
+
+[tool.ruff]
+line-length = 105
+src = ["src", "tests"]
+extend-exclude = ["src/quellix/_generated"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+exclude = ["src/quellix/_generated"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
