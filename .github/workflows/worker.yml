@@ -1,0 +1,76 @@
+name: Deploy worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/worker/**"
+      - ".github/workflows/worker.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Modal and smoke test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/worker
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Optional repository variable, e.g. T4. Empty = CPU only (the default).
+      QUELLIX_WORKER_GPU: ${{ vars.QUELLIX_WORKER_GPU }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Modal credentials
+        id: creds
+        run: |
+          if [ -z "$MODAL_TOKEN_ID" ] || [ -z "$MODAL_TOKEN_SECRET" ]; then
+            echo "::notice title=Worker not deployed::Add the repository secrets MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (Modal > Settings > API Tokens). Nothing was deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v6
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        if: steps.creds.outputs.ready == 'true'
+        run: uv sync --extra modal
+
+      - name: Check the Modal secret quellix-supabase
+        id: secret
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          if uv run modal secret list --json | grep -q '"quellix-supabase"'; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Worker not deployed::The Modal secret 'quellix-supabase' does not exist. Create it with: modal secret create quellix-supabase SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... (see services/worker/README.md). Nothing was deployed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        if: steps.secret.outputs.ready == 'true'
+        run: uv run modal deploy -m quellix_worker.modal_app
+
+      - name: Smoke test (upload a clip, wait for a decision)
+        if: steps.secret.outputs.ready == 'true'
+        run: |
+          set +e
+          uv run python scripts/smoke_test.py --timeout 300
+          code=$?
+          if [ "$code" -eq 78 ]; then
+            echo "::notice title=Smoke test skipped::Add the repository secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to run the smoke test after each deploy."
+            exit 0
+          fi
+          exit $code

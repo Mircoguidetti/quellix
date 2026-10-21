@@ -178,7 +178,12 @@ paths:
 webhooks:
   video.decided:
     post:
-      summary: Sent when a decision is ready. Signed with HMAC-SHA256 in the `Quellix-Signature` header.
+      summary: Sent when a decision is ready.
+      description: |
+        Signed with HMAC-SHA256 using the webhook's signing secret. The header is
+        `Quellix-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
+        string `<t>.<raw request body>`. Receivers must recompute it over the raw body,
+        compare in constant time and reject timestamps older than a few minutes (replay).
       requestBody:
         content:
           application/json:

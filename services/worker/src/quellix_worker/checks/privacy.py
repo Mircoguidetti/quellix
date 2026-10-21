@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import urllib.request
 from pathlib import Path
@@ -18,8 +19,12 @@ MODEL = "privacy:yunet-2023mar"
 # YuNet (opencv_zoo, MIT). The weights are stored in Git LFS; they are fetched on first
 # use into QUELLIX_MODEL_DIR (default ~/.cache/quellix) or read from QUELLIX_YUNET_PATH.
 YUNET_FILENAME = "face_detection_yunet_2023mar.onnx"
+# Pinned to an opencv_zoo commit; the file is checked against its sha256 after download.
+YUNET_COMMIT = "48b10fa505aeb51fbd127fc60a5c660040e823b7"
+YUNET_SHA256 = "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4"
 YUNET_URL = (
-    "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/" + YUNET_FILENAME
+    f"https://media.githubusercontent.com/media/opencv/opencv_zoo/{YUNET_COMMIT}/"
+    f"models/face_detection_yunet/{YUNET_FILENAME}"
 )
 FACE_SCORE_THRESHOLD = 0.7
 MIN_FACE_SHARE = 0.02  # ignore faces narrower than 2% of the frame width (far background)
@@ -47,7 +52,13 @@ def yunet_path() -> Path:
     target = cache / YUNET_FILENAME
     if not target.exists():
         cache.mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(YUNET_URL, target)  # noqa: S310 (fixed https URL)
+        tmp = target.with_suffix(".part")
+        urllib.request.urlretrieve(YUNET_URL, tmp)  # noqa: S310 (fixed https URL)
+        digest = hashlib.sha256(tmp.read_bytes()).hexdigest()
+        if digest != YUNET_SHA256:
+            tmp.unlink()
+            raise RuntimeError(f"YuNet weights have an unexpected sha256 ({digest})")
+        tmp.rename(target)
     return target
 
 

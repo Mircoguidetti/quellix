@@ -11,6 +11,7 @@ import hmac
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,13 +23,19 @@ log = logging.getLogger(__name__)
 
 QUEUE = "video_jobs"
 BUCKET = "videos"  # private bucket, paths org/<org_id>/<video_id>/<filename>
-VISIBILITY_TIMEOUT_S = 900  # a crashed worker's message reappears after this
+# A crashed worker's message reappears after this; must exceed the Modal function timeout.
+VISIBILITY_TIMEOUT_S = 2100
+MAX_ATTEMPTS = 3
+RETRY_DELAYS_S = (60, 300)  # wait before attempt 2 and 3
 SIGNATURE_HEADER = "Quellix-Signature"
 
 
-def sign(body: bytes, secret: str) -> str:
-    """HMAC-SHA256 of the raw request body, hex encoded."""
-    return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
+    """``Quellix-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
+    HMAC-SHA256 of ``"<t>.<raw body>"`` (the timestamp lets receivers reject replays)."""
+    t = int(time.time()) if timestamp is None else timestamp
+    digest = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+    return f"t={t},v1={digest}"
 
 
 def _now() -> str:
@@ -46,12 +53,15 @@ class Job:
 class JobContext:
     job: Job
     org_id: str
-    storage_path: str
+    storage_path: str | None
     filename: str | None
     rubric: dict[str, Any]
     attempts: int
     training_opt_in: bool
     allow_external_models: bool
+    video_status: str = "queued"
+    video_created_at: str | None = None
+    external_id: str | None = None
 
 
 class SupabaseStore:
@@ -89,21 +99,34 @@ class SupabaseStore:
         msg = rows[0]["message"]
         return Job(rows[0]["msg_id"], msg["job_id"], msg["video_id"])
 
+    def video_storage_path(self, video_id: str) -> str | None:
+        rows = self._rest("GET", "videos", params={"id": f"eq.{video_id}",
+                                                   "select": "storage_path"})
+        return rows[0]["storage_path"] if rows else None
+
     def archive_job(self, job: Job) -> None:
         self._pgmq("archive", {"queue_name": QUEUE, "message_id": job.msg_id})
+
+    def requeue_job(self, job: Job, delay_s: int) -> None:
+        """Put the job back on the queue after ``delay_s`` (send first, then drop the old
+        message, so a crash in between duplicates rather than loses the job)."""
+        self._pgmq("send", {"queue_name": QUEUE, "message": {
+            "job_id": job.job_id, "video_id": job.video_id}, "sleep_seconds": delay_s})
+        self._pgmq("delete", {"queue_name": QUEUE, "message_id": job.msg_id})
 
     # ------------------------------------------------------------------ job data
     def load_context(self, job: Job) -> JobContext:
         jobs = self._rest("GET", "jobs", params={"id": f"eq.{job.job_id}", "select": "attempts"})
         videos = self._rest("GET", "videos", params={
             "id": f"eq.{job.video_id}",
-            "select": "org_id,storage_path,filename,rubric_id,rubric_version,"
+            "select": "org_id,status,created_at,external_id,storage_path,filename,"
+                      "rubric_id,rubric_version,"
                       "organizations(training_opt_in,allow_external_models)"})
         if not jobs or not videos:
             raise LookupError(f"job {job.job_id} or video {job.video_id} not found")
         v = videos[0]
-        if not v["storage_path"]:
-            raise LookupError(f"video {job.video_id} has no file (already deleted?)")
+        if not v["storage_path"] and v["status"] not in ("decided", "deleted"):
+            raise LookupError(f"video {job.video_id} has no file")
         versions = self._rest("GET", "rubric_versions", params={
             "rubric_id": f"eq.{v['rubric_id']}", "version": f"eq.{v['rubric_version']}",
             "select": "body"})
@@ -113,11 +136,16 @@ class SupabaseStore:
                   "version": int(v["rubric_version"])}
         return JobContext(job, v["org_id"], v["storage_path"], v["filename"], rubric,
                           jobs[0]["attempts"], bool(v["organizations"]["training_opt_in"]),
-                          bool(v["organizations"]["allow_external_models"]))
+                          bool(v["organizations"]["allow_external_models"]),
+                          v["status"], v["created_at"], v["external_id"])
 
     def start_job(self, job_id: str, attempts: int) -> None:
         self._rest("PATCH", "jobs", params={"id": f"eq.{job_id}"}, json_body={
             "status": "running", "started_at": _now(), "attempts": attempts + 1})
+
+    def retry_job(self, job_id: str, error: str) -> None:
+        self._rest("PATCH", "jobs", params={"id": f"eq.{job_id}"}, json_body={
+            "status": "queued", "error": error})
 
     def finish_job(self, job_id: str, *, error: str | None = None,
                    cost_usd: float | None = None) -> None:
