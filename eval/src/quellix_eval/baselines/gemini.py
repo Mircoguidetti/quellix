@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 from pathlib import Path
@@ -32,10 +33,9 @@ class GeminiClient:  # pragma: no cover - network
                 raise RuntimeError("Gemini could not process the video file")
             r = self._client.models.generate_content(model=self.name, contents=[f, prompt])
         finally:
-            try:  # keep the free-tier file store clean
+            # keep the free-tier file store clean
+            with contextlib.suppress(Exception):
                 self._client.files.delete(name=f.name)
-            except Exception:  # noqa: BLE001
-                pass
         u = r.usage_metadata
         tin = u.prompt_token_count or 0
         # Thinking tokens are billed as output.
