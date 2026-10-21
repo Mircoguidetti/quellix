@@ -13,6 +13,7 @@ async function settle(page: Page) {
 
 async function shot(page: Page, info: TestInfo, name: string, fullPage = true) {
   await settle(page);
+  if (!info.project.use.hasTouch) await page.mouse.move(0, 0);
   await page.screenshot({ path: path.join(OUT, info.project.name, `${name}.png`), fullPage, caret: "hide" });
 }
 

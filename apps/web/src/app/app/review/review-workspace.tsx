@@ -228,7 +228,7 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
                     ref={noteRef}
                     rows={1}
                     maxLength={2000}
-                    placeholder="What did you see? Press N to write, Esc to leave."
+                    placeholder="What did you see?"
                     className="min-h-9 bg-background"
                     value={notes[current.video.id] ?? ""}
                     onChange={(e) => setNotes((n) => ({ ...n, [current.video.id]: e.target.value }))}
@@ -238,12 +238,12 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
                   <Button variant="reject" onClick={() => decide("reject")} disabled={busy} className="flex-1 sm:flex-none">
                     <X aria-hidden />
                     Reject
-                    <Kbd className="ml-1 border-white/25 bg-white/15 text-white">R</Kbd>
+                    <Kbd className="ml-1 hidden border-white/25 bg-white/15 text-white pointer-fine:inline-flex">R</Kbd>
                   </Button>
                   <Button variant="accept" onClick={() => decide("accept")} disabled={busy} className="flex-1 sm:flex-none">
                     <Check aria-hidden />
                     Accept
-                    <Kbd className="ml-1 border-white/25 bg-white/15 text-white">A</Kbd>
+                    <Kbd className="ml-1 hidden border-white/25 bg-white/15 text-white pointer-fine:inline-flex">A</Kbd>
                   </Button>
                 </div>
               </div>
