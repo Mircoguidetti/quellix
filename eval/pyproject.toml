@@ -3,13 +3,28 @@ name = "quellix-eval"
 version = "0.1.0"
 description = "Quellix evaluation: datasets, synthetic defects, metrics, baseline comparisons."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "quellix-worker",
+  "pydantic>=2.7",
+  "av>=13",
+  "numpy>=2",
+  "opencv-python-headless>=4.10",
+]
+
+[project.optional-dependencies]
+# Only needed on the machine that downloads datasets / calls the baselines.
+data = ["huggingface-hub>=0.25"]
+gemini = ["google-genai>=1"]
+twelvelabs = ["twelvelabs>=0.4"]
 
 [dependency-groups]
 dev = [
   "pytest>=8",
   "ruff>=0.7",
 ]
+
+[tool.uv.sources]
+quellix-worker = { path = "../services/worker", editable = true }
 
 [build-system]
 requires = ["hatchling"]
