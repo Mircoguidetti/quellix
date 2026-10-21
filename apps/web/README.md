@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @quellix/web
 
-## Getting Started
+Dashboard, public API (`/api/v1/*`), auth and public pages. Next.js 16 (App Router, Cache Components), Tailwind v4, shadcn-style components on Radix, `sonner`, `lucide-react`. Read `CLAUDE.md` and `AGENTS.md` before changing code.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm --filter @quellix/web dev        # needs Supabase env vars (.env.example)
+pnpm --filter @quellix/web dev:demo   # no Supabase: seeded demo data, demo@quellix.dev / quellix-demo
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Checks
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm lint && pnpm typecheck && pnpm test   # unit tests (Vitest)
+pnpm build && pnpm e2e                     # Playwright: screenshots (1440 / 390 px), keyboard walkthrough, axe, console guard
+pnpm lighthouse                            # with the demo server on :3100; fails under 95 on accessibility
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`pnpm e2e` starts `next start` in demo mode, renders a synthetic first-person clip with Chromium + ffmpeg into `e2e/.cache/` (never committed) and writes screenshots to `e2e/screenshots/`.
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
+| Path | What |
+|---|---|
+| `src/app/page.tsx` | The landing, ported from `docs/design/landing-reference.html` |
+| `src/app/(auth)` | Sign in, create account, forgot / reset password (server actions in `actions.ts`) |
+| `src/app/app` | The dashboard: overview, review, videos, rubrics, contests, settings, upload |
+| `src/app/contest/[videoId]` | Public contest page (shows only `effect: reject` reasons) |
+| `src/components/ui` | Design-system components (Radix) |
+| `src/lib/domain` | Data access, always scoped by `org_id` |
+| `src/lib/rubric-eval.ts` | TS port of the worker's `rubric.py`, used by the rubric editor preview and the demo seed |
+| `src/lib/demo` | Demo mode: in-memory Supabase stand-in and seed |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Design tokens live in `src/app/globals.css` (CSS variables + `@theme`), taken from the landing.

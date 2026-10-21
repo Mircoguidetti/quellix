@@ -1,16 +1,27 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
+const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap", weight: ["400", "500"] });
+
 export const metadata: Metadata = {
-  title: "Quellix",
+  title: { default: "Quellix", template: "%s · Quellix" },
   description:
-    "Automated acceptance for robot-training video: your lab's spec applied to every upload.",
+    "Quellix applies your lab's spec to every first-person video you collect and decides accept, reject or review, so your reviewers only see the doubtful cases.",
 };
+
+export const viewport: Viewport = { themeColor: "#000000" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+    <html lang="en" className={`${sans.variable} ${mono.variable} h-full`}>
+      <body className="min-h-full font-sans">
+        <TooltipProvider delayDuration={250}>{children}</TooltipProvider>
+        <Toaster />
+      </body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
 import { PublicPage } from "@/components/public-page";
 
-export const metadata = { title: "How we handle your data · Quellix" };
+export const metadata = { title: "How we handle your data" };
 
 export default function DataPage() {
   return (
@@ -40,7 +40,7 @@ export default function DataPage() {
 
       <h2>Questions</h2>
       <p>
-        See the <a className="underline" href="/dpa">data processing agreement</a> (draft) for the terms we propose.
+        See the <a href="/dpa">data processing agreement</a> (draft) for the terms we propose.
       </p>
     </PublicPage>
   );
