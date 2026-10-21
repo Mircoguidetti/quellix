@@ -25,7 +25,7 @@ import tempfile
 import time
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -130,6 +130,7 @@ class EngineRun:
     video_hours: float
     failures: int
     excluded: dict[str, int]   # check -> clips skipped because their label is "unknown"
+    decisions: dict[str, str] = field(default_factory=dict)   # clip_id -> decision | "failed"
 
     @property
     def cost_per_hour(self) -> float | None:
@@ -147,6 +148,7 @@ def evaluate_engine(
     confusion: dict[str, dict[tuple[str, str], int]] = defaultdict(lambda: defaultdict(int))
     cost = hours = 0.0
     failures = 0
+    decisions: dict[str, str] = {}
     excluded: dict[str, int] = defaultdict(int)
     for clip in clips:
         res = engine(clip, rubric_for(base_rubric, clip))
@@ -155,6 +157,7 @@ def evaluate_engine(
         for check, expected in clip.checks.items():
             if expected == "unknown" and res.decision is None:
                 excluded[check] += 1
+        decisions[clip.clip_id] = res.decision["decision"] if res.decision else "failed"
         if res.decision is None:
             failures += 1
             pairs.append(("review", clip.truth))   # a failed run is never a silent accept/reject
@@ -168,7 +171,7 @@ def evaluate_engine(
             got = status if status in ("pass", "fail") else "uncertain"
             confusion[check][(expected, got)] += 1
     return EngineRun(name, report(pairs, costs), {k: dict(v) for k, v in confusion.items()},
-                     cost, hours, failures, dict(excluded))
+                     cost, hours, failures, dict(excluded), decisions)
 
 
 def _f(x: float | None) -> str:
