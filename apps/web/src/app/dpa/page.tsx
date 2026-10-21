@@ -34,7 +34,7 @@ export default function DpaPage() {
         <li>Supabase (database, authentication, storage)</li>
         <li>Vercel (hosting)</li>
         <li>Modal (compute)</li>
-        <li>Google Gemini and TwelveLabs, only if enabled for the customer&apos;s tasks</li>
+        <li>Google Gemini and TwelveLabs, only when the customer has turned on third-party models for its organization</li>
       </ul>
 
       <h2>7. Security</h2>

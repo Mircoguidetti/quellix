@@ -1,6 +1,6 @@
 "use server";
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { generateApiKey } from "@/lib/api-keys";
@@ -56,13 +56,21 @@ export async function addWebhook(formData: FormData): Promise<AddWebhookResult> 
     const secret = `whsec_${randomBytes(24).toString("base64url")}`;
     const { error } = await db
       .from("webhooks")
-      .insert({ org_id: orgId, url, secret_hash: createHash("sha256").update(secret).digest("hex") });
+      .insert({ org_id: orgId, url, signing_secret: secret });
     if (error) throw new Error("Could not save the webhook");
     revalidatePath("/app/settings");
     return { ok: true, secret };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not save the webhook" };
   }
+}
+
+/** Third-party models (Gemini, TwelveLabs) may only see this organization's videos when this is on. */
+export async function setAllowExternalModels(formData: FormData) {
+  const { db, orgId } = await adminContext();
+  const allow = formData.get("allow") === "true";
+  await db.from("organizations").update({ allow_external_models: allow }).eq("id", orgId);
+  revalidatePath("/app/settings");
 }
 
 export async function toggleWebhook(formData: FormData) {
