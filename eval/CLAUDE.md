@@ -31,3 +31,16 @@ From a clean clip, generate labelled bad variants: hand pushed out of frame (cro
 - `run.py` - run any engine on a manifest and print the report; runs in CI on a small fixture set.
 
 Python 3.12, `ruff` + `pytest`, `uv`.
+
+## Running (see module docstrings)
+
+```bash
+uv sync --extra data --extra gemini --extra twelvelabs   # on the machine with access
+python -m quellix_eval.datasets.egocentric10k --limit 300     # needs HF_TOKEN
+python -m quellix_eval.datasets.holoassist --annotations A.json --video-dir V/
+python -m quellix_eval.run --manifest eval/data/m.jsonl --engine worker --engine gemini
+```
+
+The `worker` engine calls `python -m quellix_worker check --video P --rubric R --video-id ID`
+and expects a decision JSON on stdout (optional extra `cost_usd`). Baseline prices are
+env-overridable (see `baselines/*.py`); check them against the providers' current price lists.
