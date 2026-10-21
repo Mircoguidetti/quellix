@@ -91,3 +91,10 @@ def test_holoassist_pairs(tmp_path):
     assert (full.truth, full.checks) == ("accept", {"task_completed": "pass"})
     assert (cut.truth, cut.checks) == ("reject", {"task_completed": "fail"})
     assert cut.license == "cdla-permissive-2.0" and full.task.steps == ["grab", "press"]
+
+
+def test_min_factories_is_enforced(tmp_path):
+    shards = [f"factory_00{i}/workers/worker_001/f{i}_part00.tar" for i in range(3)]
+    with pytest.raises(RuntimeError, match="only 3 factories"):
+        egocentric10k.build(tmp_path / "m.jsonl", tmp_path, clips=4, token="t",
+                            min_factories=8, lister=lambda *a: shards)
