@@ -22,8 +22,10 @@ pgmq queue `video_jobs`. On Modal:
    `decided`, deletes the file (`storage_path = null`, `file_deleted_at`), records
    `jobs.cost_usd`, sends the signed `video.decided` webhook and archives the message.
 3. A failed attempt is retried (the message is re-sent after 60 s, then 300 s). After the third
-   failure the job and the video are `failed` with the error in `jobs.error`; nothing is
-   decided and nothing is silently rejected.
+   failure the job and the video are `failed` with the error in `jobs.error`, the customer file
+   is deleted, and the message is archived; nothing is decided and nothing is silently rejected.
+4. The webhook carries `Quellix-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`
+   (see `openapi.yaml`), signed with `webhooks.signing_secret`.
 
 Containers scale to zero. The default is CPU (2 cores, 4 GiB); a GPU is opt-in (below).
 

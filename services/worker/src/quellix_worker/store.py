@@ -11,6 +11,7 @@ import hmac
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,9 +30,12 @@ RETRY_DELAYS_S = (60, 300)  # wait before attempt 2 and 3
 SIGNATURE_HEADER = "Quellix-Signature"
 
 
-def sign(body: bytes, secret: str) -> str:
-    """HMAC-SHA256 of the raw request body, hex encoded."""
-    return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
+    """``Quellix-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
+    HMAC-SHA256 of ``"<t>.<raw body>"`` (the timestamp lets receivers reject replays)."""
+    t = int(time.time()) if timestamp is None else timestamp
+    digest = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+    return f"t={t},v1={digest}"
 
 
 def _now() -> str:
@@ -94,6 +98,11 @@ class SupabaseStore:
             return None
         msg = rows[0]["message"]
         return Job(rows[0]["msg_id"], msg["job_id"], msg["video_id"])
+
+    def video_storage_path(self, video_id: str) -> str | None:
+        rows = self._rest("GET", "videos", params={"id": f"eq.{video_id}",
+                                                   "select": "storage_path"})
+        return rows[0]["storage_path"] if rows else None
 
     def archive_job(self, job: Job) -> None:
         self._pgmq("archive", {"queue_name": QUEUE, "message_id": job.msg_id})

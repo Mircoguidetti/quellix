@@ -49,6 +49,13 @@ def _fail_or_retry(store: SupabaseStore, job: Job, attempts_used: int, error: st
     store.finish_job(job.job_id, error=message)
     if mark_video:
         store.set_video(job.video_id, status="failed")
+    # Customer videos are deleted after analysis, also when the analysis failed for good.
+    try:
+        path = store.video_storage_path(job.video_id)
+        if path:
+            store.delete_video_file(job.video_id, path)
+    except Exception:
+        log.exception("could not delete the file of failed video %s", job.video_id)
     store.archive_job(job)
 
 

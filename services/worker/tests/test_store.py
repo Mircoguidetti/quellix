@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import time
 
 import httpx
 import numpy as np
@@ -68,7 +69,27 @@ def make(fake):
 
 
 def test_sign_matches_hmac_sha256():
-    assert sign(b"{}", "k") == hmac.new(b"k", b"{}", hashlib.sha256).hexdigest()
+    header = sign(b'{"a":1}', "k", timestamp=1700000000)
+    expected = hmac.new(b"k", b'1700000000.{"a":1}', hashlib.sha256).hexdigest()
+    assert header == f"t=1700000000,v1={expected}"
+
+
+def verify(header: str, body: bytes, secret: str, now: int, tolerance: int = 300) -> bool:
+    """What a receiver does (the contract in openapi.yaml)."""
+    parts = dict(p.split("=", 1) for p in header.split(","))
+    t = int(parts["t"])
+    good = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(good, parts["v1"]) and abs(now - t) <= tolerance
+
+
+def test_signature_verifies_and_rejects_replay_and_tampering():
+    body = b'{"type":"video.decided"}'
+    header = sign(body, "secret", timestamp=1000)
+    assert verify(header, body, "secret", now=1100)
+    assert not verify(header, body, "secret", now=1000 + 301)  # replay
+    assert not verify(header, body + b" ", "secret", now=1100)  # tampered body
+    assert not verify(header, body, "other", now=1100)  # wrong secret
+    assert not verify(f"t=1001,v1={header.split('v1=')[1]}", body, "secret", now=1100)
 
 
 def test_read_job_and_context():
@@ -105,7 +126,7 @@ def test_process_job_end_to_end(tmp_path):
     assert any(p.get("storage_path", 1) is None and p.get("file_deleted_at") for p in patches)
     body, sig = f.webhook_bodies[0]
     payload = json.loads(body)
-    assert sig == sign(body, "s3") and payload["type"] == "video.decided"
+    assert verify(sig, body, "s3", now=int(time.time())) and payload["type"] == "video.decided"
     video = payload["data"]  # the OpenAPI Video object
     assert {"id", "status", "rubric_id", "rubric_version", "created_at"} <= set(video)
     assert video["created_at"] == "2026-10-21T00:00:00Z" and video["decision"]["video_id"] == "v1"
@@ -139,6 +160,8 @@ def test_failure_is_retried_with_delay():
                        Dependencies()) == "retry"
     assert _bodies(f, "/jobs")[-1] == {"status": "queued", "error": "RuntimeError: db down"}
     assert _bodies(f, "/videos")[-1] == {"status": "queued"}
+    assert not any(r.method == "DELETE" and r.url.path == "/storage/v1/object/videos"
+                   for r in f.log)  # still needed for the next attempt
     sent = _bodies(f, "/rpc/send", "POST")
     assert sent[0]["message"] == {"job_id": "j1", "video_id": "v1"}
     assert sent[0]["sleep_seconds"] == 60
@@ -152,8 +175,12 @@ def test_third_failure_marks_failed_and_archives():
                        Dependencies()) == "failed"
     job_patch = _bodies(f, "/jobs")[-1]
     assert job_patch["status"] == "failed" and "db down" in job_patch["error"]
-    assert _bodies(f, "/videos")[-1] == {"status": "failed"}
+    assert {"status": "failed"} in _bodies(f, "/videos")
     assert any(r.url.path.endswith("/rpc/archive") for r in f.log)
+    # the customer file is deleted on the final failure too, and the row records it
+    assert any(r.method == "DELETE" and r.url.path == "/storage/v1/object/videos" for r in f.log)
+    assert any(b.get("storage_path", 1) is None and b.get("file_deleted_at")
+               for b in _bodies(f, "/videos"))
     assert not any(r.url.path.endswith("/rpc/send") for r in f.log)
     assert not any(r.url.path.endswith("/decisions") for r in f.log)  # never a silent reject
 
