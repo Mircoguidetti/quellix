@@ -1,0 +1,16 @@
+{
+  "id": "rub_eval_v0",
+  "version": 1,
+  "name": "Eval v0: technical, framing, privacy, originality",
+  "task": {
+    "description": "Factory work, head-mounted camera. Task completion is not evaluated in this rubric."
+  },
+  "checks": {
+    "task_completed": { "enabled": false },
+    "hands_visible": { "enabled": false },
+    "framing": { "enabled": true, "critical": false, "max_off_target_ratio": 0.1, "max_unstable_ratio": 0.1 },
+    "technical": { "enabled": true, "critical": true, "max_blur_ratio": 0.05, "max_bad_exposure_ratio": 0.1 },
+    "privacy": { "enabled": true, "faces": "reject", "documents": "reject", "screens": "reject" },
+    "originality": { "enabled": true, "similarity_threshold": 0.9, "on_duplicate": "reject" }
+  }
+}
