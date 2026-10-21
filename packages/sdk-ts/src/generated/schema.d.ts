@@ -147,7 +147,13 @@ export interface webhooks {
         };
         get?: never;
         put?: never;
-        /** Sent when a decision is ready. Signed with HMAC-SHA256 in the `Quellix-Signature` header. */
+        /**
+         * Sent when a decision is ready.
+         * @description Signed with HMAC-SHA256 using the webhook's signing secret. The header is
+         *     `Quellix-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
+         *     string `<t>.<raw request body>`. Receivers must recompute it over the raw body,
+         *     compare in constant time and reject timestamps older than a few minutes (replay).
+         */
         post: {
             parameters: {
                 query?: never;
