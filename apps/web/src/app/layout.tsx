@@ -8,6 +8,11 @@ const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap", weight: ["400", "500"] });
 
 export const metadata: Metadata = {
+  // Absolute URLs for Open Graph images: the configured site, else Vercel's production domain.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
+  ),
   title: { default: "Quellix", template: "%s · Quellix" },
   description:
     "Quellix applies your lab's spec to every first-person video you collect and decides accept, reject or review, so your reviewers only see the doubtful cases.",

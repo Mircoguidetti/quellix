@@ -175,3 +175,13 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Marketing pages (app/(marketing)): smooth in-page anchors, like the design. */
+html:has([data-marketing]) {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has([data-marketing]) {
+    scroll-behavior: auto;
+  }
+}

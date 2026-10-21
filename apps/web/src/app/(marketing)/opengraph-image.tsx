@@ -1,0 +1,9 @@
+import { ogImage, ogSize } from "@/components/marketing/og-image";
+
+export const alt = "Quellix";
+export const size = ogSize;
+export const contentType = "image/png";
+
+export default function Image() {
+  return ogImage("Automated acceptance", "Stop watching every video before you pay for it.");
+}
