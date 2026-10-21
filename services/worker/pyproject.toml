@@ -16,6 +16,10 @@ dependencies = [
 modal = [
     "modal>=1.6.2",
 ]
+embed = [
+    "torch>=2.14.1",
+    "transformers>=5.20.2",
+]
 
 [dependency-groups]
 dev = [

@@ -13,16 +13,15 @@ from .checks import framing, hands, originality, privacy, task_baseline, technic
 from .contracts import validate_decision, validate_rubric
 from .rubric import CheckOutput, evaluate
 
-# Modal bills GPU per second; this is the rate recorded in jobs.cost_usd (override per env).
-DEFAULT_GPU_USD_PER_SECOND = 0.000164  # ~ NVIDIA T4 on Modal
-
 
 @dataclass
 class PipelineConfig:
     sample_fps: float = media.DEFAULT_SAMPLE_FPS
     # Customer video goes to Gemini / TwelveLabs only when the organisation allows it.
     allow_external_models: bool = False
-    gpu_usd_per_second: float = 0.0  # 0 on CPU-only runs; set from the Modal function
+    # Modal bills GPU per second. 0 on CPU-only runs; the Modal function reads the real rate
+    # from QUELLIX_GPU_USD_PER_SECOND (the price of the chosen GPU on modal.com/pricing).
+    gpu_usd_per_second: float = 0.0
     org_id: str = "local"
 
 
@@ -79,7 +78,12 @@ def run_pipeline(
         "technical": timed("technical", lambda: technical.run(video))}
     fingerprints: list[originality.FrameFingerprint] = []
 
-    if video.info.decodable:
+    if not video.info.decodable:
+        # technical already rejects; the other checks are deliberately not run.
+        why = "file is not decodable"
+        for name in ("originality", "privacy", "framing", "hands_visible", "task_completed"):
+            outputs[name] = CheckOutput(skipped=why)
+    else:
         outputs["originality"], fingerprints = timed("originality", lambda: originality.run(
             video, config.org_id, deps.fingerprints, video_id, deps.embedder))
         outputs["privacy"] = timed("privacy", lambda: privacy.run(video, faces=deps.face_detector))
@@ -90,7 +94,7 @@ def run_pipeline(
         # Expensive last, and only if nothing critical has already failed.
         if _critical_reject(rubric, outputs):
             outputs["task_completed"] = CheckOutput(
-                error="skipped because a critical check already failed")
+                skipped="a critical check already failed")
         elif deps.task_judge is None or not config.allow_external_models:
             outputs["task_completed"] = CheckOutput(
                 error="no task model available for this organisation")

@@ -34,7 +34,8 @@ class Fake:
             return httpx.Response(200, json=[{
                 "org_id": "o1", "storage_path": "org/o1/v1/a.mp4", "filename": "a.mp4",
                 "rubric_id": "r1", "rubric_version": 1,
-                "organizations": {"training_opt_in": False}}])
+                "organizations": {"training_opt_in": False,
+                                  "allow_external_models": True}}])
         if p.endswith("/rubric_versions"):
             return httpx.Response(200, json=[{"body": RUBRIC_BODY}])
         if p.startswith("/storage/v1/object/videos/org") and req.method == "GET":
@@ -45,7 +46,7 @@ class Fake:
             return httpx.Response(201, json=[{"id": "d1"}])
         if p.endswith("/webhooks"):
             return httpx.Response(200, json=[{"id": "w", "url": "https://hook.test/x",
-                                              "secret_hash": "s3"}])
+                                              "signing_secret": "s3"}])
         if req.url.host == "hook.test":
             self.webhook_bodies.append((req.content, req.headers["Quellix-Signature"]))
             return httpx.Response(200)
@@ -72,6 +73,7 @@ def test_read_job_and_context():
     assert (job.msg_id, job.job_id, job.video_id) == (7, "j1", "v1")
     ctx = s.load_context(job)
     assert ctx.org_id == "o1" and ctx.rubric["id"] == "r1" and ctx.rubric["version"] == 1
+    assert ctx.allow_external_models is True
 
 
 def test_service_key_sent():
@@ -133,5 +135,77 @@ def test_fingerprint_store_scoped_by_org():
                                  httpx.Client(transport=httpx.MockTransport(handler)))
     idx = s.index("orgA")
     assert seen[0].url.params["org_id"] == "eq.orgA" and len(idx) == 1
-    s.add("orgA", "v1", [FrameFingerprint(0.0, bytes(32), np.ones(3, dtype=np.float32))])
-    assert json.loads(seen[-1].content)[0]["org_id"] == "orgA"
+    s.add("orgA", "v1", [FrameFingerprint(0.0, pdq=bytes(32)),
+                         FrameFingerprint(0.0, embedding=np.ones(3, dtype=np.float32),
+                                          model="dinov2-vits14")])
+    rows = json.loads(seen[-1].content)
+    assert all(r["org_id"] == "orgA" for r in rows)
+    assert rows[0]["embedding"] is None and rows[0]["model"] == "pdq"  # no zero vectors
+    assert rows[1]["pdq"] is None and rows[1]["model"] == "dinov2-vits14"
+
+
+def test_embedding_match_uses_rpc_scoped_to_org():
+    seen = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen.append(req)
+        return httpx.Response(200, json=[{"video_id": "v2", "t_s": 1.0, "similarity": 0.97}])
+
+    s = SupabaseFingerprintStore("https://x.supabase.co", "svc",
+                                 httpx.Client(transport=httpx.MockTransport(handler)))
+    m = s.match_embedding("orgA", np.ones(3, dtype=np.float32), "v1")
+    body = json.loads(seen[0].content)
+    assert seen[0].url.path.endswith("/rpc/match_fingerprints")
+    assert body["p_org"] == "orgA" and body["p_exclude_video"] == "v1"
+    assert m[0].video_id == "v2" and m[0].similarity == 0.97
+
+
+def test_webhook_without_secret_is_not_sent(caplog):
+    f = Fake()
+    orig = f.__call__
+
+    def with_null(req):
+        if req.url.path.endswith("/webhooks"):
+            f.log.append(req)
+            return httpx.Response(200, json=[{"id": "w", "url": "https://hook.test/x",
+                                              "signing_secret": None}])
+        return orig(req)
+
+    s = SupabaseStore("https://x.supabase.co", "svc",
+                      httpx.Client(transport=httpx.MockTransport(with_null)))
+    assert s.send_webhooks("o1", {"id": "v1"}) == []
+    assert f.webhook_bodies == [] and "no signing_secret" in caplog.text
+
+
+def test_external_models_need_org_and_global_switch(tmp_path):
+    from quellix_worker import jobs
+
+    seen = {}
+
+    def fake_run(path, rubric, vid, cfg, deps):
+        seen["allow"] = cfg.allow_external_models
+        raise RuntimeError("stop")
+
+    clip = write_clip(tmp_path / "a.mp4", scene(1, 20))
+    for org_allows, switch, expected in [(True, True, True), (True, False, False)]:
+        f = Fake(clip.read_bytes())
+        s = make(f)
+        orig_ctx = s.load_context
+
+        def ctx(job, orig_ctx=orig_ctx, org_allows=org_allows):
+            c = orig_ctx(job)
+            c.allow_external_models = org_allows
+            return c
+
+        s.load_context = ctx
+        fp = SupabaseFingerprintStore("https://x.supabase.co", "svc",
+                                      httpx.Client(transport=httpx.MockTransport(f)))
+        real = jobs.run_pipeline
+        jobs.run_pipeline = fake_run
+        try:
+            with pytest.raises(RuntimeError):
+                process_job(s, s.read_job(), fp,
+                            PipelineConfig(allow_external_models=switch), Dependencies())
+        finally:
+            jobs.run_pipeline = real
+        assert seen["allow"] is expected

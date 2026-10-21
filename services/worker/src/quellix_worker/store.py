@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -16,6 +17,8 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 QUEUE = "video_jobs"
 BUCKET = "videos"  # private bucket, paths org/<org_id>/<video_id>/<filename>
@@ -48,6 +51,7 @@ class JobContext:
     rubric: dict[str, Any]
     attempts: int
     training_opt_in: bool
+    allow_external_models: bool
 
 
 class SupabaseStore:
@@ -94,7 +98,7 @@ class SupabaseStore:
         videos = self._rest("GET", "videos", params={
             "id": f"eq.{job.video_id}",
             "select": "org_id,storage_path,filename,rubric_id,rubric_version,"
-                      "organizations(training_opt_in)"})
+                      "organizations(training_opt_in,allow_external_models)"})
         if not jobs or not videos:
             raise LookupError(f"job {job.job_id} or video {job.video_id} not found")
         v = videos[0]
@@ -108,7 +112,8 @@ class SupabaseStore:
         rubric = {**versions[0]["body"], "id": str(v["rubric_id"]),
                   "version": int(v["rubric_version"])}
         return JobContext(job, v["org_id"], v["storage_path"], v["filename"], rubric,
-                          jobs[0]["attempts"], bool(v["organizations"]["training_opt_in"]))
+                          jobs[0]["attempts"], bool(v["organizations"]["training_opt_in"]),
+                          bool(v["organizations"]["allow_external_models"]))
 
     def start_job(self, job_id: str, attempts: int) -> None:
         self._rest("PATCH", "jobs", params={"id": f"eq.{job_id}"}, json_body={
@@ -155,24 +160,26 @@ class SupabaseStore:
     # ------------------------------------------------------------------ webhooks
     def active_webhooks(self, org_id: str) -> list[dict[str, Any]]:
         return self._rest("GET", "webhooks", params={
-            "org_id": f"eq.{org_id}", "active": "is.true", "select": "id,url,secret_hash"})
+            "org_id": f"eq.{org_id}", "active": "is.true", "select": "id,url,signing_secret"})
 
     def send_webhooks(self, org_id: str, video: dict[str, Any]) -> list[tuple[str, bool]]:
-        """POST ``video.decided`` to every active webhook. Failures are returned, not raised:
-        a customer endpoint being down must not fail the job.
+        """POST ``video.decided`` to every active webhook, signed with its ``signing_secret``.
 
-        NOTE: ``webhooks`` stores only ``secret_hash``; the plaintext secret is not available
-        to the worker. Until the coordinator decides how to share it, the stored value is
-        used as the HMAC key (see the PR report).
+        A webhook without a secret is not sent (warning logged); we never sign with
+        ``secret_hash``. Failures are returned, not raised: a customer endpoint being down
+        must not fail the job.
         """
         body = json.dumps({"type": "video.decided", "created_at": _now(), "data": video},
                           separators=(",", ":"), sort_keys=True).encode()
         results = []
         for hook in self.active_webhooks(org_id):
+            if not hook.get("signing_secret"):
+                log.warning("webhook %s has no signing_secret; not sending", hook["id"])
+                continue
             try:
                 r = self._client.post(hook["url"], content=body, timeout=15, headers={
                     "Content-Type": "application/json",
-                    SIGNATURE_HEADER: sign(body, hook["secret_hash"])})
+                    SIGNATURE_HEADER: sign(body, hook["signing_secret"])})
                 results.append((hook["url"], r.is_success))
             except httpx.HTTPError:
                 results.append((hook["url"], False))

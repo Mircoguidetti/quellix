@@ -19,7 +19,10 @@ def process_job(store: SupabaseStore, job: Job, fingerprints: FingerprintStore,
     try:
         with tempfile.TemporaryDirectory() as tmp:
             path = store.download(ctx.storage_path, Path(tmp) / (ctx.filename or "video.mp4"))
-            cfg = PipelineConfig(**{**config.__dict__, "org_id": ctx.org_id})
+            # Both the org setting and the global kill switch (config) must allow external models.
+            cfg = PipelineConfig(**{**config.__dict__, "org_id": ctx.org_id,
+                                    "allow_external_models": ctx.allow_external_models
+                                    and config.allow_external_models})
             deps.fingerprints = fingerprints
             result = run_pipeline(path, ctx.rubric, job.video_id, cfg, deps)
         # Order matters: decision first, fingerprints, then delete the file.

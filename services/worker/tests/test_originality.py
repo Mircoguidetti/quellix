@@ -79,23 +79,45 @@ def test_scoped_to_org(reference, store):
     assert m["max_similarity"] == 0.0 and m["match_video_id"] is None
 
 
-def test_embedder_interface_is_used(reference, tmp_path):
-    class Fake:
-        name = "fake"
+class FakeEmbedder:
+    """Same vector for every frame: any two videos then look like copies on this path."""
 
-        def embed(self, frames):
-            v = np.zeros((len(frames), 4), dtype=np.float32)
-            v[:, 0] = 1
-            return v
+    name = "fake-emb"
 
+    def embed(self, frames):
+        v = np.zeros((len(frames), 4), dtype=np.float32)
+        v[:, 0] = 1
+        return v
+
+
+def test_embedding_rows_and_matching(reference, tmp_path):
     _, _, ref = reference
     s = orig.InMemoryFingerprintStore()
-    _, prints = orig.run(decoded(ref), ORG, s, "ref", embedder=Fake())
+    _, prints = orig.run(decoded(ref), ORG, s, "ref", embedder=FakeEmbedder())
+    pdq_rows = [p for p in prints if p.pdq is not None]
+    emb_rows = [p for p in prints if p.embedding is not None]
+    assert all(p.embedding is None and p.model == "pdq" for p in pdq_rows)
+    assert emb_rows and all(p.pdq is None and p.model == "fake-emb" for p in emb_rows)
     s.add(ORG, "ref", prints)
-    # different pictures, identical embeddings -> still a copy for the embedding path
-    out, _ = orig.run(decoded(write_clip(tmp_path / "u.mp4", scene(77, 80))), ORG, s, "n",
-                      embedder=Fake())
+    other = write_clip(tmp_path / "u.mp4", scene(77, 80))
+    out, _ = orig.run(decoded(other), ORG, s, "n", embedder=FakeEmbedder())
     assert out.measurements["max_similarity"] == 1.0
+    out, _ = orig.run(decoded(other), OTHER_ORG, s, "n", embedder=FakeEmbedder())
+    assert out.measurements["max_similarity"] == 0.0  # still scoped to the org
+
+
+def test_dinov2_embedder_if_weights_available(tmp_path):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    emb = orig.DinoV2Embedder()
+    try:
+        frames = media.decode(write_clip(
+            tmp_path / "dino.mp4", scene(1, 10)), 2).frames
+        v = emb.embed(frames)
+    except Exception as exc:  # no network / weights in the sandbox
+        pytest.skip(f"DINOv2 weights unavailable: {exc}")
+    assert v.shape == (len(frames), 384) and torch.isfinite(torch.from_numpy(v)).all()
+    assert np.allclose(np.linalg.norm(v, axis=1), 1.0, atol=1e-4)
 
 
 def test_noop_embedder():

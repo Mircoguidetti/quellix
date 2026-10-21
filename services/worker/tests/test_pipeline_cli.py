@@ -43,7 +43,9 @@ def test_not_decodable_rejects(tmp_path):
     bad.write_bytes(b"junk")
     r = run_pipeline(bad, RUBRIC, "v1")
     assert r.decision["decision"] == "reject"
-    assert r.decision["reasons"][0]["code"] == "technical.not_decodable"
+    assert [x["code"] for x in r.decision["reasons"]] == ["technical.not_decodable"]
+    for name in ("originality", "privacy", "framing", "hands_visible", "task_completed"):
+        assert r.decision["checks"][name]["status"] == "skipped"
 
 
 def test_critical_fail_skips_task(clip):
@@ -51,6 +53,8 @@ def test_critical_fail_skips_task(clip):
     r = run_pipeline(clip, RUBRIC, "v1", PipelineConfig(allow_external_models=True),
                      Dependencies(task_judge=judge))
     assert r.decision["decision"] == "reject" and judge.calls == 0
+    assert r.decision["checks"]["task_completed"]["status"] == "skipped"
+    assert not any(x["check"] == "task_completed" for x in r.decision["reasons"])
     validate_decision(r.decision)
 
 
@@ -68,7 +72,7 @@ def test_external_model_not_called_without_consent(clip):
     judge = FakeJudge()
     r = run_pipeline(clip, LENIENT, "v1", PipelineConfig(), Dependencies(task_judge=judge))
     assert judge.calls == 0
-    assert r.decision["checks"]["task_completed"]["status"] == "error"
+    assert r.decision["checks"]["task_completed"]["status"] == "error"  # -> review, intended
     assert r.decision["decision"] != "accept"
 
 
