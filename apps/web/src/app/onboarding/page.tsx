@@ -1,43 +1,39 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase/server";
-import { createOrganization } from "./actions";
-import { button, input } from "@/components/ui";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { AuthFormSkeleton } from "@/components/auth/auth-skeleton";
+import { getCurrentUser } from "@/lib/auth/server";
+import { listMemberships } from "@/lib/session";
+import { OnboardingForm } from "./onboarding-form";
 
-export const metadata = { title: "Create your organization · Quellix" };
+export const metadata: Metadata = { title: "Create your organization" };
 
-export default function OnboardingPage() {
+export default function OnboardingPage({ searchParams }: PageProps<"/onboarding">) {
   return (
-    <Suspense>
-      <Onboarding />
-    </Suspense>
+    <AuthShell>
+      <div className="w-full max-w-[440px]">
+        <Suspense
+          fallback={
+            <div className="rounded-2xl border border-border bg-card p-7">
+              <AuthFormSkeleton fields={1} extra={false} />
+            </div>
+          }
+        >
+          <Content searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </AuthShell>
   );
 }
 
-async function Onboarding() {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
-  const { count } = await supabase.from("members").select("*", { count: "exact", head: true });
-  if (count) redirect("/app");
-
-  return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 py-12">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Create your organization</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Your videos, rubrics and API keys live inside an organization.
-        </p>
-      </div>
-      <form action={createOrganization} className="flex flex-col gap-3">
-        <label htmlFor="name" className="text-sm font-medium">
-          Organization name
-        </label>
-        <input id="name" name="name" required maxLength={200} className={input} />
-        <button type="submit" className={button("primary")}>
-          Create organization
-        </button>
-      </form>
-    </main>
-  );
+async function Content({ searchParams }: { searchParams: PageProps<"/onboarding">["searchParams"] }) {
+  const sp = await searchParams;
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const additional = sp.new === "1";
+  const memberships = await listMemberships(user.id);
+  if (memberships.length && !additional) redirect("/app");
+  const firstName = user.name?.split(" ")[0];
+  return <OnboardingForm additional={additional} greeting={firstName ? `Welcome, ${firstName}` : "Welcome to Quellix"} />;
 }

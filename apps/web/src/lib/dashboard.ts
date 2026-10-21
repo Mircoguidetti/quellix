@@ -1,3 +1,4 @@
+import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSession } from "@/lib/session";
 
@@ -10,15 +11,9 @@ export async function dashboardContext() {
   return { session, db: createAdminClient(), orgId: session.orgId };
 }
 
-export function explainStatus(status: string): string {
-  return (
-    {
-      awaiting_upload: "Waiting for the file",
-      queued: "Queued",
-      processing: "Analysing",
-      decided: "Decided",
-      failed: "Failed",
-      deleted: "File deleted",
-    } as Record<string, string>
-  )[status] ?? status;
+/** Same, for actions only owners and admins may take. */
+export async function adminContext() {
+  const ctx = await dashboardContext();
+  if (ctx.session.role === "reviewer") throw new Error("Only owners and admins can do this.");
+  return ctx;
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { dashboardContext } from "@/lib/dashboard";
+import { ApiError } from "@/lib/api/errors";
 import { createVideoSchema } from "@/lib/api/schemas";
 import { completeUpload, createVideo } from "@/lib/domain/videos";
 
@@ -16,7 +17,7 @@ export async function startUpload(raw: unknown): Promise<StartResult> {
     const res = await createVideo(db, orgId, input);
     return { ok: true, videoId: res.video.id, uploadUrl: res.upload_url };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Could not start the upload" };
+    return { ok: false, error: e instanceof ApiError && e.status < 500 ? `${e.message}.` : "We could not start the upload. Try again." };
   }
 }
 
@@ -26,6 +27,6 @@ export async function finishUpload(videoId: string): Promise<{ ok: boolean; erro
     await completeUpload(db, orgId, videoId);
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Could not queue the analysis" };
+    return { ok: false, error: e instanceof ApiError && e.status < 500 ? `${e.message}.` : "We could not queue the analysis. Try again." };
   }
 }

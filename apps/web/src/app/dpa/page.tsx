@@ -1,11 +1,11 @@
 import { PublicPage } from "@/components/public-page";
 
-export const metadata = { title: "Data processing agreement (draft) · Quellix" };
+export const metadata = { title: "Data processing agreement (draft)" };
 
 export default function DpaPage() {
   return (
     <PublicPage title="Data processing agreement">
-      <p className="rounded-md border border-amber-300 bg-amber-50 p-3 font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+      <p className="rounded-lg border border-review-fg/30 bg-review-bg p-3.5 font-medium text-review-fg">
         Draft, to be reviewed by counsel. This template is not a legal commitment until it is reviewed, completed and signed.
       </p>
 

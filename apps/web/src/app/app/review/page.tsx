@@ -1,53 +1,42 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { Skeleton } from "@/components/ui/skeleton";
 import { dashboardContext } from "@/lib/dashboard";
+import { listRubrics } from "@/lib/domain/rubrics";
 import { listReviewQueue } from "@/lib/domain/videos";
-import { submitReview } from "./actions";
-import { badge, button, card, input, muted } from "@/components/ui";
+import { ReviewWorkspace } from "./review-workspace";
 
-export const metadata = { title: "Review · Quellix" };
+export const metadata: Metadata = { title: "Review" };
 
-type Reason = { message: string; effect: string };
-
-export default async function ReviewPage() {
-  const { db, orgId } = await dashboardContext();
-  const items = await listReviewQueue(db, orgId);
+export default function ReviewPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold tracking-tight">Review</h1>
-      {items.length === 0 ? (
-        <div className={card + " " + muted}>Nothing to review. Doubtful videos land here.</div>
-      ) : (
-        items.map(({ video, playbackUrl, filename }) => (
-          <article key={video.id} className={card + " flex flex-col gap-3"}>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href={`/app/videos/${video.id}`} className="font-medium underline">
-                {video.external_id ?? filename ?? video.id}
-              </Link>
-              <span className={badge("review")}>review</span>
-            </div>
-            <ul className="list-disc pl-5 text-sm">
-              {((video.decision?.reasons ?? []) as Reason[]).map((r, i) => (
-                <li key={i}>{r.message}</li>
-              ))}
-            </ul>
-            {playbackUrl ? (
-              <video controls preload="metadata" src={playbackUrl} className="max-h-80 w-full rounded bg-black" />
-            ) : (
-              <p className={"text-sm " + muted}>The file has been deleted, so there is nothing to play.</p>
-            )}
-            <form action={submitReview} className="flex flex-wrap items-center gap-2">
-              <input type="hidden" name="video_id" value={video.id} />
-              <input name="note" maxLength={2000} placeholder="Note (optional)" className={input + " !w-auto min-w-48 flex-1"} />
-              <button name="decision" value="accept" className={button("primary")}>
-                Accept
-              </button>
-              <button name="decision" value="reject" className={button("danger")}>
-                Reject
-              </button>
-            </form>
-          </article>
-        ))
-      )}
+    <Suspense fallback={<ReviewSkeleton />}>
+      <Content />
+    </Suspense>
+  );
+}
+
+async function Content() {
+  const { db, orgId } = await dashboardContext();
+  const [items, rubrics] = await Promise.all([listReviewQueue(db, orgId), listRubrics(db, orgId)]);
+  const rubricNames = Object.fromEntries(rubrics.map((r) => [r.id, r.name]));
+  return <ReviewWorkspace initialItems={items} rubricNames={rubricNames} />;
+}
+
+function ReviewSkeleton() {
+  return (
+    <div className="grid min-h-[calc(100dvh-3.5rem)] lg:min-h-dvh lg:grid-cols-[340px_1fr]" aria-busy="true" aria-label="Loading review queue">
+      <div className="hidden flex-col gap-2 border-r border-border p-4 lg:flex">
+        <Skeleton className="mb-2 h-6 w-32" />
+        {Array.from({ length: 7 }, (_, i) => (
+          <Skeleton key={i} className="h-[68px] rounded-lg" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-5 p-4 sm:p-6 lg:p-8">
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="aspect-video w-full max-w-[880px] rounded-xl" />
+        <Skeleton className="h-24 w-full max-w-[880px] rounded-xl" />
+      </div>
     </div>
   );
 }

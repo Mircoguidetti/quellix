@@ -21,10 +21,19 @@ export async function getContestInfo(db: SupabaseClient, videoId: string): Promi
   const rejected = review ? review.decision === "reject" : decision?.decision === "reject";
   if (!rejected) return null;
 
-  const reasons = ((decision?.reasons ?? []) as { message?: string; effect?: string }[])
-    .filter((r) => r.message)
+  return { videoId, orgId: video.org_id, contributorRef: video.contributor_ref, reasons: contributorReasons(decision?.reasons) };
+}
+
+/**
+ * What a contributor may read about a rejection: only the reasons that caused it (`effect:
+ * reject`). Reasons that only sent the video to review are operational details for the
+ * collector's reviewers (issue #8).
+ */
+export function contributorReasons(reasons: unknown): string[] {
+  if (!Array.isArray(reasons)) return [];
+  return (reasons as { message?: unknown; effect?: unknown }[])
+    .filter((r) => r && r.effect === "reject" && typeof r.message === "string" && r.message)
     .map((r) => r.message as string);
-  return { videoId, orgId: video.org_id, contributorRef: video.contributor_ref, reasons };
 }
 
 export async function submitContest(db: SupabaseClient, info: PublicContestInfo, message: string) {
@@ -44,7 +53,31 @@ export async function submitContest(db: SupabaseClient, info: PublicContestInfo,
   if (error) throw errors.internal();
 }
 
-export async function listContests(db: SupabaseClient, orgId: string) {
+export type ContestRow = {
+  id: string;
+  video_id: string;
+  contributor_ref: string | null;
+  message: string;
+  status: "open" | "upheld" | "overturned";
+  resolution_note: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by?: string | null;
+};
+
+export async function getContest(db: SupabaseClient, orgId: string, contestId: string): Promise<ContestRow | null> {
+  if (!isUuid(contestId)) return null;
+  const { data, error } = await db
+    .from("contests")
+    .select("id, video_id, contributor_ref, message, status, resolution_note, created_at, resolved_at, resolved_by")
+    .eq("id", contestId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (error) throw errors.internal();
+  return (data as ContestRow | null) ?? null;
+}
+
+export async function listContests(db: SupabaseClient, orgId: string): Promise<ContestRow[]> {
   const { data, error } = await db
     .from("contests")
     .select("id, video_id, contributor_ref, message, status, resolution_note, created_at, resolved_at")
@@ -52,7 +85,7 @@ export async function listContests(db: SupabaseClient, orgId: string) {
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw errors.internal();
-  return data ?? [];
+  return (data ?? []) as ContestRow[];
 }
 
 export async function resolveContest(

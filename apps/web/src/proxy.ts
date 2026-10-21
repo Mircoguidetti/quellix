@@ -1,26 +1,41 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_SESSION_COOKIE, isDemoMode } from "@/lib/demo/mode";
 
-// Refreshes the Supabase session cookie and keeps signed-out visitors out of /app and /onboarding.
+const AUTH_PAGES = ["/login", "/signup"];
+
+/**
+ * Refreshes the Supabase session cookie, keeps signed-out visitors out of /app and /onboarding,
+ * and sends signed-in visitors from the sign-in pages straight to the app.
+ */
 export async function proxy(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const isAuthPage = AUTH_PAGES.includes(request.nextUrl.pathname);
   let response = NextResponse.next({ request });
-  if (!url || !anon) return redirectToLogin(request);
 
-  const supabase = createServerClient(url, anon, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (list) => {
-        for (const { name, value } of list) request.cookies.set(name, value);
-        response = NextResponse.next({ request });
-        for (const { name, value, options } of list) response.cookies.set(name, value, options);
-      },
-    },
-  });
+  let signedIn = false;
+  if (isDemoMode()) {
+    signedIn = Boolean(request.cookies.get(DEMO_SESSION_COOKIE)?.value);
+  } else {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (url && anon) {
+      const supabase = createServerClient(url, anon, {
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll: (list) => {
+            for (const { name, value } of list) request.cookies.set(name, value);
+            response = NextResponse.next({ request });
+            for (const { name, value, options } of list) response.cookies.set(name, value, options);
+          },
+        },
+      });
+      const { data } = await supabase.auth.getClaims().catch(() => ({ data: null }));
+      signedIn = Boolean(data?.claims);
+    }
+  }
 
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) return redirectToLogin(request);
+  if (isAuthPage) return signedIn ? NextResponse.redirect(new URL("/app", request.url)) : response;
+  if (!signedIn) return redirectToLogin(request);
   return response;
 }
 
@@ -31,5 +46,5 @@ function redirectToLogin(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/onboarding"],
+  matcher: ["/app/:path*", "/onboarding", "/login", "/signup"],
 };

@@ -1,34 +1,64 @@
+import "server-only";
+import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export type Role = "owner" | "admin" | "reviewer";
+export type Membership = { orgId: string; orgName: string; role: Role };
 
 export type Session = {
   userId: string;
   email: string | undefined;
+  name: string | undefined;
   orgId: string;
   orgName: string;
-  role: "owner" | "admin" | "reviewer";
+  role: Role;
+  memberships: Membership[];
 };
 
-/** The signed-in user and their first organization; redirects to /login or /onboarding. */
-export async function requireSession(): Promise<Session> {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
-  const { data: rows } = await supabase
+export const ORG_COOKIE = "qx_org";
+
+/** Every organization the user belongs to, oldest membership first. */
+export async function listMemberships(userId: string): Promise<Membership[]> {
+  const db = createAdminClient();
+  const { data: rows, error } = await db
     .from("members")
-    .select("role, organizations(id, name)")
-    .eq("user_id", data.user.id)
-    .order("created_at")
-    .limit(1);
-  const row = rows?.[0] as unknown as
-    | { role: Session["role"]; organizations: { id: string; name: string } | null }
-    | undefined;
-  if (!row?.organizations) redirect("/onboarding");
-  return {
-    userId: data.user.id,
-    email: data.user.email,
-    orgId: row.organizations.id,
-    orgName: row.organizations.name,
-    role: row.role,
-  };
+    .select("org_id, role, created_at")
+    .eq("user_id", userId)
+    .order("created_at");
+  if (error) throw new Error("Could not load your organizations");
+  if (!rows?.length) return [];
+  const { data: orgs, error: orgError } = await db
+    .from("organizations")
+    .select("id, name")
+    .in("id", rows.map((r) => r.org_id));
+  if (orgError) throw new Error("Could not load your organizations");
+  const names = new Map((orgs ?? []).map((o) => [o.id as string, o.name as string]));
+  return rows.flatMap((r) =>
+    names.has(r.org_id) ? [{ orgId: r.org_id as string, orgName: names.get(r.org_id)!, role: r.role as Role }] : [],
+  );
 }
+
+/**
+ * The signed-in user and their active organization (from the `qx_org` cookie when it is one of
+ * theirs, else the first). Redirects to /login or /onboarding. Cached per request.
+ */
+export const requireSession = cache(async (): Promise<Session> => {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const memberships = await listMemberships(user.id);
+  if (!memberships.length) redirect("/onboarding");
+  const preferred = (await cookies()).get(ORG_COOKIE)?.value;
+  const active = memberships.find((m) => m.orgId === preferred) ?? memberships[0];
+  return {
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    orgId: active.orgId,
+    orgName: active.orgName,
+    role: active.role,
+    memberships,
+  };
+});
