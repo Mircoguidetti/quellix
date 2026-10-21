@@ -1,7 +1,7 @@
 import { dashboardContext } from "@/lib/dashboard";
 import { deleteWebhook, revokeApiKey, toggleWebhook } from "./actions";
 import { NewKeyForm, NewWebhookForm } from "./secret-forms";
-import { badge, button, card, muted } from "@/components/ui";
+import { badge, button, muted } from "@/components/ui";
 
 export const metadata = { title: "Settings · Quellix" };
 
