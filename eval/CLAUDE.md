@@ -41,6 +41,6 @@ python -m quellix_eval.datasets.holoassist --annotations A.json --video-dir V/
 python -m quellix_eval.run --manifest eval/data/m.jsonl --engine worker --engine gemini
 ```
 
-The `worker` engine calls `python -m quellix_worker check --video P --rubric R --video-id ID`
+The `worker` engine calls `python -m quellix_worker check P --rubric R --video-id ID --report REPORT.json`
 and expects a decision JSON on stdout (optional extra `cost_usd`). Baseline prices are
 env-overridable (see `baselines/*.py`); check them against the providers' current price lists.
