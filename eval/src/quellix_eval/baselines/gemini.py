@@ -20,10 +20,22 @@ class GeminiClient:  # pragma: no cover - network
 
     def generate(self, video_path: Path, prompt: str) -> ModelResponse:
         f = self._client.files.upload(file=str(video_path))
-        while getattr(f.state, "name", "ACTIVE") == "PROCESSING":
-            time.sleep(2)
-            f = self._client.files.get(name=f.name)
-        r = self._client.models.generate_content(model=self.name, contents=[f, prompt])
+        try:
+            waited = 0.0
+            while getattr(f.state, "name", "ACTIVE") == "PROCESSING":
+                if waited > 120:
+                    raise TimeoutError("Gemini file processing took over 2 minutes")
+                time.sleep(2)
+                waited += 2
+                f = self._client.files.get(name=f.name)
+            if getattr(f.state, "name", "ACTIVE") == "FAILED":
+                raise RuntimeError("Gemini could not process the video file")
+            r = self._client.models.generate_content(model=self.name, contents=[f, prompt])
+        finally:
+            try:  # keep the free-tier file store clean
+                self._client.files.delete(name=f.name)
+            except Exception:  # noqa: BLE001
+                pass
         u = r.usage_metadata
         tin = u.prompt_token_count or 0
         # Thinking tokens are billed as output.
