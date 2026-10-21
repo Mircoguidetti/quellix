@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
 from functools import cache
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
 
-CONTRACTS_DIR = Path(__file__).resolve().parents[4] / "packages" / "contracts"
+CONTRACTS_DIR = Path(
+    os.environ.get("QUELLIX_CONTRACTS_DIR")
+    or Path(__file__).resolve().parents[4] / "packages" / "contracts"
+)
 
 
 @cache
