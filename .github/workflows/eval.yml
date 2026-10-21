@@ -1,0 +1,67 @@
+name: Eval
+
+# First real evaluation: Build AI Egocentric-10K clips + synthetic defects, worker engine.
+# Start it from the Actions tab (workflow_dispatch) or by pushing a file under eval/requests/
+# to main. A request file may contain {"clips": N}; without one the default is 20.
+
+on:
+  workflow_dispatch:
+    inputs:
+      clips:
+        description: Number of source clips to download from Egocentric-10K
+        default: "20"
+  push:
+    branches: [main]
+    paths:
+      - "eval/requests/**"
+
+concurrency:
+  group: eval
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    name: Eval (worker engine)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      QUELLIX_FINGERPRINT_DB: ${{ github.workspace }}/eval/out/fingerprints.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --extra data
+      - name: Decide how many clips
+        id: n
+        env:
+          INPUT_CLIPS: ${{ inputs.clips }}
+        run: |
+          clips="${INPUT_CLIPS:-}"
+          if [ -z "$clips" ]; then
+            req="$(ls -t requests/*.json 2>/dev/null | head -n 1 || true)"
+            if [ -n "$req" ]; then clips="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('clips', ''))" "$req")"; fi
+          fi
+          clips="${clips:-20}"
+          case "$clips" in ''|*[!0-9]*) echo "clips must be a positive integer, got '$clips'" >&2; exit 1;; esac
+          echo "clips=$clips" >> "$GITHUB_OUTPUT"
+      - name: Run evaluation
+        run: |
+          mkdir -p out
+          uv run python -m quellix_eval.ci --clips "${{ steps.n.outputs.clips }}" --out-dir out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          if-no-files-found: warn
+          path: |
+            eval/out/report.md
+            eval/out/manifest.jsonl
+            eval/out/sources.jsonl

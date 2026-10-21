@@ -44,3 +44,13 @@ python -m quellix_eval.run --manifest eval/data/m.jsonl --engine worker --engine
 The `worker` engine calls `python -m quellix_worker check P --rubric R --video-id ID --report REPORT.json`
 and expects a decision JSON on stdout (optional extra `cost_usd`). Baseline prices are
 env-overridable (see `baselines/*.py`); check them against the providers' current price lists.
+
+## First real evaluation on GitHub Actions
+
+`.github/workflows/eval.yml` (manual run, or push to `main` of a file under `eval/requests/`,
+optionally `{"clips": N}`) runs `python -m quellix_eval.ci`: streams the first clips of one
+Egocentric-10K shard per factory (never whole shards), transcodes them small (20 s, 640 px,
+15 fps), adds 3 synthetic defects per clip (`rubrics/eval_v0.json`: technical, framing,
+privacy = reject, originality; hands and task off), runs the worker with a shared fingerprint
+store (`QUELLIX_FINGERPRINT_DB`) and writes `report.md` to the job summary and as an artifact.
+Source clips are assumed acceptable (not human-labelled); the report says so.
