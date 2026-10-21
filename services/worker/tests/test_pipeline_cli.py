@@ -156,7 +156,8 @@ def test_decode_helper_is_reused(clip):
 def test_modal_app_imports_without_credentials():
     import quellix_worker.modal_app as m
 
-    assert m.GPU and (m.app is None or m.app.name == "quellix-worker")
+    assert m.GPU is None  # CPU by default
+    assert m.app is None or m.app.name == "quellix-worker"
 
 
 def test_cli_fingerprint_db_finds_duplicate_across_runs(clip, tmp_path):

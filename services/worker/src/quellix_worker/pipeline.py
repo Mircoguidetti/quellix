@@ -19,9 +19,9 @@ class PipelineConfig:
     sample_fps: float = media.DEFAULT_SAMPLE_FPS
     # Customer video goes to Gemini / TwelveLabs only when the organisation allows it.
     allow_external_models: bool = False
-    # Modal bills GPU per second. 0 on CPU-only runs; the Modal function reads the real rate
-    # from QUELLIX_GPU_USD_PER_SECOND (the price of the chosen GPU on modal.com/pricing).
-    gpu_usd_per_second: float = 0.0
+    # Modal bills compute per second (CPU cores + memory, or GPU). 0 on local runs; the Modal
+    # function reads the real rate from QUELLIX_COMPUTE_USD_PER_SECOND (see .env.example).
+    compute_usd_per_second: float = 0.0
     org_id: str = "local"
 
 
@@ -104,8 +104,8 @@ def run_pipeline(
 
     decision = evaluate(video_id, rubric, outputs)
     validate_decision(decision)
-    gpu_cost = (time.monotonic() - started) * config.gpu_usd_per_second
-    cost = {"gpu_usd": round(gpu_cost, 6), "api_usd": round(api_cost, 6),
-            "total_usd": round(gpu_cost + api_cost, 6)}
+    compute_cost = (time.monotonic() - started) * config.compute_usd_per_second
+    cost = {"compute_usd": round(compute_cost, 6), "api_usd": round(api_cost, 6),
+            "total_usd": round(compute_cost + api_cost, 6)}
     models = {n: o.model for n, o in outputs.items() if o.model}
     return PipelineResult(decision, cost, fingerprints, video.info.duration_s, timings, models)
