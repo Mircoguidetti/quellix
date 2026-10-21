@@ -66,12 +66,16 @@ test.describe("screens", () => {
     if (info.project.name === "mobile") {
       await expect(page.getByRole("list", { name: "Videos waiting for review" })).toBeVisible();
       await shot(page, info, "06-review-queue", false);
-      await page.getByRole("list", { name: "Videos waiting for review" }).getByRole("button").first().click();
     }
+    // Show a video with a timed detection: the flagged moments list is the point of this screen.
+    const queue = page.getByRole("list", { name: "Videos waiting for review" });
+    await page.waitForLoadState("networkidle");
+    const timed = queue.getByRole("button").filter({ hasText: /visible at/ }).first();
+    await ((await timed.count()) ? timed : queue.getByRole("button").first()).click();
     await expect(page.getByRole("button", { name: "Accept" })).toBeVisible();
     await page.waitForFunction(() => {
       const v = document.querySelector("video");
-      return !v || v.readyState >= 2;
+      return !v || (v.readyState >= 2 && !v.seeking);
     });
     await shot(page, info, "06-review", false);
 

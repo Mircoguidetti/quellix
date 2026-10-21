@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Collapsible } from "radix-ui";
 import { ChevronRight, CircleCheck, CircleDot, CircleMinus, CircleX, Clock, TriangleAlert, UserRound } from "lucide-react";
 import { DecisionBadge } from "@/components/app/decision-badge";
 import { Badge } from "@/components/ui/badge";
+import { Kbd } from "@/components/ui/kbd";
 import { checkLabel, formatAge, formatClock, formatDateTime } from "@/lib/format";
 import { formatMeasurement, measurementLabel } from "@/lib/measurements";
-import { reasonMarkers, videoDuration, type StoredCheck, type TimelineReason } from "@/lib/timeline";
+import { flaggedMoments, videoDuration, type StoredCheck, type TimelineReason } from "@/lib/timeline";
 import type { ReviewItem } from "@/lib/domain/videos";
 import { cn } from "@/lib/utils";
 import { VideoPlayer, type PlayerHandle } from "./video-player";
@@ -27,28 +28,56 @@ export function videoTitle(item: Pick<ReviewItem, "video" | "filename">): string
   return item.video.external_id ?? item.filename ?? item.video.id.slice(0, 8);
 }
 
-/** The video report: player with pinned reasons, every check with its measurements, and actions. */
+export type ReportHandle = { next: () => void; prev: () => void; replay: () => void };
+
+/** Seconds of context shown before a flagged moment when the player jumps there. */
+const LEAD_IN = 1.5;
+
+/**
+ * The video report: player, the flagged moments (each with its reason and measurement), every
+ * check, and optional actions. The reviewer steps through moments instead of watching it all.
+ */
 export function VideoReport({
   item,
   rubricName,
   actions,
   headingLevel = 2,
+  ref,
 }: {
   item: ReviewItem;
   rubricName?: string;
   actions?: React.ReactNode;
   headingLevel?: 1 | 2;
+  ref?: React.Ref<ReportHandle>;
 }) {
   const decision = item.video.decision;
   const reasons = useMemo(() => (decision?.reasons ?? []) as TimelineReason[], [decision]);
   const checks = useMemo(() => (decision?.checks ?? {}) as Record<string, StoredCheck & { model?: string }>, [decision]);
   const duration = videoDuration(item.durationS, checks);
-  const markers = useMemo(() => reasonMarkers(reasons, checks, duration), [reasons, checks, duration]);
+  const moments = useMemo(() => flaggedMoments(reasons, checks, duration), [reasons, checks, duration]);
+  const markers = useMemo(
+    () => moments.flatMap((m) => (m.t === null ? [] : [{ key: m.key, t: m.t, end: m.end, label: m.label, effect: m.effect }])),
+    [moments],
+  );
   const player = useRef<PlayerHandle>(null);
-  const [activeReason, setActiveReason] = useState<number | null>(null);
+  const [active, setActive] = useState<string | null>(moments[0]?.key ?? null);
   const Heading = headingLevel === 1 ? "h1" : "h2";
   const ordered = CHECK_ORDER.filter((c) => checks[c]).map((c) => [c, checks[c]] as const);
   const rubricVersion = decision?.rubric.version ?? item.video.rubric_version;
+  const firstTimed = moments.find((m) => m.t !== null);
+
+  const go = useCallback(
+    (index: number, play = true) => {
+      const m = moments[Math.min(Math.max(index, 0), moments.length - 1)];
+      if (!m) return;
+      setActive(m.key);
+      if (m.t !== null) player.current?.seek(Math.max(0, m.t - LEAD_IN), play);
+      document.getElementById(`moment-${item.video.id}-${m.key}`)?.scrollIntoView({ block: "nearest" });
+    },
+    [moments, item.video.id],
+  );
+  const activeIndex = Math.max(0, moments.findIndex((m) => m.key === active));
+  useImperativeHandle(ref, () => ({ next: () => go(activeIndex + 1), prev: () => go(activeIndex - 1), replay: () => go(activeIndex) }), [go, activeIndex]);
 
   return (
     <div className="grid gap-5">
@@ -82,64 +111,58 @@ export function VideoReport({
         ref={player}
         src={item.playbackUrl}
         duration={duration}
+        startAt={firstTimed?.t === null || !firstTimed ? 0 : Math.max(0, firstTimed.t - LEAD_IN)}
         markers={markers}
-        activeReason={activeReason}
-        onMarker={setActiveReason}
+        activeKey={active}
+        onMarker={(key) => go(moments.findIndex((m) => m.key === key))}
       />
 
-      {actions}
-
-      <section aria-labelledby={`why-${item.video.id}`} className="grid gap-2.5">
-        <h3 id={`why-${item.video.id}`} className="font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">
-          Reasons
-        </h3>
+      <section aria-labelledby={`moments-${item.video.id}`} className="grid gap-2.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 id={`moments-${item.video.id}`} className="font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">
+            Flagged moments{moments.length ? ` · ${moments.length}` : ""}
+          </h3>
+          {moments.length > 1 && (
+            <p className="hidden items-center gap-1 text-[12px] text-muted-foreground pointer-fine:flex">
+              <Kbd>J</Kbd>
+              <Kbd>K</Kbd> step through · <Kbd>Enter</Kbd> replay
+            </p>
+          )}
+        </div>
         {!decision ? (
           <p className="text-[14px] text-muted-foreground">No decision yet. The analysis usually takes under a minute.</p>
-        ) : reasons.length === 0 ? (
-          <p className="text-[14px] text-muted-foreground">Every enabled check passed.</p>
+        ) : moments.length === 0 ? (
+          <p className="text-[14px] text-muted-foreground">Nothing was flagged: every enabled check passed.</p>
         ) : (
-          <ul className="grid gap-1.5">
-            {reasons.map((r, i) => {
-              const marker = markers.find((m) => m.reasonIndex === i);
-              const body = (
-                <>
-                  <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", r.effect === "reject" ? "bg-no" : "bg-brand")} aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] leading-snug">{r.message}</span>
-                    <span className="mt-0.5 block font-mono text-[11.5px] text-muted-foreground">
-                      {r.effect === "reject" ? "rejects" : "sends to review"} · {r.code}
-                    </span>
+          <ol className="grid max-h-[22rem] gap-1.5 overflow-y-auto">
+            {moments.map((m, i) => (
+              <li key={m.key}>
+                <button
+                  type="button"
+                  id={`moment-${item.video.id}-${m.key}`}
+                  onClick={() => go(i)}
+                  aria-current={active === m.key ? "true" : undefined}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-lg border border-border px-3 py-2.5 text-left outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring",
+                    active === m.key && "border-foreground/40 bg-subtle",
+                  )}
+                >
+                  <span className="w-[4.25rem] shrink-0 rounded-md bg-muted px-1.5 text-center font-mono text-[11.5px] leading-5 tabular-nums">
+                    {m.t === null ? "whole" : formatClock(m.t)}
                   </span>
-                  {marker && (
-                    <span className="shrink-0 rounded-md bg-muted px-1.5 font-mono text-[11.5px] leading-5 tabular-nums">{formatClock(marker.t)}</span>
-                  )}
-                </>
-              );
-              const cls = cn(
-                "flex w-full items-start gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors",
-                activeReason === i && "border-foreground/30 bg-subtle",
-              );
-              return (
-                <li key={`${r.code}-${i}`}>
-                  {marker ? (
-                    <button
-                      type="button"
-                      className={cn(cls, "hover:bg-subtle")}
-                      onClick={() => {
-                        player.current?.seek(marker.t);
-                        setActiveReason(i);
-                      }}
-                      aria-label={`${r.message} Jump to ${formatClock(marker.t)}`}
-                    >
-                      {body}
-                    </button>
-                  ) : (
-                    <div className={cls}>{body}</div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2 text-[14px] font-medium leading-snug">
+                      <span className={cn("size-2 shrink-0 rounded-full", m.effect === "reject" ? "bg-no" : "bg-brand")} aria-hidden />
+                      {m.label}
+                      <span className="font-mono text-[11px] font-normal text-muted-foreground">{m.effect === "reject" ? "rejects" : "to review"}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[13.5px] leading-snug text-muted-foreground">{m.message}</span>
+                    <span className="mt-1 block font-mono text-[12px] text-foreground/80">{m.detail}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
         )}
         {item.video.review?.note && (
           <p className="rounded-lg bg-subtle px-3 py-2.5 text-[13.5px]">
@@ -148,6 +171,8 @@ export function VideoReport({
           </p>
         )}
       </section>
+
+      {actions}
 
       {ordered.length > 0 && (
         <section aria-labelledby={`checks-${item.video.id}`} className="grid gap-2.5">

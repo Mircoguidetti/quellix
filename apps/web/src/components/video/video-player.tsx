@@ -1,20 +1,22 @@
 "use client";
 
-import { useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { FileX2, Pause, Play } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatClock } from "@/lib/format";
-import type { Marker } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
 
-export type PlayerHandle = { seek: (t: number) => void };
+export type PlayerHandle = { seek: (t: number, play?: boolean) => void };
+export type PlayerMarker = { key: string; t: number; end?: number; label: string; effect: "reject" | "review" };
 
 type Props = {
   src: string | null;
   duration: number | null;
-  markers: Marker[];
-  activeReason: number | null;
-  onMarker: (reasonIndex: number) => void;
+  /** Where the playhead starts, e.g. just before the first flagged moment. */
+  startAt?: number;
+  markers: PlayerMarker[];
+  activeKey: string | null;
+  onMarker: (key: string) => void;
   ref?: React.Ref<PlayerHandle>;
 };
 
@@ -23,24 +25,33 @@ type Props = {
  * deletes videos after analysis, so the timeline still shows where each reason happened.
  * Give it a `key` per video so its playback state starts fresh.
  */
-export function VideoPlayer({ src, duration: knownDuration, markers, activeReason, onMarker, ref }: Props) {
+export function VideoPlayer({ src, duration: knownDuration, startAt = 0, markers, activeKey, onMarker, ref }: Props) {
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(startAt);
   const [mediaDuration, setMediaDuration] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
   const duration = mediaDuration ?? knownDuration ?? 0;
   const playable = Boolean(src) && !failed;
 
   const seek = useCallback(
-    (t: number) => {
+    (t: number, play = false) => {
       const clamped = Math.max(0, Math.min(duration || t, t));
       setTime(clamped);
-      if (video.current && playable) video.current.currentTime = clamped;
+      if (video.current && playable) {
+        video.current.currentTime = clamped;
+        if (play) void video.current.play().catch(() => undefined);
+      }
     },
     [duration, playable],
   );
   useImperativeHandle(ref, () => ({ seek }), [seek]);
+
+  // The metadata can load before hydration, when onLoadedMetadata is not attached yet.
+  useEffect(() => {
+    const el = video.current;
+    if (el && el.readyState >= 1 && el.currentTime === 0 && startAt > 0) el.currentTime = startAt;
+  }, [startAt]);
 
   const toggle = () => {
     const el = video.current;
@@ -61,11 +72,17 @@ export function VideoPlayer({ src, duration: knownDuration, markers, activeReaso
             className="absolute inset-0 size-full object-contain"
             preload="metadata"
             playsInline
+            muted
             onClick={toggle}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-            onLoadedMetadata={(e) => Number.isFinite(e.currentTarget.duration) && setMediaDuration(e.currentTarget.duration)}
+            onLoadedMetadata={(e) => {
+              const el = e.currentTarget;
+              if (Number.isFinite(el.duration)) setMediaDuration(el.duration);
+              // Keep a jump made before the metadata arrived; otherwise start at startAt.
+              if (el.currentTime === 0 && time > 0) el.currentTime = time;
+            }}
             onError={() => setFailed(true)}
             aria-label="Video"
           />
@@ -95,7 +112,7 @@ export function VideoPlayer({ src, duration: knownDuration, markers, activeReaso
         >
           {playing ? <Pause className="size-3.5" aria-hidden /> : <Play className="ml-0.5 size-3.5" aria-hidden />}
         </button>
-        <Timeline duration={duration} time={time} markers={markers} activeReason={activeReason} onSeek={seek} onMarker={onMarker} pct={pct} />
+        <Timeline duration={duration} time={time} markers={markers} activeKey={activeKey} onSeek={seek} onMarker={onMarker} pct={pct} />
         <span className="shrink-0 font-mono text-[11.5px] text-muted-foreground tabular-nums">{formatClock(duration)}</span>
       </div>
     </div>
@@ -106,17 +123,17 @@ function Timeline({
   duration,
   time,
   markers,
-  activeReason,
+  activeKey,
   onSeek,
   onMarker,
   pct,
 }: {
   duration: number;
   time: number;
-  markers: Marker[];
-  activeReason: number | null;
+  markers: PlayerMarker[];
+  activeKey: string | null;
   onSeek: (t: number) => void;
-  onMarker: (reasonIndex: number) => void;
+  onMarker: (key: string) => void;
   pct: (t: number) => string;
 }) {
   const track = useRef<HTMLDivElement>(null);
@@ -153,7 +170,7 @@ function Timeline({
           .filter((m) => m.end !== undefined)
           .map((m) => (
             <span
-              key={`span-${m.reasonIndex}`}
+              key={`span-${m.key}`}
               aria-hidden
               className={cn("absolute inset-y-0 rounded-full", m.effect === "reject" ? "bg-no/35" : "bg-brand/35")}
               style={{ left: pct(m.t), width: `calc(${pct(m.end!)} - ${pct(m.t)})` }}
@@ -167,14 +184,11 @@ function Timeline({
         style={{ left: pct(time) }}
       />
       {markers.map((m) => (
-        <Tooltip key={m.reasonIndex}>
+        <Tooltip key={m.key}>
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => {
-                onSeek(m.t);
-                onMarker(m.reasonIndex);
-              }}
+              onClick={() => onMarker(m.key)}
               className={cn(
                 "absolute top-1/2 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
               )}
@@ -185,7 +199,7 @@ function Timeline({
                 className={cn(
                   "block size-3 rotate-45 rounded-[2px] border-2 border-panel transition-transform",
                   m.effect === "reject" ? "bg-no" : "bg-brand",
-                  activeReason === m.reasonIndex && "scale-150",
+                  activeKey === m.key && "scale-150",
                 )}
               />
             </button>

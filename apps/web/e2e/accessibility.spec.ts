@@ -46,12 +46,27 @@ test("keyboard only: sign in, open Review, accept a video, undo", async ({ page 
   expect(await focusRingVisible(page)).toBe(true);
   await page.keyboard.press("Enter");
   await page.waitForURL("**/app/review");
+  await page.waitForLoadState("networkidle");
   const first = page.getByRole("list", { name: "Videos waiting for review" }).getByRole("button").first();
   const title = (await first.locator("span").first().innerText()).split("\n")[0];
 
-  // Shortcuts: J moves down, K back up, A accepts the selected video.
-  await page.keyboard.press("j");
-  await page.keyboard.press("k");
+  // ↓ / ↑ move between videos; J / K step through the flagged moments of the selected one.
+  const queue = page.getByRole("list", { name: "Videos waiting for review" });
+  await page.waitForLoadState("networkidle");
+  await expect(queue.getByRole("button").first()).toHaveAttribute("aria-current", "true");
+  await page.keyboard.press("ArrowDown");
+  await expect(queue.getByRole("button").nth(1)).toHaveAttribute("aria-current", "true");
+  await page.keyboard.press("ArrowUp");
+  await expect(queue.getByRole("button").first()).toHaveAttribute("aria-current", "true");
+  const moments = page.getByRole("region", { name: /Flagged moments/ }).getByRole("button");
+  await expect(moments.first()).toHaveAttribute("aria-current", "true");
+  if ((await moments.count()) > 1) {
+    await page.keyboard.press("j");
+    await expect(moments.nth(1)).toHaveAttribute("aria-current", "true");
+    await page.keyboard.press("k");
+    await expect(moments.first()).toHaveAttribute("aria-current", "true");
+  }
+  await page.keyboard.press("Enter");
   await page.keyboard.press("n");
   await expect(page.getByLabel(/^Note/)).toBeFocused();
   await page.keyboard.type("Checked on keyboard");

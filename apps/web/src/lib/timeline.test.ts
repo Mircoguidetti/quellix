@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reasonMarkers, videoDuration } from "./timeline";
+import { flaggedMoments, videoDuration } from "./timeline";
 
 const reasons = [
   { check: "hands_visible", code: "hands_visible.below_min", message: "Both hands visible 61%", effect: "reject" },
@@ -13,30 +13,35 @@ const checks = {
   technical: { measurements: { duration_s: 34 } },
 };
 
-describe("reason markers", () => {
-  it("pins reasons to the timestamps found in their measurements, sorted by time", () => {
-    const markers = reasonMarkers(reasons, checks, 34);
-    expect(markers.map((m) => [m.code, m.t])).toEqual([
-      ["hands_visible.below_min", 4.2],
-      ["privacy.faces", 12.4],
-    ]);
-    expect(markers[0]).toMatchObject({ end: 18, effect: "reject", label: "Hands out of frame", reasonIndex: 0 });
-    expect(markers[1]).toMatchObject({ effect: "review", reasonIndex: 1 });
-  });
-
-  it("skips reasons without a moment in time and clamps to the duration", () => {
-    const markers = reasonMarkers(
-      [{ check: "privacy", code: "privacy.documents", message: "x", effect: "review" }],
-      { privacy: { measurements: { documents: [{ t_s: 99 }] } } },
-      30,
-    );
-    expect(markers[0].t).toBe(30);
-    expect(reasonMarkers([reasons[2]], checks, 34)).toEqual([]);
-  });
-
+describe("video duration", () => {
   it("falls back to the technical duration", () => {
     expect(videoDuration(null, checks)).toBe(34);
     expect(videoDuration(20, checks)).toBe(20);
     expect(videoDuration(null, {})).toBeNull();
+  });
+});
+
+
+describe("flagged moments", () => {
+  it("lists every detection with its measurement, in time order, then whole-video reasons", () => {
+    const moments = flaggedMoments(reasons, checks, 34);
+    expect(moments.map((m) => [m.code, m.t])).toEqual([
+      ["hands_visible.below_min", 4.2],
+      ["privacy.faces", 12.4],
+      ["privacy.faces", 34],
+      ["framing.off_target", null],
+    ]);
+    expect(moments[0].detail).toBe("Visible 61% while handling objects · 00:04–00:18, 00:20–00:30");
+    expect(moments[1].detail).toBe("Detection 1 of 2");
+    expect(moments[3].detail).toBe("Off target 30% of frames");
+  });
+
+  it("explains the task moment with confidence and the task window", () => {
+    const [m] = flaggedMoments(
+      [{ check: "task_completed", code: "task_completed.uncertain", message: "Could not tell", effect: "review" }],
+      { task_completed: { measurements: { completed: true, confidence: 0.54, start_s: 3, end_s: 31 } } },
+      40,
+    );
+    expect(m).toMatchObject({ t: 31, detail: "Completed yes · confidence 54% · task 00:03–00:31" });
   });
 });

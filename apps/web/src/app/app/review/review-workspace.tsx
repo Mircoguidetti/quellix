@@ -11,15 +11,18 @@ import { Kbd } from "@/components/ui/kbd";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/input";
-import { VideoReport, videoTitle } from "@/components/video/video-report";
+import { VideoReport, videoTitle, type ReportHandle } from "@/components/video/video-report";
 import type { ReviewItem } from "@/lib/domain/videos";
 import { formatAge } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { submitReview, undoReviewAction } from "./actions";
 
 const SHORTCUTS: [string, string][] = [
-  ["J", "Next video"],
-  ["K", "Previous video"],
+  ["J", "Next flagged moment"],
+  ["K", "Previous flagged moment"],
+  ["Enter", "Replay the moment"],
+  ["↓", "Next video"],
+  ["↑", "Previous video"],
   ["A", "Accept"],
   ["R", "Reject"],
   ["N", "Write a note"],
@@ -40,6 +43,7 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
   const [busy, setBusy] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const reportRef = useRef<ReportHandle>(null);
   const { adjust } = useReviewCount();
 
   const index = Math.max(0, items.findIndex((i) => i.video.id === selectedId));
@@ -112,8 +116,15 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
       }
       if (document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"]')) return;
       const key = e.key.toLowerCase();
-      if (key === "j") select(index + 1);
-      else if (key === "k") select(index - 1);
+      const target = e.target as HTMLElement | null;
+      // Enter keeps activating buttons and links; arrows keep moving sliders and menus.
+      const onControl = target?.closest("button, a, [role=slider], [tabindex]:not(main)");
+      const usesArrows = target?.closest("[role=slider], [role=listbox], [role=tablist], [role=radiogroup]");
+      if (key === "j") reportRef.current?.next();
+      else if (key === "k") reportRef.current?.prev();
+      else if (key === "enter" && !onControl) reportRef.current?.replay();
+      else if (key === "arrowdown" && !usesArrows) select(index + 1);
+      else if (key === "arrowup" && !usesArrows) select(index - 1);
       else if (key === "a") void decide("accept");
       else if (key === "r") void decide("reject");
       else if (key === "n") noteRef.current?.focus();
@@ -204,15 +215,16 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
               {index + 1} of {items.length}
             </span>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon-sm" onClick={() => select(index - 1)} disabled={index === 0} aria-label="Previous video (K)">
+              <Button variant="ghost" size="icon-sm" onClick={() => select(index - 1)} disabled={index === 0} aria-label="Previous video (Up arrow)">
                 <ChevronUp aria-hidden />
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={() => select(index + 1)} disabled={index === items.length - 1} aria-label="Next video (J)">
+              <Button variant="ghost" size="icon-sm" onClick={() => select(index + 1)} disabled={index === items.length - 1} aria-label="Next video (Down arrow)">
                 <ChevronDown aria-hidden />
               </Button>
             </div>
           </div>
           <VideoReport
+            ref={reportRef}
             key={current.video.id}
             item={current}
             rubricName={rubricNames[current.video.rubric_id]}
