@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quellix.ai/schemas/decision.schema.json",
+  "title": "Decision",
+  "description": "What Quellix decided about one video, why, and on what measurements. Produced by services/worker, stored in the decisions table, returned by the API and the webhook.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["video_id", "decision", "reasons", "checks", "rubric", "engine_version"],
+  "properties": {
+    "video_id": { "type": "string" },
+    "decision": { "enum": ["accept", "reject", "review"] },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check", "code", "message", "effect"],
+        "properties": {
+          "check": { "$ref": "#/$defs/checkName" },
+          "code": { "type": "string", "description": "Stable machine code, e.g. 'hands_visible.below_min'." },
+          "message": { "type": "string", "description": "Human-readable reason shown to reviewers and contributors." },
+          "effect": { "enum": ["reject", "review"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/checkResult" },
+      "propertyNames": { "$ref": "#/$defs/checkName" }
+    },
+    "rubric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "engine_version": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "checkName": {
+      "enum": ["task_completed", "hands_visible", "framing", "technical", "privacy", "originality"]
+    },
+    "checkResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "uncertain", "skipped", "error"] },
+        "measurements": {
+          "type": "object",
+          "description": "Raw values produced by the check (ratios, durations, detections with timestamps, similarity)."
+        },
+        "model": { "type": "string", "description": "Which model or method produced the measurements, e.g. 'hands@0.1.0' or 'baseline:gemini'." }
+      }
+    }
+  }
+}

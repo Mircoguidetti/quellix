@@ -1,0 +1,288 @@
+openapi: 3.1.0
+info:
+  title: Quellix API
+  version: 0.1.0
+  description: |
+    Automated acceptance for first-person training video.
+    Flow: create a video -> upload the file to the signed URL -> call /complete -> receive the decision by webhook or poll GET /videos/{id}.
+servers:
+  - url: https://api.quellix.ai/v1
+security:
+  - apiKey: []
+
+paths:
+  /videos:
+    post:
+      operationId: createVideo
+      summary: Register a video and get a signed upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateVideoRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateVideoResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+    get:
+      operationId: listVideos
+      summary: List videos, newest first
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/VideoStatus" } }
+        - { name: decision, in: query, schema: { $ref: "#/components/schemas/DecisionValue" } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Video" } }
+                  next_cursor: { type: [string, "null"] }
+
+  /videos/{video_id}:
+    parameters:
+      - { name: video_id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getVideo
+      summary: Get a video with its decision
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /videos/{video_id}/complete:
+    parameters:
+      - { name: video_id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: completeUpload
+      summary: Mark the upload as finished and queue the analysis
+      responses:
+        "202":
+          description: Queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /videos/{video_id}/review:
+    parameters:
+      - { name: video_id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: reviewVideo
+      summary: A human reviewer's final decision on a video (usually one in `review`)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { enum: [accept, reject] }
+                note: { type: string, maxLength: 2000 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+
+  /videos/{video_id}/lab-outcome:
+    parameters:
+      - { name: video_id, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: setLabOutcome
+      summary: Record what the lab decided about this video, used to measure Quellix's precision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LabOutcome" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+
+  /rubrics:
+    get:
+      operationId: listRubrics
+      summary: List rubrics (latest version of each)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Rubric" } }
+    post:
+      operationId: createRubric
+      summary: Create a rubric (version 1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RubricInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Rubric" }
+
+  /rubrics/{rubric_id}:
+    parameters:
+      - { name: rubric_id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getRubric
+      summary: Get the latest version of a rubric (or ?version=N)
+      parameters:
+        - { name: version, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Rubric" }
+    put:
+      operationId: updateRubric
+      summary: Save a new version of the rubric. Old versions are kept; decisions point to the version they used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RubricInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Rubric" }
+
+webhooks:
+  video.decided:
+    post:
+      summary: Sent when a decision is ready. Signed with HMAC-SHA256 in the `Quellix-Signature` header.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, created_at, data]
+              properties:
+                type: { const: video.decided }
+                created_at: { type: string, format: date-time }
+                data: { $ref: "#/components/schemas/Video" }
+      responses:
+        "2XX": { description: Received }
+
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: Organization API key, `qx_live_...`. Created in the dashboard.
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+
+  schemas:
+    VideoStatus:
+      enum: [awaiting_upload, queued, processing, decided, failed, deleted]
+
+    DecisionValue:
+      enum: [accept, reject, review]
+
+    CreateVideoRequest:
+      type: object
+      required: [rubric_id, filename, content_type, size_bytes]
+      properties:
+        rubric_id: { type: string }
+        rubric_version: { type: integer, minimum: 1, description: Defaults to the latest version. }
+        external_id: { type: string, maxLength: 200, description: The collector's own id for this video. }
+        contributor_ref: { type: string, maxLength: 200, description: Opaque id of the contributor, used for contests. Never a name or email. }
+        filename: { type: string, maxLength: 300 }
+        content_type: { enum: [video/mp4, video/quicktime, video/webm] }
+        size_bytes: { type: integer, minimum: 1, maximum: 5368709120 }
+        lab_outcome: { $ref: "#/components/schemas/LabOutcome" }
+
+    CreateVideoResponse:
+      type: object
+      required: [video, upload_url, upload_expires_at]
+      properties:
+        video: { $ref: "#/components/schemas/Video" }
+        upload_url: { type: string, format: uri }
+        upload_expires_at: { type: string, format: date-time }
+
+    LabOutcome:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { enum: [accept, reject] }
+        reason: { type: string, maxLength: 2000 }
+
+    Video:
+      type: object
+      required: [id, status, rubric_id, rubric_version, created_at]
+      properties:
+        id: { type: string }
+        external_id: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/VideoStatus" }
+        rubric_id: { type: string }
+        rubric_version: { type: integer }
+        decision:
+          oneOf:
+            - $ref: "./decision.schema.json"
+            - type: "null"
+        review:
+          type: [object, "null"]
+          properties:
+            decision: { enum: [accept, reject] }
+            note: { type: string }
+            reviewed_at: { type: string, format: date-time }
+        lab_outcome:
+          oneOf:
+            - $ref: "#/components/schemas/LabOutcome"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+
+    RubricInput:
+      description: A rubric without id and version (the server assigns them).
+      type: object
+      required: [name, task, checks]
+      properties:
+        name: { type: string }
+        task: { type: object }
+        checks: { type: object }
+
+    Rubric:
+      $ref: "./rubric.schema.json"

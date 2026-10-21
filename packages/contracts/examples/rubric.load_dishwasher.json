@@ -1,0 +1,19 @@
+{
+  "id": "rub_example_dishwasher",
+  "version": 1,
+  "name": "Load the dishwasher (example)",
+  "task": {
+    "library_id": "load_dishwasher",
+    "description": "Load dirty plates and glasses into the dishwasher and close the door.",
+    "steps": ["open the dishwasher door", "place items in the racks", "close the door"],
+    "final_state": "dishwasher door closed with items inside"
+  },
+  "checks": {
+    "task_completed": { "enabled": true, "critical": true, "min_confidence": 0.7 },
+    "hands_visible": { "enabled": true, "critical": true, "scope": "manipulation", "require_both": true, "min_ratio": 0.8 },
+    "framing": { "enabled": true, "critical": false, "max_off_target_ratio": 0.1, "max_unstable_ratio": 0.1 },
+    "technical": { "enabled": true, "critical": true, "min_duration_s": 20, "max_duration_s": 600, "min_width": 1280, "min_height": 720, "min_fps": 24, "max_blur_ratio": 0.05, "max_bad_exposure_ratio": 0.1 },
+    "privacy": { "enabled": true, "faces": "review", "documents": "review", "screens": "review" },
+    "originality": { "enabled": true, "similarity_threshold": 0.9, "on_duplicate": "reject" }
+  }
+}
