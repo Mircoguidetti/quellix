@@ -21,6 +21,23 @@ def is_rate_limit(exc: BaseException) -> bool:
     return "429" in text or "RESOURCE_EXHAUSTED" in text or "rate limit" in text.lower()
 
 
+def is_hard_quota(exc: BaseException) -> bool:
+    """A 429 that waiting will not fix: no free quota for this model, or the daily cap is hit."""
+    text = str(exc)
+    return is_rate_limit(exc) and bool(
+        re.search(r"limit:\s*0\b|PerDay|per day|free_tier.*limit", text, re.I)
+    )
+
+
+def is_model_unavailable(exc: BaseException) -> bool:
+    """The model id is wrong or not enabled for this key."""
+    if getattr(exc, "code", None) == 404 or getattr(exc, "status_code", None) == 404:
+        return True
+    text = str(exc)
+    pattern = r"\b404\b.*not found|is not found|not supported"
+    return "NOT_FOUND" in text or bool(re.search(pattern, text, re.I))
+
+
 def retry_delay_s(exc: BaseException) -> float | None:
     """The server's suggested wait ("retry in 12.3s" / "retryDelay: 12s"), if it gave one."""
     m = re.search(r"retry(?: in|Delay\D{0,5})\s*([0-9]+(?:\.[0-9]+)?)\s*s", str(exc), re.I)
@@ -48,6 +65,7 @@ class RetryingClient:
         self._deadline = None if deadline_s is None else clock() + deadline_s
         self._last_call = float("-inf")
         self.retries = 0
+        self.first_rate_limit_body: str | None = None
 
     def _out_of_time(self, extra: float = 0.0) -> bool:
         return self._deadline is not None and self._clock() + extra > self._deadline
@@ -63,7 +81,11 @@ class RetryingClient:
             try:
                 return self.inner.generate(video_path, prompt)
             except Exception as e:  # noqa: BLE001
-                if not is_rate_limit(e) or attempt == self.max_retries:
+                if not is_rate_limit(e):
+                    raise
+                if self.first_rate_limit_body is None:
+                    self.first_rate_limit_body = str(e)[:2000]
+                if is_hard_quota(e) or attempt == self.max_retries:
                     raise
                 delay = retry_delay_s(e) or self.base_backoff_s * 2**attempt
                 if self._out_of_time(delay):
