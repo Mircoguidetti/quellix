@@ -69,3 +69,10 @@ def test_missing_check_in_answer_goes_to_review(tmp_path):
 
 def test_prompt_mentions_task():
     assert "Task: x" in build_prompt({"task": {"description": "x"}})
+
+
+def test_baselines_never_produce_skipped(tmp_path):
+    path, rubric = setup(tmp_path)
+    for text in (json.dumps(GOOD), "garbage", json.dumps({})):
+        d = run_baseline(Fake(text), path, rubric, "v").decision
+        assert all(c["status"] != "skipped" for c in d["checks"].values())

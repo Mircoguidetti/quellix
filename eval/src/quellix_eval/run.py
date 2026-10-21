@@ -129,6 +129,7 @@ class EngineRun:
     cost_usd: float
     video_hours: float
     failures: int
+    excluded: dict[str, int]   # check -> clips skipped because their label is "unknown"
 
     @property
     def cost_per_hour(self) -> float | None:
@@ -146,10 +147,14 @@ def evaluate_engine(
     confusion: dict[str, dict[tuple[str, str], int]] = defaultdict(lambda: defaultdict(int))
     cost = hours = 0.0
     failures = 0
+    excluded: dict[str, int] = defaultdict(int)
     for clip in clips:
         res = engine(clip, rubric_for(base_rubric, clip))
         cost += res.cost_usd
         hours += video_duration_s(clip) / 3600
+        for check, expected in clip.checks.items():
+            if expected == "unknown" and res.decision is None:
+                excluded[check] += 1
         if res.decision is None:
             failures += 1
             pairs.append(("review", clip.truth))   # a failed run is never a silent accept/reject
@@ -157,12 +162,13 @@ def evaluate_engine(
         pairs.append((res.decision["decision"], clip.truth))
         for check, expected in clip.checks.items():
             if expected == "unknown":
+                excluded[check] += 1
                 continue
             status = res.decision.get("checks", {}).get(check, {}).get("status", "missing")
             got = status if status in ("pass", "fail") else "uncertain"
             confusion[check][(expected, got)] += 1
     return EngineRun(name, report(pairs, costs), {k: dict(v) for k, v in confusion.items()},
-                     cost, hours, failures)
+                     cost, hours, failures, dict(excluded))
 
 
 def _f(x: float | None) -> str:
@@ -195,6 +201,8 @@ def format_runs(runs: Sequence[EngineRun]) -> str:
         for check, cells in sorted(r.confusion.items()):
             body = ", ".join(f"{e}->{g}: {n}" for (e, g), n in sorted(cells.items()))
             lines.append(f"  {check:<16}{body}")
+        for check, n in sorted(r.excluded.items()):
+            lines.append(f"  {check:<16}excluded (unknown label): {n} of {r.report.n} clips")
     return "\n".join(lines)
 
 

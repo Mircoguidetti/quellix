@@ -82,3 +82,11 @@ def test_cost_comes_from_report_file(fixture_set):
     rubric = json.loads((fixture_set / "rubric.json").read_text())
     r = evaluate_engine("w", _w([sys.executable, str(FAKE)]), clips, rubric)
     assert r.cost_usd == pytest.approx(0.002)
+
+
+def test_report_prints_excluded_unknown_labels(fixture_set):
+    clips = load_manifest(fixture_set / "m.jsonl")
+    rubric = json.loads((fixture_set / "rubric.json").read_text())
+    r = evaluate_engine("worker", _w([sys.executable, str(FAKE)]), clips, rubric)
+    assert r.excluded == {"hands_visible": 14}
+    assert "hands_visible   excluded (unknown label): 14 of 14 clips" in format_runs([r])
