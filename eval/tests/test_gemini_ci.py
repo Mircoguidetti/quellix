@@ -145,7 +145,7 @@ class ByModel:
                 b = outer.behaviour[model]
                 if b == "ok":
                     return ModelResponse(json.dumps(OK), 0.01)
-                raise RuntimeError(b.format(model=model))
+                raise RuntimeError(b.replace("{model}", model))
 
         return C()
 
@@ -171,7 +171,8 @@ def test_no_free_quota_falls_back_to_the_next_model_without_waiting():
     fb.generate(Path("x"), "p")
     assert by.calls == ["a", "b", "b"] and fb.served["b"] == 2
     text = fb.describe()
-    assert "`b`: 2 clips served" in text and "First raw 429 body" in text and "limit: 0" in text
+    assert "`b`: 2 clips served" in text and "limit: 0" in text
+    assert "First raw quota/billing error" in text
 
 
 def test_unknown_model_id_falls_back():
@@ -232,7 +233,7 @@ def test_subset_run_compares_worker_and_gemini_on_the_same_clips(tmp_path, monke
     for col in ("worker (all 12)", "worker (same 8)", "gemini (8 clips)"):
         assert f"| {col} |" in report
     assert "`gemini-3.5-flash-lite`: 8 clips served" in report
-    assert "no free quota" in report and "First raw 429 body" in report
+    assert "no free quota" in report and "First raw quota/billing error" in report
     assert "limit: 0" in report
     assert by.calls.count("gemini-3.1-flash-lite") == 1       # tried once, then dropped
     assert "| gemini (8 clips) |" in report
@@ -257,3 +258,32 @@ def test_check_metrics():
     assert m["precision"] == pytest.approx(0.75) and m["recall"] == pytest.approx(0.6)
     assert m["flag_recall"] == pytest.approx(0.8) and m["review_rate"] == pytest.approx(2 / 20)
     assert ci.check_metrics({})["precision"] is None
+
+
+BILLING = ("402 RESOURCE_EXHAUSTED. {'error': {'code': 402, 'message': 'Your prepayment credits "
+           "are depleted. Please go to AI Studio to manage your project and billing.', "
+           "'status': 'RESOURCE_EXHAUSTED'}}")
+
+
+def test_depleted_credits_stop_gemini_at_once_and_say_so():
+    from quellix_eval.baselines.retry import is_billing_problem, is_rate_limit
+
+    assert is_billing_problem(RuntimeError(BILLING)) and is_rate_limit(RuntimeError(BILLING))
+    assert not is_billing_problem(RuntimeError("429 RESOURCE_EXHAUSTED limit: 0"))
+    clock = Clock()
+    fb, by = fallback({"a": BILLING, "b": "ok"}, ["a", "b"])
+    for _ in range(3):
+        with pytest.raises(RuntimeError, match="billing problem"):
+            fb.generate(Path("x"), "p")
+    assert by.calls == ["a"]                  # one real call, then nothing: no retries, no b
+    assert fb.current == "a" and clock.sleeps == []
+    text = fb.describe()
+    assert "BLOCKED" in text and "prepayment credits are depleted" in text
+
+
+def test_billing_error_is_not_retried_inside_the_retrying_client():
+    clock = Clock()
+    inner = Flaky([BILLING])
+    with pytest.raises(RuntimeError):
+        retrying(inner, clock, min_interval_s=0).generate(Path("x"), "p")
+    assert inner.calls == 1 and clock.sleeps == []
