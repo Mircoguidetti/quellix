@@ -1,0 +1,63 @@
+name: Database
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - ".github/workflows/db.yml"
+  pull_request:
+    paths:
+      - "supabase/**"
+      - ".github/workflows/db.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate migrations (no access to the real project)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Apply migrations to a throwaway local database
+        run: |
+          supabase start -x realtime,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase db reset --local --no-seed
+      - name: Stop local stack
+        if: always()
+        run: supabase stop --no-backup
+
+  deploy:
+    name: Push migrations to Supabase
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: db-deploy
+      cancel-in-progress: false
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+      - name: Push migrations
+        run: supabase db push --include-all --yes
+      - name: Summary
+        run: |
+          {
+            echo "## Migrations"
+            echo '```'
+            supabase migration list
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
