@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from test_ci import fake_source
 
 from quellix_eval import ci
@@ -80,7 +79,8 @@ def test_spend_cap_stops_the_phase_and_reports_the_spend(tmp_path):
     lim = PhaseLimits(600, 1.0)
     report = run(tmp_path, {"worker": lambda c, r: EngineResult(decision()), "gemini": gem},
                  limits={"gemini": lim})
-    assert lim.spent_usd == pytest.approx(1.2) and lim.stopped_by == "spend cap"       # 3 clips, then stop
+    # three clips, then the cap stops the phase
+    assert lim.spent_usd == pytest.approx(1.2) and lim.stopped_by == "spend cap"
     assert "$1.2000 spent of the $1.00 cap" in report
     assert "STOPPED early: spend cap reached" in report
     row = next(ln for ln in report.splitlines() if ln.startswith("| gemini (8 clips) |"))
