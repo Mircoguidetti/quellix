@@ -79,6 +79,13 @@ class CheckResult:
         return out
 
 
+# The hands check cannot reject yet. The eval on issue #53 shows it failing 32 of 40 clips that
+# were assumed good (false alarm rate 0.80); until benchmark v2 (issue #64) validates it, a
+# `hands_visible.below_min` failure has effect `review` even when the rubric says `critical:
+# true`. A false reject costs an honest contributor money; a doubtful case goes to review.
+# One-line flip once #64 passes: set this to True.
+HANDS_CAN_REJECT = False
+
 # Defaults mirror packages/contracts/rubric.schema.json.
 DEFAULTS: dict[str, dict[str, Any]] = {
     "task_completed": {"enabled": True, "critical": True, "min_confidence": 0.7},
@@ -155,7 +162,7 @@ def _hands_visible(cfg: dict[str, Any], m: Mapping[str, Any]) -> tuple[Status, l
     if ratio < cfg["min_ratio"]:
         hands = "Both hands" if cfg["require_both"] else "Hands"
         where = "during manipulation" if scope == "manipulation" else "in the video"
-        effect: Effect = "reject" if cfg["critical"] else "review"
+        effect: Effect = "reject" if cfg["critical"] and HANDS_CAN_REJECT else "review"
         return "fail", [
             Reason("hands_visible", "hands_visible.below_min",
                    f"{hands} visible {_pct(ratio)} of the time {where} "
@@ -285,7 +292,14 @@ def evaluate(
                                   "review"))
             continue
         status, check_reasons = _EVALUATORS[name](cfg, out.measurements)
-        checks[name] = CheckResult(status, out.measurements, out.model).to_dict()
+        measurements: Mapping[str, Any] = out.measurements
+        if (name == "hands_visible" and cfg["critical"] and not HANDS_CAN_REJECT
+                and any(r.code == "hands_visible.below_min" for r in check_reasons)):
+            # Record that the cap was applied: the rubric asked for a reject, we sent it to review.
+            measurements = {**measurements, "reject_capped_to_review": True,
+                            "reject_cap_note": "The hands check cannot reject until it is "
+                            "validated (issues #53, #64); this failure was sent to review."}
+        checks[name] = CheckResult(status, measurements, out.model).to_dict()
         reasons.extend(check_reasons)
 
     skipped_any = any(
