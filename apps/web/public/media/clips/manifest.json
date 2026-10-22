@@ -1,0 +1,77 @@
+{
+  "schema": "ormes.site-clips/1",
+  "dataset": "Build AI Egocentric-10K",
+  "license": "Apache-2.0",
+  "total_bytes": 5781987,
+  "clips": [
+    {
+      "id": "clip-01",
+      "source_clip": "ego10k_factory014_worker001_00007",
+      "factory": "factory014",
+      "decision": "accept",
+      "mp4": "clip-01.mp4",
+      "webm": "clip-01.webm",
+      "poster": "clip-01.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 24.0,
+      "duration_s": 5.54,
+      "bytes": {
+        "mp4": 869476,
+        "webm": 1095569,
+        "poster": 97674,
+        "json": 9125
+      },
+      "crf": {
+        "mp4": 30,
+        "webm": 46
+      }
+    },
+    {
+      "id": "clip-02",
+      "source_clip": "ego10k_factory017_worker001_00002",
+      "factory": "factory017",
+      "decision": "accept",
+      "mp4": "clip-02.mp4",
+      "webm": "clip-02.webm",
+      "poster": "clip-02.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 24.0,
+      "duration_s": 5.54,
+      "bytes": {
+        "mp4": 878940,
+        "webm": 736955,
+        "poster": 98049,
+        "json": 9146
+      },
+      "crf": {
+        "mp4": 30,
+        "webm": 46
+      }
+    },
+    {
+      "id": "clip-03",
+      "source_clip": "ego10k_factory012_worker001_00009",
+      "factory": "factory012",
+      "decision": "accept",
+      "mp4": "clip-03.mp4",
+      "webm": "clip-03.webm",
+      "poster": "clip-03.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 24.0,
+      "duration_s": 5.54,
+      "bytes": {
+        "mp4": 729250,
+        "webm": 1141416,
+        "poster": 107158,
+        "json": 9229
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 46
+      }
+    }
+  ]
+}
