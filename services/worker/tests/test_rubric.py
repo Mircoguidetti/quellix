@@ -7,6 +7,7 @@ import pytest
 
 from quellix_worker import rubric as rubric_module
 from quellix_worker.contracts import load_example, validate_decision, validate_rubric
+from quellix_worker.pipeline import active_checks
 from quellix_worker.rubric import CheckOutput, evaluate
 
 RUBRIC = load_example("rubric.load_dishwasher.json")
@@ -25,11 +26,14 @@ def good_outputs() -> dict[str, CheckOutput]:
                                   "bad_exposure_ratio": 0.0}),
         "privacy": CheckOutput({"faces": [], "documents": [], "screens": []}),
         "originality": CheckOutput({"max_similarity": 0.12, "match_video_id": None}),
+        "viewpoint": CheckOutput({"viewpoint": "first_person", "first_person_ratio": 0.95,
+                                  "confidence": 0.9}),
     }
 
 
 def run(outputs: dict[str, CheckOutput], rubric: dict | None = None) -> dict:
-    decision = evaluate("vid_1", rubric or RUBRIC, outputs)
+    """Only the checks the current decision contract knows (as the pipeline does)."""
+    decision = evaluate("vid_1", rubric or RUBRIC, outputs, active_checks())
     validate_decision(decision)
     return decision
 

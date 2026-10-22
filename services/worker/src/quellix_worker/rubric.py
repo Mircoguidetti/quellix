@@ -20,7 +20,8 @@ from typing import Any, Literal
 from . import ENGINE_VERSION
 
 CheckName = Literal[
-    "task_completed", "hands_visible", "framing", "technical", "privacy", "originality"
+    "task_completed", "hands_visible", "framing", "technical", "privacy", "originality",
+    "viewpoint",
 ]
 CHECK_NAMES: tuple[CheckName, ...] = (
     "task_completed",
@@ -29,6 +30,7 @@ CHECK_NAMES: tuple[CheckName, ...] = (
     "technical",
     "privacy",
     "originality",
+    "viewpoint",
 )
 Status = Literal["pass", "fail", "uncertain", "skipped", "error"]
 Effect = Literal["reject", "review"]
@@ -86,6 +88,11 @@ class CheckResult:
 # One-line flip once #64 passes: set this to True.
 HANDS_CAN_REJECT = False
 
+# The viewpoint check (#79) cannot reject yet either: until it is validated on more third-person
+# footage, `viewpoint.wrong` has effect `review` even when the rubric says `critical: true`.
+VIEWPOINT_CAN_REJECT = False
+VIEWPOINTS = {"first_person": "first-person", "third_person": "third-person"}
+
 # Defaults mirror packages/contracts/rubric.schema.json.
 DEFAULTS: dict[str, dict[str, Any]] = {
     "task_completed": {"enabled": True, "critical": True, "min_confidence": 0.7},
@@ -110,6 +117,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "privacy": {"enabled": True, "faces": "review", "documents": "review", "screens": "review"},
     "originality": {"enabled": True, "similarity_threshold": 0.9, "on_duplicate": "reject"},
+    "viewpoint": {"enabled": True, "required": "first_person", "critical": True},
 }
 
 
@@ -256,6 +264,29 @@ def _originality(cfg: dict[str, Any], m: Mapping[str, Any]) -> tuple[Status, lis
     return "pass", []
 
 
+def _viewpoint(cfg: dict[str, Any], m: Mapping[str, Any]) -> tuple[Status, list[Reason]]:
+    required = cfg["required"]
+    if required == "any":
+        return "pass", []
+    seen = m.get("viewpoint")
+    if seen not in VIEWPOINTS:
+        return "uncertain", [
+            Reason("viewpoint", "viewpoint.uncertain",
+                   f"Could not tell whether the video was filmed {VIEWPOINTS[required]}.",
+                   "review")
+        ]
+    if seen != required:
+        effect: Effect = "reject" if cfg["critical"] and VIEWPOINT_CAN_REJECT else "review"
+        how = ("from a tripod or by someone else" if seen == "third_person"
+               else "with the camera on the head or chest")
+        return "fail", [
+            Reason("viewpoint", "viewpoint.wrong",
+                   f"Filmed {VIEWPOINTS[seen]} ({how}); this order needs "
+                   f"{VIEWPOINTS[required]} video.", effect)
+        ]
+    return "pass", []
+
+
 _EVALUATORS = {
     "task_completed": _task_completed,
     "hands_visible": _hands_visible,
@@ -263,6 +294,17 @@ _EVALUATORS = {
     "technical": _technical,
     "privacy": _privacy,
     "originality": _originality,
+    "viewpoint": _viewpoint,
+}
+
+# Checks whose failure the rubric may ask to reject, but which cannot reject until validated.
+_CAPPED = {
+    "hands_visible": ("hands_visible.below_min", lambda: HANDS_CAN_REJECT,
+                      "The hands check cannot reject until it is validated (issues #53, #64); "
+                      "this failure was sent to review."),
+    "viewpoint": ("viewpoint.wrong", lambda: VIEWPOINT_CAN_REJECT,
+                  "The viewpoint check cannot reject until it is validated (issue #79); "
+                  "this failure was sent to review."),
 }
 
 
@@ -270,12 +312,16 @@ def evaluate(
     video_id: str,
     rubric: Mapping[str, Any],
     outputs: Mapping[str, CheckOutput],
+    check_names: tuple[CheckName, ...] = CHECK_NAMES,
 ) -> dict[str, Any]:
-    """Apply the rubric to the check outputs and return a decision (decision.schema.json)."""
+    """Apply the rubric to the check outputs and return a decision (decision.schema.json).
+
+    `check_names` limits the checks evaluated (the pipeline leaves out a check the loaded
+    decision contract does not know yet)."""
     checks: dict[str, Any] = {}
     reasons: list[Reason] = []
 
-    for name in CHECK_NAMES:
+    for name in check_names:
         cfg = check_config(rubric, name)
         if not cfg.get("enabled", True):
             checks[name] = CheckResult("skipped").to_dict()
@@ -293,12 +339,12 @@ def evaluate(
             continue
         status, check_reasons = _EVALUATORS[name](cfg, out.measurements)
         measurements: Mapping[str, Any] = out.measurements
-        if (name == "hands_visible" and cfg["critical"] and not HANDS_CAN_REJECT
-                and any(r.code == "hands_visible.below_min" for r in check_reasons)):
+        cap = _CAPPED.get(name)
+        if (cap is not None and cfg["critical"] and not cap[1]()
+                and any(r.code == cap[0] for r in check_reasons)):
             # Record that the cap was applied: the rubric asked for a reject, we sent it to review.
             measurements = {**measurements, "reject_capped_to_review": True,
-                            "reject_cap_note": "The hands check cannot reject until it is "
-                            "validated (issues #53, #64); this failure was sent to review."}
+                            "reject_cap_note": cap[2]}
         checks[name] = CheckResult(status, measurements, out.model).to_dict()
         reasons.extend(check_reasons)
 

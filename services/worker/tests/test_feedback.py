@@ -10,7 +10,7 @@ from quellix_worker import feedback, media
 from quellix_worker.checks import framing, technical
 from quellix_worker.checks.segments import flagged_runs, runs
 from quellix_worker.contracts import load_example, validate_decision
-from quellix_worker.pipeline import Dependencies, PipelineConfig, run_pipeline
+from quellix_worker.pipeline import Dependencies, PipelineConfig, active_checks, run_pipeline
 from quellix_worker.rubric import CheckOutput, evaluate
 
 from .clips import scene, write_clip
@@ -24,7 +24,7 @@ RUBRIC = load_example("rubric.load_dishwasher.json")
 
 def rubric_codes() -> set[str]:
     codes = set(re.findall(r'"((?:task_completed|hands_visible|framing|technical|originality|'
-                           r'pipeline)\.[a-z_]+)"', (SRC / "rubric.py").read_text()))
+                           r'pipeline|viewpoint)\.[a-z_]+)"', (SRC / "rubric.py").read_text()))
     codes |= {f"privacy.{k}" for k in ("faces", "documents", "screens")}
     return codes
 
@@ -50,7 +50,7 @@ def test_hidden_codes_are_never_visible_and_visible_codes_have_a_hint():
 def reasons_for(measurements: dict, overrides: dict | None = None):
     rubric = {**RUBRIC, "checks": {**RUBRIC["checks"], **(overrides or {})}}
     outputs = {name: CheckOutput(measurements=m, model="t") for name, m in measurements.items()}
-    return rubric, evaluate("v", rubric, outputs)
+    return rubric, evaluate("v", rubric, outputs, active_checks())
 
 
 def test_hint_texts_are_filled_from_the_rubric_and_short():
