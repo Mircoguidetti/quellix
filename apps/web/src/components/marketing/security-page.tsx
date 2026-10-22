@@ -119,7 +119,7 @@ export function SecurityPage() {
             <Link className="b w" href="/signup">Start a free pilot</Link>
             <Link className="b o" href="/developers">Read the API</Link></div></div>{" "}
         <SiteFooter />{" "}
-        <p className="note" style={{ padding: "0 16px 28px" }}>Example footage: Build AI Egocentric-10K (Apache 2.0).</p>{" "}</section>{" "}
+        <p className="note" style={{ padding: "0 16px 28px" }}>Example footage: Build AI Egocentric-10K (Apache 2.0) and HoloAssist (CDLA-Permissive-2.0).</p>{" "}</section>{" "}
     </main>
   );
 }
