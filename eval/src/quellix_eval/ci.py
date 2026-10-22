@@ -39,6 +39,7 @@ from .run import (
     Engine,
     EngineResult,
     EngineRun,
+    NothingRun,
     baseline_engine,
     evaluate_engine,
     format_runs,
@@ -54,7 +55,11 @@ VARIANTS_PER_CLIP = 3
 DEFAULT_CLIPS = 40
 MIN_FACTORIES = 8
 GEMINI_SUBSET_SOURCES = 20     # Gemini sees 20 originals + their variants (80 clips)
-GEMINI_BUDGET_S = 18 * 60      # whole run must stay well under 45 minutes
+GEMINI_BUDGET_S = 12 * 60      # the Gemini phase runs FIRST and has its own time budget
+GEMINI_CAP_USD = 1.0           # spend cap for one run; the phase stops when it is reached
+JOB_BUDGET_S = 38 * 60         # the driver finishes (report written) by then; the job limit is 45
+REPORT_RESERVE_S = 90          # kept free at the end for rendering the report
+WORKER_MIN_S = 8 * 60          # Gemini never takes the time the worker needs at the least
 GEMINI_INTERVAL_S = 6.0        # 10 requests per minute, inside the free tier
 
 # Builds a manifest of source clips: (out_manifest, data_dir, n_clips) -> n written
@@ -192,12 +197,12 @@ def render_report(
             "n/a" if r.cost_per_hour is None else f"{r.cost_per_hour:.2f}",
             "n/a" if r.latency_pct(0.5) is None else f"{r.latency_pct(0.5):.1f}",
             "n/a" if r.latency_pct(0.95) is None else f"{r.latency_pct(0.95):.1f}",
-            str(r.failures),
+            str(r.failures), str(r.not_run),
         ])
     lines += _md_table(
         ["engine", "reject precision", "reject recall", "flag recall", "review rate",
          "false reject rate", "USD / video hour", "latency p50 s", "latency p95 s",
-         "failed clips"], rows)
+         "failed clips", "not run (budget/cap)"], rows)
     lines += ["", f"Base reject rate of this set: {runs[0].report.base_reject_rate:.2f} "
               f"({runs[0].report.n} clips). Cost of the worker is compute only (not billed here)."]
     for r in runs:
@@ -246,6 +251,45 @@ def subset_for(manifest: Sequence[ClipRecord], n_sources: int) -> list[ClipRecor
     return [c for c in manifest if c.clip_id in keep or c.clip_id.startswith(prefixes)]
 
 
+class PhaseLimits:
+    """Time budget and spend cap of one engine phase. The clock starts at the first clip."""
+
+    def __init__(self, budget_s: float, cap_usd: float | None = None,
+                 clock: Callable[[], float] = time.monotonic) -> None:
+        self.budget_s, self.cap_usd, self._clock = budget_s, cap_usd, clock
+        self.started: float | None = None
+        self.spent_usd = 0.0
+        self.stopped_by: str | None = None      # "time budget" | "spend cap"
+
+    def check(self) -> str | None:
+        if self.started is None:
+            self.started = self._clock()
+        if self.stopped_by is None and self._clock() - self.started >= self.budget_s:
+            self.stopped_by = "time budget"
+        if self.stopped_by is None and self.cap_usd is not None and self.spent_usd >= self.cap_usd:
+            self.stopped_by = "spend cap"
+        return self.stopped_by
+
+    def describe(self, name: str) -> str:
+        cap = "" if self.cap_usd is None else f" of the ${self.cap_usd:.2f} cap"
+        elapsed = 0.0 if self.started is None else self._clock() - self.started
+        stop = f" The phase STOPPED early: {self.stopped_by} reached." if self.stopped_by else ""
+        return (f"{name} phase: ${self.spent_usd:.4f} spent{cap}, "
+                f"{elapsed / 60:.1f} of {self.budget_s / 60:.0f} minutes used.{stop}")
+
+
+def _limited(engine: Engine, limits: PhaseLimits) -> Engine:
+    def run(clip: ClipRecord, rubric: Mapping[str, Any]) -> EngineResult:
+        why = limits.check()
+        if why:
+            return EngineResult(None, error=f"{why} reached", not_run=True)
+        res = engine(clip, rubric)
+        limits.spent_usd += res.cost_usd
+        return res
+
+    return run
+
+
 def _recording(engine: Engine, store: dict[str, EngineResult]) -> Engine:
     def run(clip: ClipRecord, rubric: Mapping[str, Any]) -> EngineResult:
         t0 = time.monotonic()
@@ -258,7 +302,7 @@ def _recording(engine: Engine, store: dict[str, EngineResult]) -> Engine:
 
 def _replay(store: dict[str, EngineResult]) -> Engine:
     def run(clip: ClipRecord, rubric: Mapping[str, Any]) -> EngineResult:
-        return store.get(clip.clip_id) or EngineResult(None, error="not run")
+        return store.get(clip.clip_id) or EngineResult(None, error="not run", not_run=True)
 
     return run
 
@@ -272,10 +316,15 @@ def run_ci(
     keep_media: bool = False,
     notes: Sequence[str | Callable[[], str]] = (),
     subset_sources: Mapping[str, int] | None = None,
+    limits: Mapping[str, PhaseLimits] | None = None,
+    job_deadline: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> str:
     """Run every engine; engines named in `subset_sources` only see that many originals (and
-    their variants). The worker's results on that same subset are replayed from its full run,
-    so the comparison is like for like and nothing is run (or fingerprinted) twice."""
+    their variants) and run FIRST, each with its own time budget and spend cap (`limits`).
+    The worker then runs the subset first and the rest while time is left until `job_deadline`;
+    clips it never reaches are reported as "not run". The worker's results on the subset are
+    replayed from that run, so the comparison is like for like and nothing is run twice."""
     out_dir.mkdir(parents=True, exist_ok=True)
     work = out_dir / "work"
     sources_manifest = out_dir / "sources.jsonl"
@@ -284,19 +333,61 @@ def run_ci(
     write_manifest(manifest, out_dir / "manifest.jsonl")
     rubric = json.loads(rubric_path.read_text())
     subset_sources = subset_sources or {}
-    runs: list[EngineRun] = []
-    worker_results: dict[str, EngineResult] = {}
+    limits = dict(limits or {})
+    extra_notes: list[str | Callable[[], str]] = []
+    skipped: list[str] = []
+
+    def run_phase(label: str, engine: Engine, subset: Sequence[ClipRecord]) -> EngineRun | None:
+        try:
+            return evaluate_engine(label, engine, subset, rubric)
+        except NothingRun:
+            skipped.append(f"**{label}** did not run any clip (its budget or cap was used up).")
+            return None
+
+    # 1. The engines with a fixed subset (Gemini) go first, so the worker cannot starve them.
+    gemini_runs: list[EngineRun] = []
+    first_subset: list[ClipRecord] = []
     for name, engine in engines.items():
         if name not in subset_sources:
-            eng = _recording(engine, worker_results) if name == "worker" else engine
-            runs.append(evaluate_engine(name, eng, manifest, rubric))
             continue
         subset = subset_for(manifest, subset_sources[name])
-        if "worker" in engines and worker_results and len(subset) < len(manifest):
-            runs[0] = dataclasses.replace(runs[0], name=f"worker (all {len(manifest)})")
-            runs.append(evaluate_engine(
-                f"worker (same {len(subset)})", _replay(worker_results), subset, rubric))
-        runs.append(evaluate_engine(f"{name} ({len(subset)} clips)", engine, subset, rubric))
+        first_subset = first_subset or subset
+        lim = limits.get(name)
+        if lim is not None:
+            if job_deadline is not None:
+                left = job_deadline - clock() - WORKER_MIN_S - REPORT_RESERVE_S
+                lim.budget_s = max(0.0, min(lim.budget_s, left))
+            engine = _limited(engine, lim)
+            extra_notes.append(lambda lim=lim, n=name: lim.describe(n.capitalize()))
+        run = run_phase(f"{name} ({len(subset)} clips)", engine, subset)
+        if run is not None:
+            gemini_runs.append(run)
+
+    # 2. The worker: the subset first, then the rest, until the job's time is nearly used up.
+    worker_runs: list[EngineRun] = []
+    worker_results: dict[str, EngineResult] = {}
+    if "worker" in engines:
+        ids = {c.clip_id for c in first_subset}
+        ordered = first_subset + [c for c in manifest if c.clip_id not in ids]
+        worker = _recording(engines["worker"], worker_results)
+        lim = limits.get("worker") or PhaseLimits(float("inf"))
+        if job_deadline is not None:
+            lim.budget_s = min(lim.budget_s, max(0.0, job_deadline - clock() - REPORT_RESERVE_S))
+        run = run_phase("worker", _limited(worker, lim), ordered)
+        extra_notes.append(lambda lim=lim: lim.describe("Worker"))
+        if run is not None:
+            if first_subset and len(first_subset) < len(manifest):
+                worker_runs.append(dataclasses.replace(run, name=f"worker (all {len(manifest)})"))
+                same = run_phase(
+                    f"worker (same {len(first_subset)})", _replay(worker_results), first_subset)
+                if same is not None:
+                    worker_runs.append(same)
+            else:
+                worker_runs.append(run)
+    runs = worker_runs + gemini_runs
+    if not runs:
+        raise RuntimeError("no engine ran any clip: " + "; ".join(skipped))
+    notes = [*notes, *extra_notes, *skipped]
     report = render_report(runs, manifest, notes, requested=clips)
     if worker_results:
         report += privacy_breakdown(worker_results, manifest)
@@ -330,6 +421,7 @@ def build_engines(
     worker_cmd: Sequence[str] | None = None,
     gemini_factory: Callable[[str], VideoModelClient] = _gemini_client,
     gemini_budget_s: float = GEMINI_BUDGET_S,
+    gemini_cap_usd: float = GEMINI_CAP_USD,
     gemini_interval_s: float = GEMINI_INTERVAL_S,
     gemini_retries: int = 5,
     sleep: Callable[[float], None] = time.sleep,
@@ -345,12 +437,11 @@ def build_engines(
         notes.append("Gemini was SKIPPED: the GEMINI_API_KEY secret is not set.")
         return engines, notes
     models = [env["GEMINI_MODEL"]] if env.get("GEMINI_MODEL") else gemini_models_by_price()
-    deadline = time.monotonic() + gemini_budget_s
 
     def wrap(inner: VideoModelClient) -> RetryingClient:
+        # The time budget is enforced per phase in run_ci (it starts at the first Gemini clip).
         return RetryingClient(
-            inner, min_interval_s=gemini_interval_s, max_retries=gemini_retries,
-            deadline_s=max(0.0, deadline - time.monotonic()), sleep=sleep,
+            inner, min_interval_s=gemini_interval_s, max_retries=gemini_retries, sleep=sleep,
         )
 
     client = FallbackClient(models, gemini_factory, wrap)
@@ -358,16 +449,18 @@ def build_engines(
     notes.append(
         f"Gemini (free tier, public Build AI clips only, no customer data), cheapest model "
         f"first: {', '.join(f'`{m}`' for m in models)}. Calls are paced at "
-        f"{gemini_interval_s:.0f}s, 429s are retried, and the Gemini phase stops after "
-        f"{gemini_budget_s / 60:.0f} minutes (remaining clips count as failed). Gemini sees "
+        f"{gemini_interval_s:.0f}s and 429s are retried. The Gemini phase runs first, with its "
+        f"own budget of {gemini_budget_s / 60:.0f} minutes and a spend cap of "
+        f"${gemini_cap_usd:.2f}; clips it does not reach are reported as not run. Gemini sees "
         f"only {GEMINI_SUBSET_SOURCES} originals and their variants; the worker is shown on "
-        "the same subset and on everything."
+        "the same subset and on everything it had time for."
     )
     notes.append(client.describe)
     return engines, notes
 
 
 def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
+    started = time.monotonic()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--clips", type=int, default=DEFAULT_CLIPS)
     ap.add_argument("--out-dir", type=Path, default=Path("out"))
@@ -383,7 +476,9 @@ def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None
     out_dir.mkdir(parents=True, exist_ok=True)
     engines, notes = build_engines(env, a.worker_cmd)
     report = run_ci(out_dir, a.clips, _hf_source, engines, a.rubric, notes=notes,
-                    subset_sources={"gemini": GEMINI_SUBSET_SOURCES})
+                    subset_sources={"gemini": GEMINI_SUBSET_SOURCES},
+                    limits={"gemini": PhaseLimits(GEMINI_BUDGET_S, GEMINI_CAP_USD)},
+                    job_deadline=started + JOB_BUDGET_S)
     print(report)
     return 0
 

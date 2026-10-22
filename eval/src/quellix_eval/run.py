@@ -48,6 +48,13 @@ class EngineResult:
     cost_usd: float = 0.0
     error: str | None = None
     latency_s: float | None = None   # set when the result is replayed from an earlier run
+    # The engine did not get to this clip (time budget or spend cap used up): the clip is left
+    # out of this engine's numbers instead of counting as a failure.
+    not_run: bool = False
+
+
+class NothingRun(ValueError):
+    """Every clip was left unrun (budget or cap used up before the first one)."""
 
 
 Engine = Callable[[ClipRecord, Mapping[str, Any]], EngineResult]
@@ -134,6 +141,7 @@ class EngineRun:
     decisions: dict[str, str] = field(default_factory=dict)   # clip_id -> decision | "failed"
     latencies_s: list[float] = field(default_factory=list)    # wall time per clip
     errors: list[str] = field(default_factory=list)           # failure messages (first few)
+    not_run: int = 0                                          # clips skipped by a budget or cap
 
     def latency_pct(self, q: float) -> float | None:
         if not self.latencies_s:
@@ -161,9 +169,13 @@ def evaluate_engine(
     excluded: dict[str, int] = defaultdict(int)
     latencies: list[float] = []
     errors: list[str] = []
+    not_run = 0
     for clip in clips:
         t0 = time.monotonic()
         res = engine(clip, rubric_for(base_rubric, clip))
+        if res.not_run:
+            not_run += 1
+            continue
         latencies.append(res.latency_s if res.latency_s is not None else time.monotonic() - t0)
         cost += res.cost_usd
         hours += video_duration_s(clip) / 3600
@@ -185,8 +197,11 @@ def evaluate_engine(
             status = res.decision.get("checks", {}).get(check, {}).get("status", "missing")
             got = status if status in ("pass", "fail") else "uncertain"
             confusion[check][(expected, got)] += 1
+    if not pairs:
+        raise NothingRun(f"{name}: no clip was run")
     return EngineRun(name, report(pairs, costs), {k: dict(v) for k, v in confusion.items()},
-                     cost, hours, failures, dict(excluded), decisions, latencies, errors)
+                     cost, hours, failures, dict(excluded), decisions, latencies, errors,
+                     not_run)
 
 
 def _f(x: float | None) -> str:
