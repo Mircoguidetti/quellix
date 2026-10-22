@@ -1,44 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { Crosshair, Hand, ListChecks, ScanFace } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { cn } from "@/lib/utils";
 import { CLIP_BASE, ClipPlayer, useClip, type ClipSidecar } from "../clip-player";
 import { SITE_CLIPS } from "../clips";
-import { ICON } from "../primitives";
 import { HeroCanvas } from "./hero-canvas";
 
-const FIELDS = [
-  { icon: ListChecks, label: "Steps done", value: "3 of 3" },
-  { icon: Hand, label: "Hands on the work", value: "92%", accent: true },
-  { icon: ScanFace, label: "Personal data", value: "none" },
-];
-const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "–");
+const TONE = { accept: "bg-ok/15 text-ok", review: "bg-brand/15 text-brand", reject: "bg-no/15 text-no" } as const;
+const PORTRAIT = "(max-width: 639px)";
 
-/** The card's rows from the worker's real measurements on the clip. */
-function clipFields(side: ClipSidecar) {
-  const checks = side.decision?.checks ?? {};
-  const hands = checks.hands_visible?.measurements ?? {};
-  const framing = checks.framing?.measurements ?? {};
-  const offTarget = framing.off_target_ratio;
-  return [
-    { icon: Hand, label: "Hands on the work", value: pct(hands.ratio_both_manipulation), accent: true },
-    { icon: Crosshair, label: "Camera on the work", value: typeof offTarget === "number" ? pct(1 - offTarget) : "–" },
-    { icon: ScanFace, label: "Personal data", value: checks.privacy?.status === "pass" ? "none" : (checks.privacy?.status ?? "–") },
-  ];
+function subscribePortrait(onChange: () => void) {
+  const mq = window.matchMedia(PORTRAIT);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
 }
 
-const TONE = { accept: "bg-ok/12 text-ok", review: "bg-brand/12 text-brand", reject: "bg-no/12 text-no" } as const;
+const clock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/** The reason shown in the corner: the clip's first reason with its times, or the example's. */
+function reasonOf(side: ClipSidecar | null) {
+  if (!side) return { text: "Readable document", at: "00:12", example: true };
+  const r = side.decision?.reasons[0];
+  if (!r) return { text: "No reasons: every check passed", at: null, example: false };
+  const seg = r.segments?.[0];
+  return { text: r.message, at: seg ? `${clock(seg.start_s)}–${clock(seg.end_s)}` : null, example: false };
+}
 
 /**
- * The hero's screen and decision card. With a real clip configured (SITE_CLIPS.hero) it plays the
- * clip with the hands model's boxes and shows the worker's own decision; otherwise the drawn
- * viewfinder and an example decision.
+ * The hero's clip card (issue #69): landscape from 640 px up, portrait (9:16) below. With real clips
+ * configured (SITE_CLIPS.hero) the poster is in the server HTML (it is the LCP) and the clip with its
+ * hand boxes starts after the page has loaded; until then the drawn viewfinder fills the same card.
+ * The live Ormes UI stays small, in the corners.
  */
 export function HeroScreen() {
-  const clip = useClip(SITE_CLIPS.hero);
-  // The clip (about 1 MB) starts after the page has loaded, so the poster paints first.
+  const { landscape, portrait } = SITE_CLIPS.hero;
+  // null on the server: no clip is chosen until the client knows its screen.
+  const isPortrait = useSyncExternalStore<boolean | null>(subscribePortrait, () => window.matchMedia(PORTRAIT).matches, () => null);
   const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
     let timer = 0;
     const go = () => (timer = window.setTimeout(() => setLoaded(true), 300));
@@ -49,54 +48,42 @@ export function HeroScreen() {
       clearTimeout(timer);
     };
   }, []);
+
+  // Load only the clip this screen shows.
+  const id = isPortrait === null ? null : isPortrait ? portrait : landscape;
+  const clip = useClip(id);
   const side = clip && clip !== "missing" ? clip : null;
-  const decision = side?.decision ?? null;
+  const hasClips = Boolean(landscape || portrait);
+  const verdict = side?.decision?.decision ?? (hasClips ? null : "review");
+  const reason = reasonOf(side);
 
   return (
-    <div className="relative mx-auto mt-14 max-w-[1040px]">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] border border-hairline bg-[#050607] sm:aspect-[16/9]">
-        {SITE_CLIPS.hero ? (
-          // The poster is in the server HTML so it paints first (it is the LCP); the clip and its
-          // hand boxes take over once the sidecar has loaded.
-          <Image src={`${CLIP_BASE}/${SITE_CLIPS.hero}.jpg`} alt="" fill priority sizes="(min-width: 1072px) 1040px, 100vw" className="object-cover" />
+    <div className="relative mx-auto mt-10 w-full max-w-[1100px] sm:mt-14">
+      <div className="relative aspect-[9/16] overflow-hidden rounded-[20px] border border-white/10 bg-[#050607] shadow-[0_40px_120px_-40px_rgba(143,180,255,0.35)] sm:aspect-video">
+        {hasClips ? (
+          <picture>
+            {portrait ? <source media={PORTRAIT} srcSet={`${CLIP_BASE}/${portrait}.jpg`} /> : null}
+            <img src={`${CLIP_BASE}/${landscape ?? portrait}.jpg`} alt="" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
+          </picture>
         ) : null}
-        {side && loaded ? <ClipPlayer side={side} /> : SITE_CLIPS.hero ? null : <HeroCanvas />}
-        <div aria-hidden className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70 sm:p-5">
-          <span className="inline-flex items-center gap-2">
-            <i className="size-2 rounded-full bg-no motion-safe:animate-pulse" />
-            {side ? "Analysed by Ormes" : "REC 00:24"}
+        {side && loaded ? <ClipPlayer key={side.id} side={side} /> : hasClips ? null : <HeroCanvas />}
+
+        {/* Live Ormes UI, small and in the corners. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 p-3 sm:p-5">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-white/80 backdrop-blur sm:left-5 sm:top-5">
+            <i className="size-1.5 rounded-full bg-no motion-safe:animate-pulse" /> Ormes · live
           </span>
-          <span>{side ? (side.source?.task ?? side.id) : "load the dishwasher"}</span>
+          {verdict ? (
+            <span className={cn("absolute right-3 top-3 rounded-full px-2.5 py-1 font-mono text-[12px] font-medium backdrop-blur sm:right-5 sm:top-5", TONE[verdict])}>{verdict}</span>
+          ) : null}
         </div>
-      </div>
-      <div
-        className="relative mx-4 -mt-20 rounded-2xl border border-hairline bg-panel/95 p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur sm:absolute sm:bottom-8 sm:right-8 sm:m-0 sm:w-[300px]"
-        aria-label={side ? "Decision on this clip" : "Example decision"}
-        role="group"
-      >
-        <div className="mb-2 flex items-center justify-between border-b border-hairline pb-3">
-          <span className="font-mono text-[13px] text-muted-foreground">{side ? side.id : "v_88213"}</span>
-          <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-medium ${TONE[decision?.decision ?? "accept"]}`}>{decision?.decision ?? "accept"}</span>
-        </div>
-        {side && decision && decision.reasons.length > 0 ? (
-          <ul className="flex flex-col gap-1.5 py-1 text-[14px] text-muted-foreground">
-            {decision.reasons.slice(0, 3).map((r) => (
-              <li key={r.code}>{r.message}</li>
-            ))}
-          </ul>
-        ) : (
-          <dl className="flex flex-col">
-            {(side ? clipFields(side) : FIELDS).map(({ icon: Icon, label, value, accent }) => (
-              <div key={label} className="flex items-center justify-between gap-3 py-2 text-[14px]">
-                <dt className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Icon {...ICON} className="size-4" />
-                  {label}
-                </dt>
-                <dd className={accent ? "font-mono text-[13px] text-brand" : "font-mono text-[13px] text-foreground"}>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        {verdict ? (
+          <p className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-black/60 px-3 py-2 text-[13px] text-white backdrop-blur sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-[420px]">
+            <span>{reason.text}</span>
+            {reason.at ? <span className="font-mono text-[12px] text-white/70">· {reason.at}</span> : null}
+            {reason.example ? <span className="rounded border border-white/25 px-1 text-[11px] text-white/70">Example</span> : null}
+          </p>
+        ) : null}
       </div>
     </div>
   );
