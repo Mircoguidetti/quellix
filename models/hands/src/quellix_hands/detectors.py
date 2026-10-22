@@ -26,7 +26,8 @@ class MediaPipeDetector:
     name = "mediapipe-hand_landmarker@float16-1"
 
     def __init__(self, model_path: str | Path | None = None, *, mirrored: bool = False,
-                 min_detection_confidence: float = 0.5, num_hands: int = 2) -> None:
+                 min_detection_confidence: float = 0.5, min_presence_confidence: float = 0.5,
+                 num_hands: int = 2) -> None:
         try:
             import mediapipe as mp
             from mediapipe.tasks.python import BaseOptions, vision
@@ -43,6 +44,7 @@ class MediaPipeDetector:
             running_mode=vision.RunningMode.IMAGE,
             num_hands=num_hands,
             min_hand_detection_confidence=min_detection_confidence,
+            min_hand_presence_confidence=min_presence_confidence,
         )
         self._landmarker: Any = vision.HandLandmarker.create_from_options(opts)
 

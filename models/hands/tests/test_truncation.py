@@ -36,3 +36,14 @@ def test_box_states():
 def test_bad_keypoints_shape():
     with pytest.raises(ValueError):
         state_from_keypoints(np.zeros((0, 2)))
+
+
+def test_wrist_is_exempt_unless_asked():
+    import numpy as np
+
+    kp = np.full((21, 2), 0.5)
+    kp[0] = (0.5, 1.0)                                       # wrist on the bottom edge
+    assert state_from_keypoints(kp, check_wrist=False) == "full"
+    assert state_from_keypoints(kp) == "truncated"           # the v0 rule
+    kp[12] = (0.5, 0.995)                                    # a fingertip in the margin
+    assert state_from_keypoints(kp, check_wrist=False) == "truncated"

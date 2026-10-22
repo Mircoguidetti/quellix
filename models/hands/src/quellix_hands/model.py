@@ -19,15 +19,18 @@ import numpy as np
 from .aggregate import aggregate
 from .contact import ContactEstimator, HeuristicContact, segments_from_contact
 from .infer import Detector, InferConfig, infer_frame
+from .smooth import DEFAULT_MAX_GAP_S, smooth_gaps
 from .types import FrameHands
 
-MODEL_VERSION = "0.1.0"
+MODEL_VERSION = "0.2.0"
+V0_VERSION = "0.1.0"  # every landmark in frame, handedness labels, no smoothing: `HandsModel.v0`
 
 
 class HandsModel:
     def __init__(self, detector: Detector | None = None, contact: ContactEstimator | None = None,
                  config: InferConfig | None = None, *, max_gap_s: float = 1.0,
-                 min_segment_s: float = 0.5) -> None:
+                 min_segment_s: float = 0.5, smooth_gap_s: float = DEFAULT_MAX_GAP_S,
+                 version: str = MODEL_VERSION) -> None:
         if detector is None:
             from .detectors import MediaPipeDetector
 
@@ -37,15 +40,22 @@ class HandsModel:
         self.config = config or InferConfig()
         self.max_gap_s = max_gap_s
         self.min_segment_s = min_segment_s
-        self.model_id = f"hands@{MODEL_VERSION}"
+        self.smooth_gap_s = smooth_gap_s
+        self.model_id = f"hands@{version}"
         self.name = self.model_id  # matches the worker's HandsModel protocol attribute
+
+    @classmethod
+    def v0(cls, detector: Detector | None = None) -> HandsModel:
+        """The first version (hands@0.1.0), for before/after scoring on the same code."""
+        return cls(detector, config=InferConfig.v0(), smooth_gap_s=0.0, version=V0_VERSION)
 
     def frames(self, frames: Sequence[np.ndarray], timestamps: Sequence[float]) -> list[FrameHands]:
         """Per-frame results with contact filled in (useful for debugging and evaluation)."""
         if len(frames) != len(timestamps):
             raise ValueError("frames and timestamps must have the same length")
-        per_frame = [infer_frame(rgb, t, self.detector, self.config)
-                     for rgb, t in zip(frames, timestamps, strict=True)]
+        per_frame = smooth_gaps(
+            [infer_frame(rgb, t, self.detector, self.config)
+             for rgb, t in zip(frames, timestamps, strict=True)], self.smooth_gap_s)
         contact = self.contact.estimate(per_frame)
         return [replace(f, contact=c) for f, c in zip(per_frame, contact, strict=True)]
 
@@ -57,6 +67,8 @@ class HandsModel:
         m["detector"] = self.detector.name
         m["contact_model"] = self.contact.name
         m["margin"] = self.config.margin
+        m["check_wrist"] = self.config.check_wrist
+        m["smooth_gap_s"] = self.smooth_gap_s
         return m
 
     def measure_video(self, video: Any) -> dict[str, Any]:

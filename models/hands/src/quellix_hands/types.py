@@ -43,6 +43,7 @@ class HandObservation:
     confidence: float = 0.0
     keypoints: np.ndarray | None = None
     box: tuple[float, float, float, float] | None = None
+    filled: bool = False  # not seen in this frame: carried over from its neighbours (smooth.py)
 
     @property
     def present(self) -> bool:
