@@ -43,8 +43,9 @@ export function createFakeDb(handler: Handler, opts: { exists?: boolean; sendErr
       });
     }
     chain("select");
-    for (const f of ["eq", "is", "in", "lt", "gt"]) chain(f, (col, val) => call.filters.push([`${f}:${col}`, val]));
+    for (const f of ["eq", "is", "in", "lt", "gt", "lte", "gte"]) chain(f, (col, val) => call.filters.push([`${f}:${col}`, val]));
     for (const f of ["or", "order", "limit"]) chain(f);
+    chain("range", (from, to) => call.filters.push(["range", [from, to]]));
     builder.single = () => {
       call.single = true;
       return run();

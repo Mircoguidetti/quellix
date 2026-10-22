@@ -26,10 +26,11 @@ pnpm lighthouse                            # with the demo server on :3100; home
 | `src/app/(marketing)` | The marketing site (`/`, `/product`, `/developers`, `/security`), ported from `docs/design/site/` |
 | `src/components/marketing` | Its pages (generated from the design HTML), nav, footer, code tabs, canvases, OG image and CSS module |
 | `src/app/(auth)` | Sign in, create account, forgot / reset password (server actions in `actions.ts`) |
-| `src/app/app` | The dashboard: overview, review, videos, rubrics, contests, settings, upload |
+| `src/app/app` | The dashboard: overview, review, videos, rubrics, contests, audit export, settings, upload |
 | `src/app/contest/[videoId]` | Public contest page (shows only `effect: reject` reasons) |
 | `src/components/ui` | Design-system components (Radix) |
 | `src/lib/domain` | Data access, always scoped by `org_id` |
+| `src/lib/domain/audit.ts` | Lab audit export (issue #25): per rubric version over a window of days. Served as JSON/CSV by `GET /api/v1/audit` and the dashboard's `/app/audit/export` |
 | `src/lib/rubric-eval.ts` | TS port of the worker's `rubric.py`, used by the rubric editor preview and the demo seed |
 | `src/lib/demo` | Demo mode: in-memory Supabase stand-in and seed |
 
