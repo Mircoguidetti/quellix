@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "required": ["video_id", "decision", "reasons", "checks", "rubric", "engine_version"],
   "properties": {
+    "schema_version": { "type": "integer", "minimum": 1, "description": "Version of this schema the decision was written with. Absent means 1. Version 2 added hint, segments and contributor_visible on reasons." },
     "video_id": { "type": "string" },
     "decision": { "enum": ["accept", "reject", "review"] },
     "reasons": {
@@ -19,7 +20,14 @@
           "check": { "$ref": "#/$defs/checkName" },
           "code": { "type": "string", "description": "Stable machine code, e.g. 'hands_visible.below_min'." },
           "message": { "type": "string", "description": "Human-readable reason shown to reviewers and contributors." },
-          "effect": { "enum": ["reject", "review"] }
+          "effect": { "enum": ["reject", "review"] },
+          "hint": { "type": "string", "maxLength": 200, "description": "One short, actionable sentence for the person who filmed the video, e.g. 'Keep both hands in frame: hold the camera lower.'" },
+          "segments": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/segment" },
+            "description": "Where in the video the problem happens, in seconds from the start. Empty or absent for reasons about the whole video."
+          },
+          "contributor_visible": { "type": "boolean", "description": "Whether the contributor may see this reason (message, hint, segments). Absent means true, except originality.*, *.error and pipeline.* reasons, which are always treated as hidden. Originality reasons are never visible: a contributor must not learn how duplicates are detected." }
         }
       }
     },
@@ -41,6 +49,15 @@
     "created_at": { "type": "string", "format": "date-time" }
   },
   "$defs": {
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_s", "end_s"],
+      "properties": {
+        "start_s": { "type": "number", "minimum": 0 },
+        "end_s": { "type": "number", "minimum": 0 }
+      }
+    },
     "checkName": {
       "enum": ["task_completed", "hands_visible", "framing", "technical", "privacy", "originality"]
     },
