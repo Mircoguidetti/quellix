@@ -1,0 +1,115 @@
+name: Viewpoint features
+
+# Viewpoint check (#79): extracts hand landmarks, faces and camera motion from labelled clips
+# (Egocentric-10K, HoloAssist, the founder's Pexels clips) and from Pexels search candidates, and
+# commits the small feature file + candidate contact sheets to eval/reports/viewpoint/ on the
+# branch it runs on. Posts the contact sheets on issue #79. Start it from the Actions tab, or
+# push a file under eval/requests/viewpoint/ to agent/viewpoint.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/viewpoint]
+    paths: ["eval/requests/viewpoint/**"]
+
+concurrency:
+  group: viewpoint-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  extract:
+    name: Extract viewpoint features
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for the hands detector
+        working-directory: .
+        run: sudo apt-get update -q && sudo apt-get install -y -q libegl1 libgles2 libgl1
+      - run: uv sync --extra data --extra mediapipe
+      - name: Hands model weights
+        run: uv run python -m quellix_hands.weights download
+      - name: Read the request
+        id: req
+        run: |
+          req="$(ls requests/viewpoint/*.json 2>/dev/null | sort | tail -n 1 || true)"
+          get() { [ -n "$req" ] && python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2], sys.argv[3]))" "$req" "$1" "$2" || echo "$2"; }
+          for k in ego10k:60 holoassist:30 candidates:30 mode:extract; do
+            echo "${k%%:*}=$(get "${k%%:*}" "${k#*:}")" >> "$GITHUB_OUTPUT"
+          done
+      - name: Extract
+        if: steps.req.outputs.mode == 'extract'
+        run: |
+          uv run python -m quellix_eval.viewpoint.extract --out out/viewpoint \
+            --features reports/viewpoint/features.jsonl.gz --sheets reports/viewpoint/candidates \
+            --ego10k "${{ steps.req.outputs.ego10k }}" --holoassist "${{ steps.req.outputs.holoassist }}" \
+            --candidates "${{ steps.req.outputs.candidates }}"
+      - name: Score the worker
+        if: steps.req.outputs.mode == 'score'
+        run: |
+          uv run python -m quellix_eval.viewpoint.report --features reports/viewpoint/features.jsonl.gz \
+            --out reports/viewpoint --overlays --work out/viewpoint \
+            --run "run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)"
+      - name: Commit to this branch
+        id: commit
+        if: always() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A eval/reports/viewpoint
+          git rm -q --cached eval/reports/viewpoint/comment.md 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -q -m "eval: viewpoint ${{ steps.req.outputs.mode }} (run ${{ github.run_id }})"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post on issue #79
+        if: always() && steps.commit.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: https://github.com/${{ github.repository }}/blob/${{ steps.commit.outputs.sha }}/eval/reports/viewpoint/
+          MODE: ${{ steps.req.outputs.mode }}
+        run: |
+          mkdir -p out
+          python3 - <<'PY'
+          import gzip, json, os, pathlib
+          base, mode = os.environ["BASE"], os.environ["MODE"]
+          if mode == "score" and pathlib.Path("reports/viewpoint/comment.md").exists():
+              s = pathlib.Path("reports/viewpoint/comment.md").read_text()
+          else:
+              p = pathlib.Path("reports/viewpoint/features.jsonl.gz")
+              clips = [json.loads(l) for l in gzip.open(p, "rt")] if p.exists() else []
+              by = {}
+              for c in clips:
+                  k = (c["source"].split(":")[0], c["label"])
+                  ok, n = by.get(k, (0, 0))
+                  by[k] = (ok + (not c.get("error")), n + 1)
+              s = f"Viewpoint feature extraction, run {os.environ.get('GITHUB_RUN_ID')}.\n\n"
+              s += "| source | label | extracted |\n|---|---|---|\n"
+              s += "".join(f"| {k[0]} | {k[1]} | {v[0]}/{v[1]} |\n" for k, v in sorted(by.items(), key=str))
+              errs = [c for c in clips if c.get("error")][:15]
+              if errs:
+                  s += "\nErrors:\n" + "".join(f"- `{c['clip_id']}`: {c['error'][:200]}\n" for c in errs)
+              sheets = sorted(pathlib.Path("reports/viewpoint/candidates").glob("*.jpg"))
+              if sheets:
+                  s += "\n### Pexels search candidates (unlabelled; 4 frames each)\n\n"
+                  s += "".join(f"![{x.stem}]({base}candidates/{x.name}?raw=true)\n" for x in sheets)
+          s = s.replace("{IMAGE_BASE}", base).replace(".jpg)", ".jpg?raw=true)").replace("?raw=true?raw=true", "?raw=true")
+          s += "\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n"
+          open("out/comment.md", "w").write(s[:60000])
+          PY
+          gh issue comment 79 -R "${{ github.repository }}" --body-file out/comment.md
