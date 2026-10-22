@@ -46,6 +46,7 @@ class DecodedVideo:
     sample_fps: float = DEFAULT_SAMPLE_FPS
     # (gray_t, gray_t+gap) uint8 pairs, MOTION_WIDTH px wide, for the framing check
     motion_pairs: list[tuple[np.ndarray, np.ndarray]] = field(default_factory=list)
+    motion_times: list[float] = field(default_factory=list)  # t_s of each pair's first frame
     fp_frames: list[Frame] = field(default_factory=list)
 
 
@@ -81,6 +82,7 @@ def decode(
             width, height = stream.codec_context.width, stream.codec_context.height
             frames: list[Frame] = []
             pairs: list[tuple[np.ndarray, np.ndarray]] = []
+            pair_times: list[float] = []
             fp_frames: list[Frame] = []
             pending: tuple[float, np.ndarray] | None = None
             next_i = 0  # sampling is on a fixed grid (k / fps), so two videos line up
@@ -103,6 +105,7 @@ def decode(
                     next_fp = max(next_fp + 1, int(t * FINGERPRINT_FPS + 1e-6) + 1)
                 if wants_pair:
                     pairs.append((pending[1], _small_gray(rgb)))
+                    pair_times.append(pending[0])
                     pending = None
                 if wants_sample:
                     frames.append(Frame(t, rgb))
@@ -119,4 +122,4 @@ def decode(
     if not frames:
         return DecodedVideo(path, VideoInfo(decodable=False), [], sample_fps)
     info = VideoInfo(True, round(duration, 3), width, height, fps)
-    return DecodedVideo(path, info, frames, sample_fps, pairs, fp_frames)
+    return DecodedVideo(path, info, frames, sample_fps, pairs, pair_times, fp_frames)
