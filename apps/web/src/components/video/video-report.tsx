@@ -3,7 +3,7 @@
 import { useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Collapsible } from "radix-ui";
-import { ChevronRight, CircleCheck, CircleDot, CircleMinus, CircleX, Clock, TriangleAlert, UserRound } from "lucide-react";
+import { ChevronRight, CircleCheck, CircleDot, CircleMinus, CircleX, Clock, EyeOff, Lightbulb, TriangleAlert, UserRound } from "lucide-react";
 import { DecisionBadge } from "@/components/app/decision-badge";
 import { Badge } from "@/components/ui/badge";
 import { Kbd } from "@/components/ui/kbd";
@@ -161,7 +161,24 @@ export function VideoReport({
                       <span className="font-mono text-[11px] font-normal text-muted-foreground">{m.effect === "reject" ? "rejects" : "to review"}</span>
                     </span>
                     <span className="mt-0.5 block text-[13.5px] leading-snug text-muted-foreground">{m.message}</span>
-                    <span className="mt-1 block font-mono text-[12px] text-foreground/80">{m.detail}</span>
+                    {m.hint && (
+                      <span className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug text-foreground/85">
+                        <Lightbulb className="mt-px size-3.5 shrink-0 text-brand" aria-hidden />
+                        <span>
+                          <span className="sr-only">Hint for the contributor: </span>
+                          {m.hint}
+                        </span>
+                      </span>
+                    )}
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-mono text-[12px] text-foreground/80">
+                      {m.detail}
+                      {!m.contributorVisible && (
+                        <span className="inline-flex items-center gap-1 text-muted-foreground" title="The contributor sees a generic message instead">
+                          <EyeOff className="size-3" aria-hidden />
+                          not shown to the contributor
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>

@@ -1,0 +1,42 @@
+[
+  {
+    "check": "framing",
+    "code": "framing.unstable",
+    "effect": "review",
+    "message": "Unstable camera 20% of the time (maximum 10%).",
+    "hint": "Keep your head steady, or mount the camera more firmly.",
+    "segments": [{ "start_s": 2.0, "end_s": 9.0 }]
+  },
+  {
+    "check": "privacy",
+    "code": "privacy.faces",
+    "effect": "review",
+    "message": "A face is visible at 00:05.",
+    "hint": "Point the camera away from people's faces.",
+    "segments": [{ "start_s": 5.0, "end_s": 5.5 }]
+  },
+  {
+    "check": "hands_visible",
+    "code": "hands_visible.below_min",
+    "effect": "reject",
+    "message": "Both hands visible 55% of the time during manipulation (minimum 80%).",
+    "hint": "Keep both hands in frame while you work: hold the camera a little lower.",
+    "segments": [{ "start_s": 12.0, "end_s": 18.5 }, { "start_s": 40.0, "end_s": 44.0 }]
+  },
+  {
+    "check": "technical",
+    "code": "technical.blurry",
+    "effect": "reject",
+    "message": "Blurry 12% of the time (maximum 5%).",
+    "hint": "Clean the lens and move the camera more slowly.",
+    "segments": []
+  },
+  {
+    "check": null,
+    "code": null,
+    "effect": "reject",
+    "message": "This video could not be accepted for a reason we cannot share. Ask the company that paid you for details.",
+    "hint": null,
+    "segments": []
+  }
+]

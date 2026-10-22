@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createFakeDb } from "@/test/fake-supabase";
-import { contributorReasons, getContestInfo } from "./contests";
+import { getContestInfo } from "./contests";
 
 const VIDEO = "11111111-1111-4111-8111-111111111111";
 const reasons = [
@@ -9,15 +9,6 @@ const reasons = [
 ];
 
 describe("contributor-facing reasons (issue #8)", () => {
-  it("keeps only the reasons that caused the rejection", () => {
-    expect(contributorReasons(reasons)).toEqual(["Both hands visible 61% of the time."]);
-  });
-
-  it("is safe on malformed input", () => {
-    expect(contributorReasons(null)).toEqual([]);
-    expect(contributorReasons([{ effect: "reject" }, null, { effect: "reject", message: 3 }])).toEqual([]);
-  });
-
   it("the contest page never shows review-only reasons", async () => {
     const { db } = createFakeDb((c) => {
       if (c.table === "videos") return { data: { id: VIDEO, org_id: "org", contributor_ref: "c_1" }, error: null };
@@ -26,7 +17,20 @@ describe("contributor-facing reasons (issue #8)", () => {
       return undefined;
     });
     const info = await getContestInfo(db, VIDEO);
-    expect(info?.reasons).toEqual(["Both hands visible 61% of the time."]);
+    expect(info?.feedback.map((f) => f.message)).toEqual(["Both hands visible 61% of the time."]);
+  });
+
+  it("never shows how a duplicate was detected", async () => {
+    const duplicate = { check: "originality", code: "originality.duplicate", message: "Matches video vid_secret; similarity 0.98.", effect: "reject" };
+    const { db } = createFakeDb((c) => {
+      if (c.table === "videos") return { data: { id: VIDEO, org_id: "org", contributor_ref: "c_1" }, error: null };
+      if (c.table === "decisions") return { data: { decision: "reject", reasons: [duplicate] }, error: null };
+      if (c.table === "reviews") return { data: null, error: null };
+      return undefined;
+    });
+    const info = await getContestInfo(db, VIDEO);
+    expect(info?.feedback).toHaveLength(1);
+    expect(JSON.stringify(info)).not.toContain("vid_secret");
   });
 
   it("offers nothing to contest when the video was not rejected", async () => {

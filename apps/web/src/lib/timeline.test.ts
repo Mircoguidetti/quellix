@@ -52,3 +52,32 @@ describe("moment times", () => {
     expect(momentClock(12.4)).toBe("00:12");
   });
 });
+
+describe("schema v2 segments and hints (issue #22)", () => {
+  it("uses the reason's segments, one moment each, and carries the hint", () => {
+    const moments = flaggedMoments(
+      [
+        {
+          check: "hands_visible",
+          code: "hands_visible.below_min",
+          message: "Both hands visible 55%",
+          effect: "reject",
+          hint: "Hold the camera lower.",
+          segments: [{ start_s: 40, end_s: 44 }, { start_s: 12, end_s: 18.5 }],
+        },
+        { check: "originality", code: "originality.duplicate", message: "Already delivered", effect: "reject", segments: [{ start_s: 0, end_s: 30 }] },
+      ],
+      checks,
+      60,
+    );
+    expect(moments.map((m) => [m.code, m.t, m.end, m.detail])).toEqual([
+      ["originality.duplicate", 0, 30, "00:00–00:30"],
+      ["hands_visible.below_min", 12, 18.5, "00:12–00:18 · 2 of 2"],
+      ["hands_visible.below_min", 40, 44, "00:40–00:44 · 1 of 2"],
+    ]);
+    expect(moments[1].hint).toBe("Hold the camera lower.");
+    expect(moments[1].contributorVisible).toBe(true);
+    expect(moments[0].contributorVisible).toBe(false);
+    expect(moments[0].hint).toBeNull();
+  });
+});
