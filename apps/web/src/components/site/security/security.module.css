@@ -1,0 +1,98 @@
+/*
+ * Security's orchestrated moment: a dot carries a video along its life. Static styles are the
+ * final state (every node reached); keyframes only run under [data-play].
+ * Cycle: 9s. Main dot reaches Analysis at 16%, Decision at 34%, Deleted at 52%.
+ * Branch dot leaves Decision at 34%, reaches Waiting at 50%, waits, reaches Deleted at 86%.
+ */
+
+.dot {
+  left: 87.5%;
+  opacity: 0;
+}
+[data-play] .dot {
+  animation: mainDot 9s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+@keyframes mainDot {
+  0% { left: 12.5%; opacity: 1; }
+  10% { left: 12.5%; }
+  16%, 22% { left: 37.5%; }
+  34%, 40% { left: 62.5%; }
+  52% { left: 87.5%; opacity: 1; }
+  60%, 100% { left: 87.5%; opacity: 0; }
+}
+
+.branchDot {
+  left: 87.5%;
+  top: var(--row2);
+  opacity: 0;
+}
+[data-play] .branchDot {
+  animation: branchDot 9s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+@keyframes branchDot {
+  0%, 33% { left: 62.5%; top: var(--row1); opacity: 0; }
+  34% { left: 62.5%; top: var(--row1); opacity: 1; }
+  50%, 74% { left: 62.5%; top: var(--row2); opacity: 1; }
+  86% { left: 87.5%; top: var(--row2); opacity: 1; }
+  92%, 100% { left: 87.5%; top: var(--row2); opacity: 0; }
+}
+
+/* Mobile: the dot runs down the left rail. */
+.vdot {
+  top: 100%;
+  opacity: 0;
+}
+[data-play] .vdot {
+  animation: vDot 9s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+@keyframes vDot {
+  0%, 10% { top: 0%; opacity: 1; }
+  16%, 22% { top: 33.3%; }
+  34%, 40% { top: 66.6%; }
+  52% { top: 100%; opacity: 1; }
+  60%, 100% { top: 100%; opacity: 0; }
+}
+
+/* Nodes light up when the dot reaches them. */
+[data-play] .n1 { animation: n1 9s linear infinite; }
+[data-play] .n2 { animation: n2 9s linear infinite; }
+[data-play] .n3 { animation: n3 9s linear infinite; }
+[data-play] .n4 { animation: n4 9s linear infinite; }
+[data-play] .n5 { animation: n5 9s linear infinite; }
+[data-play] .n6 { animation: n6 9s linear infinite; }
+@keyframes n1 {
+  0%, 100% { opacity: 1; }
+}
+@keyframes n2 {
+  0%, 15% { opacity: 0.35; }
+  17%, 100% { opacity: 1; }
+}
+@keyframes n3 {
+  0%, 33% { opacity: 0.35; }
+  35%, 100% { opacity: 1; }
+}
+@keyframes n4 {
+  0%, 51% { opacity: 0.35; }
+  53%, 100% { opacity: 1; }
+}
+@keyframes n5 {
+  0%, 49% { opacity: 0.35; }
+  51%, 100% { opacity: 1; }
+}
+@keyframes n6 {
+  0%, 85% { opacity: 0.35; }
+  87%, 100% { opacity: 1; }
+}
+
+/* The 14-day bar fills while the branch dot waits. */
+.days {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+[data-play] .days {
+  animation: days 9s linear infinite;
+}
+@keyframes days {
+  0%, 50% { transform: scaleX(0); }
+  74%, 100% { transform: scaleX(1); }
+}
