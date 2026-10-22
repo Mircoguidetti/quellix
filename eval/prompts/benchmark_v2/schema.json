@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "required": ["task_completed", "hands_visible", "framing", "technical", "privacy"],
+  "properties": {
+    "task_completed": {
+      "type": "object",
+      "required": ["completed", "confidence"],
+      "properties": {
+        "completed": {"type": "boolean", "nullable": true},
+        "confidence": {"type": "number"},
+        "start_s": {"type": "number", "nullable": true},
+        "end_s": {"type": "number", "nullable": true}
+      }
+    },
+    "hands_visible": {
+      "type": "object",
+      "required": ["ratio_both_manipulation", "ratio_any_manipulation", "ratio_both_whole",
+                   "ratio_any_whole", "manipulation_detected", "confidence"],
+      "properties": {
+        "ratio_both_manipulation": {"type": "number"},
+        "ratio_any_manipulation": {"type": "number"},
+        "ratio_both_whole": {"type": "number"},
+        "ratio_any_whole": {"type": "number"},
+        "manipulation_detected": {"type": "boolean"},
+        "confidence": {"type": "number"}
+      }
+    },
+    "framing": {
+      "type": "object",
+      "required": ["off_target_ratio", "unstable_ratio", "confidence"],
+      "properties": {
+        "off_target_ratio": {"type": "number"},
+        "unstable_ratio": {"type": "number"},
+        "confidence": {"type": "number"}
+      }
+    },
+    "technical": {
+      "type": "object",
+      "required": ["blur_ratio", "bad_exposure_ratio", "confidence"],
+      "properties": {
+        "blur_ratio": {"type": "number"},
+        "bad_exposure_ratio": {"type": "number"},
+        "confidence": {"type": "number"}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["faces", "documents", "screens", "confidence"],
+      "properties": {
+        "faces": {"type": "array", "items": {"type": "object", "properties": {"t_s": {"type": "number"}}}},
+        "documents": {"type": "array", "items": {"type": "object", "properties": {"t_s": {"type": "number"}}}},
+        "screens": {"type": "array", "items": {"type": "object", "properties": {"t_s": {"type": "number"}}}},
+        "confidence": {"type": "number"}
+      }
+    }
+  }
+}

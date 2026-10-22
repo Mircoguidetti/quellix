@@ -1,0 +1,14 @@
+{
+  "id": "rub_benchmark_v2_hands",
+  "version": 1,
+  "name": "Benchmark v2: hand visibility only",
+  "task": { "description": "Replaced per clip by the HoloAssist task and its steps." },
+  "checks": {
+    "task_completed": { "enabled": false },
+    "hands_visible": { "enabled": true, "critical": true, "scope": "manipulation", "require_both": true, "min_ratio": 0.8 },
+    "framing": { "enabled": false },
+    "technical": { "enabled": false },
+    "privacy": { "enabled": false },
+    "originality": { "enabled": false }
+  }
+}
