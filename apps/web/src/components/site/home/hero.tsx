@@ -1,17 +1,11 @@
-import { Code2, Hand, ListChecks, MonitorCheck, ScanFace, Trash2 } from "lucide-react";
+import { Code2, MonitorCheck, Trash2 } from "lucide-react";
 import { ButtonLink, ICON, Wrap } from "../primitives";
-import { HeroCanvas } from "./hero-canvas";
+import { HeroScreen } from "./hero-screen";
 
 const TRUST = [
   { icon: Code2, label: "API and SDKs" },
   { icon: MonitorCheck, label: "Review console" },
   { icon: Trash2, label: "Videos deleted after analysis" },
-];
-
-const FIELDS = [
-  { icon: ListChecks, label: "Steps done", value: "3 of 3" },
-  { icon: Hand, label: "Hands on the work", value: "92%", accent: true },
-  { icon: ScanFace, label: "Personal data", value: "none" },
 ];
 
 /** The only hero on the site: headline, the viewfinder canvas and the decision card. */
@@ -47,39 +41,7 @@ export function Hero() {
           </ul>
         </div>
 
-        <div className="relative mx-auto mt-14 max-w-[1040px]">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] border border-hairline bg-[#050607] sm:aspect-[16/9]">
-            <HeroCanvas />
-            <div aria-hidden className="absolute inset-x-0 top-0 flex items-center justify-between p-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/60 sm:p-5">
-              <span className="inline-flex items-center gap-2">
-                <i className="size-2 rounded-full bg-no motion-safe:animate-pulse" />
-                REC 00:24
-              </span>
-              <span>load the dishwasher</span>
-            </div>
-          </div>
-          <div
-            className="relative mx-4 -mt-20 rounded-2xl border border-hairline bg-panel/95 p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur sm:absolute sm:bottom-8 sm:right-8 sm:m-0 sm:w-[300px]"
-            aria-label="Example decision"
-            role="group"
-          >
-            <div className="mb-2 flex items-center justify-between border-b border-hairline pb-3">
-              <span className="font-mono text-[13px] text-muted-foreground">v_88213</span>
-              <span className="rounded-md bg-ok/12 px-2 py-0.5 font-mono text-[12px] font-medium text-ok">accept</span>
-            </div>
-            <dl className="flex flex-col">
-              {FIELDS.map(({ icon: Icon, label, value, accent }) => (
-                <div key={label} className="flex items-center justify-between gap-3 py-2 text-[14px]">
-                  <dt className="inline-flex items-center gap-2 text-muted-foreground">
-                    <Icon {...ICON} className="size-4" />
-                    {label}
-                  </dt>
-                  <dd className={accent ? "font-mono text-[13px] text-brand" : "font-mono text-[13px] text-foreground"}>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
+        <HeroScreen />
       </Wrap>
     </section>
   );

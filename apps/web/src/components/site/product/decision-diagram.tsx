@@ -5,6 +5,8 @@ import type { LucideIcon } from "lucide-react";
 import { CircleCheck, CircleX, Copy, Crosshair, Gauge, Hand, ListChecks, Play, ScanFace, UserRoundSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Example, ICON } from "../primitives";
+import { ClipPlayer, useClip } from "../clip-player";
+import { SITE_CLIPS } from "../clips";
 import { usePlayback } from "../use-playback";
 
 /**
@@ -38,7 +40,17 @@ const EXAMPLES: { id: string; failing: CheckKey[]; outcome: Outcome; line: strin
   { id: "v_88213", failing: [], outcome: "accept", line: "every enabled check passed · no reasons" },
 ];
 
-type Active = { kind: "check"; key: CheckKey } | { kind: "example"; index: number };
+type Active = { kind: "check"; key: CheckKey } | { kind: "example"; failing: CheckKey[] };
+
+/** Decision check names (decision.schema.json) to the diagram's checks. */
+const CHECK_OF: Record<string, CheckKey> = {
+  hands_visible: "hands",
+  task_completed: "task",
+  privacy: "privacy",
+  originality: "originality",
+  framing: "framing",
+  technical: "technical",
+};
 type Edge = { id: string; from: string; to: string };
 
 const EDGES: Edge[] = [
@@ -53,7 +65,7 @@ function lit(active: Active) {
   const nodes = new Set<string>();
   const pass = new Set<string>();
   const edges = new Map<string, string>();
-  const failing = active.kind === "check" ? [active.key] : EXAMPLES[active.index].failing;
+  const failing = active.kind === "check" ? [active.key] : active.failing;
   if (active.kind === "example" && failing.length === 0) {
     for (const c of CHECKS) {
       pass.add(`check-${c.key}`);
@@ -130,10 +142,19 @@ export function DecisionDiagram() {
     return () => clearInterval(t);
   }, [playing, interacting]);
 
-  const active: Active = interacting ? { kind: "check", key: interacting } : { kind: "example", index: example };
+  // Real clips for the three examples, when #60's footage is configured.
+  const clips = { reject: useClip(SITE_CLIPS.decision.reject), review: useClip(SITE_CLIPS.decision.review), accept: useClip(SITE_CLIPS.decision.accept) };
+
+  const ex = EXAMPLES[example];
+  const exClip = clips[ex.outcome];
+  const exSide = exClip && exClip !== "missing" && exClip.decision ? exClip : null;
+  // With a real clip, its own reasons light the path.
+  const exFailing = exSide ? [...new Set(exSide.decision!.reasons.map((r) => CHECK_OF[r.check]).filter(Boolean))] : ex.failing;
+  const exLine = exSide ? (exSide.decision!.reasons[0]?.message ?? "every enabled check passed · no reasons") : ex.line;
+
+  const active: Active = interacting ? { kind: "check", key: interacting } : { kind: "example", failing: exFailing };
   const { nodes, pass, edges } = lit(active);
   const check = interacting ? CHECKS.find((c) => c.key === interacting)! : null;
-  const ex = EXAMPLES[example];
 
   return (
     <div ref={rootRef} className="rounded-[24px] border border-hairline bg-panel">
@@ -151,11 +172,17 @@ export function DecisionDiagram() {
             </>
           ) : (
             <>
-              <Play {...ICON} className="size-4 shrink-0 text-muted-foreground" />
+              {exSide ? (
+                <span className="relative block aspect-video w-24 shrink-0 overflow-hidden rounded-md border border-hairline">
+                  <ClipPlayer key={exSide.id} side={exSide} />
+                </span>
+              ) : (
+                <Play {...ICON} className="size-4 shrink-0 text-muted-foreground" />
+              )}
               <p className="min-w-0 text-[14px]">
-                <span className="font-mono text-[13px]">{ex.id}</span>
+                <span className="font-mono text-[13px]">{exSide ? exSide.id : ex.id}</span>
                 <span className="mx-2 text-muted-foreground">·</span>
-                <span className="font-mono text-[12.5px] text-muted-foreground">{ex.line}</span>
+                <span className="font-mono text-[12.5px] text-muted-foreground">{exLine}</span>
               </p>
             </>
           )}
