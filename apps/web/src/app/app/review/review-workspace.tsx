@@ -71,7 +71,7 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
       setSelectedId(remaining[Math.min(position, remaining.length - 1)]?.video.id ?? null);
       adjust(-1);
       setBusy(true);
-      const res = await submitReview(item.video.id, { decision, note }).catch(() => ({ ok: false as const, error: "We could not reach Quellix. Check your connection." }));
+      const res = await submitReview(item.video.id, { decision, note }).catch(() => ({ ok: false as const, error: "We could not reach Ormes. Check your connection." }));
       setBusy(false);
       const restore = () => {
         setItems((list) => {
@@ -142,7 +142,7 @@ export function ReviewWorkspace({ initialItems, rubricNames }: { initialItems: R
         <EmptyState
           icon={initialItems.length ? PartyPopper : Inbox}
           title={initialItems.length ? "All caught up" : "Nothing to review"}
-          description="Doubtful videos land here with the reason Quellix could not decide. Clear cases are accepted or rejected for you."
+          description="Doubtful videos land here with the reason Ormes could not decide. Clear cases are accepted or rejected for you."
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Button asChild variant="secondary">

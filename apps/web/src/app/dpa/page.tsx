@@ -11,7 +11,7 @@ export default function DpaPage() {
 
       <h2>1. Parties and roles</h2>
       <p>
-        The customer (the data collector) is the controller of the videos it uploads. Quellix acts as processor and
+        The customer (the data collector) is the controller of the videos it uploads. Ormes acts as processor and
         processes them only on the customer&apos;s documented instructions.
       </p>
 

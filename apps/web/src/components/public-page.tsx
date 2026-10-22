@@ -10,13 +10,13 @@ export function PublicShell({ children, wide = false }: { children: React.ReactN
         className="pointer-events-none absolute left-1/2 top-[-30%] aspect-square w-[min(900px,150vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(143,180,255,0.12),rgba(143,180,255,0))]"
       />
       <header className="relative mx-auto flex h-16 w-full max-w-[1120px] items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="rounded-md" aria-label="Quellix home">
+        <Link href="/" className="rounded-md" aria-label="Ormes home">
           <Logo />
         </Link>
       </header>
       <main className={`relative mx-auto w-full flex-1 px-4 pb-20 pt-10 sm:px-6 ${wide ? "max-w-[880px]" : "max-w-[720px]"}`}>{children}</main>
       <footer className="relative mx-auto flex w-full max-w-[1120px] flex-wrap justify-between gap-4 border-t border-border px-4 py-7 text-[14px] text-muted-foreground sm:px-6">
-        <span className="font-semibold tracking-[0.14em]">QUELLIX</span>
+        <span className="font-semibold tracking-[0.14em]">ORMES</span>
         <nav aria-label="Footer" className="flex gap-6">
           <Link className="hover:text-foreground" href="/data">
             Data handling

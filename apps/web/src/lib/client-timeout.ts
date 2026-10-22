@@ -15,4 +15,4 @@ export function clientTimeout<T>(promise: Promise<T>, ms = 20_000): Promise<T> {
   });
 }
 
-export const NETWORK_ERROR = "We could not reach Quellix. Check your connection and try again.";
+export const NETWORK_ERROR = "We could not reach Ormes. Check your connection and try again.";

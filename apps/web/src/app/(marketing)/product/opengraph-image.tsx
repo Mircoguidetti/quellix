@@ -1,6 +1,6 @@
 import { ogImage, ogSize } from "@/components/marketing/og-image";
 
-export const alt = "Quellix Product";
+export const alt = "Ormes Product";
 export const size = ogSize;
 export const contentType = "image/png";
 

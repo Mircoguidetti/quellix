@@ -10,7 +10,7 @@ export function ProductPage() {
         <div className="hc">{" "}
           <div className="eyebrow">Product</div>{" "}
           <h1>One spec, applied the same way to every video.</h1>{" "}
-          <p className="hl">How Quellix decides, what it measures, and the tools around the decision: rubrics, the review console, contests and your lab’s outcomes.</p>{" "}
+          <p className="hl">How Ormes decides, what it measures, and the tools around the decision: rubrics, the review console, contests and your lab’s outcomes.</p>{" "}
           <nav className="toc" aria-label="On this page">
             <a href="#rule">The decision</a>
             <a href="#checks">Checks</a>
@@ -100,7 +100,7 @@ export function ProductPage() {
               <div>
                 <h3>{"From the lab\u2019s spec "}
                   <span className="badge">soon</span></h3>
-                <p>Paste the lab’s guidelines and Quellix drafts the rubric, each value tied to the line it came from. You review and save.</p></div>{" "}
+                <p>Paste the lab’s guidelines and Ormes drafts the rubric, each value tied to the line it came from. You review and save.</p></div>{" "}
               <div>
                 <h3>{"A library of specs "}
                   <span className="badge">soon</span></h3>
@@ -112,10 +112,10 @@ export function ProductPage() {
         <div className="wrap">{" "}
           <h2>The review console.</h2>{" "}
           <p className="lead">Only doubtful videos arrive here, each with its reasons pinned to the timeline.</p>{" "}
-          <ReviewMock className="app" role="img" aria-label="The Quellix review screen: a queue of doubtful videos on the left, the selected video with its flagged moments and Accept and Reject buttons on the right">{" "}
+          <ReviewMock className="app" role="img" aria-label="The Ormes review screen: a queue of doubtful videos on the left, the selected video with its flagged moments and Accept and Reject buttons on the right">{" "}
             <aside>
               <div className="logo">
-                <i aria-hidden="true"></i>QUELLIX</div>{" "}
+                <i aria-hidden="true"></i>ORMES</div>{" "}
               <a>
                 <svg viewBox="0 0 24 24">
                   <rect x="3" y="3" width="7" height="9" rx="1"></rect>
@@ -239,7 +239,7 @@ export function ProductPage() {
       <section className="sec" id="lab">
         <div className="wrap">{" "}
           <h2>Measured against your lab, not against itself.</h2>{" "}
-          <p className="lead">Send the lab’s accept or reject for delivered videos. Quellix reports precision and recall on rejections against your reject rate, per rubric version, and proposes threshold changes as a new version you approve.</p>{" "}
+          <p className="lead">Send the lab’s accept or reject for delivered videos. Ormes reports precision and recall on rejections against your reject rate, per rubric version, and proposes threshold changes as a new version you approve.</p>{" "}
           <div className="dual">{" "}
             <div className="pn">
               <div className="x-win">

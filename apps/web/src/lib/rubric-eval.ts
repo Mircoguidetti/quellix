@@ -1,5 +1,5 @@
 /**
- * Rubric evaluation, ported from services/worker/src/quellix_worker/rubric.py.
+ * Rubric evaluation, ported from services/worker/src/ormes_worker/rubric.py.
  *
  * The worker is the source of truth for real decisions. The dashboard uses this copy only to
  * preview what an edited rubric would do to measurements we already have (rubric editor) and to

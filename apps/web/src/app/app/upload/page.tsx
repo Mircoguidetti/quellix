@@ -23,7 +23,7 @@ export default function UploadPage() {
           </Link>
         }
         title="Upload videos"
-        description="Files go straight to encrypted storage, are analysed, then deleted. Add the lab's outcome if you already know it, to measure Quellix against it."
+        description="Files go straight to encrypted storage, are analysed, then deleted. Add the lab's outcome if you already know it, to measure Ormes against it."
       />
       <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
         <Content />

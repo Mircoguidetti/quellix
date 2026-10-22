@@ -73,7 +73,7 @@ export function AppShell({ user, org, memberships, reviewCount, initialCollapsed
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="dark border-r border-border bg-background text-foreground lg:hidden">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <SheetDescription className="sr-only">Move between sections of Quellix</SheetDescription>
+            <SheetDescription className="sr-only">Move between sections of Ormes</SheetDescription>
             <SidebarBody user={user} org={org} memberships={memberships} collapsed={false} onNavigate={() => setMobileOpen(false)} demo={demo} />
           </SheetContent>
         </Sheet>
@@ -88,7 +88,7 @@ export function AppShell({ user, org, memberships, reviewCount, initialCollapsed
             >
               <Menu className="size-5" aria-hidden />
             </button>
-            <Link href="/app" className="rounded-md" aria-label="Quellix overview">
+            <Link href="/app" className="rounded-md" aria-label="Ormes overview">
               <Logo className="text-[14px]" />
             </Link>
             <span className="ml-auto max-w-[45%] truncate text-[13px] text-muted-foreground">{org.orgName}</span>
@@ -126,7 +126,7 @@ function SidebarBody({
     <div className="flex h-full flex-col">
       <div className={cn("flex h-14 items-center", collapsed ? "justify-center px-0" : "justify-between pl-4 pr-2")}>
         {!collapsed && (
-          <Link href="/app" className="rounded-md" onClick={onNavigate} aria-label="Quellix overview">
+          <Link href="/app" className="rounded-md" onClick={onNavigate} aria-label="Ormes overview">
             <Logo className="text-[14px]" />
           </Link>
         )}

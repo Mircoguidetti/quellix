@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { hashApiKey, API_KEY_PREFIX } from "@/lib/api-keys";
+import { hashApiKey, hasApiKeyPrefix } from "@/lib/api-keys";
 import { errors } from "./errors";
 
 export type ApiContext = { orgId: string; keyId: string };
@@ -8,7 +8,7 @@ export type ApiContext = { orgId: string; keyId: string };
 export async function authenticate(req: Request, db: SupabaseClient): Promise<ApiContext> {
   const header = req.headers.get("authorization") ?? "";
   const match = /^Bearer\s+(\S+)$/i.exec(header);
-  if (!match || !match[1].startsWith(API_KEY_PREFIX)) throw errors.unauthorized();
+  if (!match || !hasApiKeyPrefix(match[1])) throw errors.unauthorized();
 
   const { data, error } = await db
     .from("api_keys")

@@ -68,7 +68,7 @@ export function UploadForm({ rubrics }: { rubrics: Rubric[] }) {
         content_type: it.file.type,
         size_bytes: it.file.size,
         ...(lab !== "unknown" ? { lab_outcome: { outcome: lab } } : {}),
-      }).catch(() => ({ ok: false as const, error: "We could not reach Quellix." }));
+      }).catch(() => ({ ok: false as const, error: "We could not reach Ormes." }));
       if (!start.ok) {
         update(it.key, { state: "error", error: start.error });
         continue;

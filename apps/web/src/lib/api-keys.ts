@@ -1,6 +1,13 @@
 import { createHash, randomBytes } from "node:crypto";
 
-export const API_KEY_PREFIX = "qx_live_";
+/** New keys. */
+export const API_KEY_PREFIX = "orm_live_";
+/** Keys issued before the rename keep working. */
+export const LEGACY_API_KEY_PREFIX = "qx_live_";
+
+export function hasApiKeyPrefix(key: string): boolean {
+  return key.startsWith(API_KEY_PREFIX) || key.startsWith(LEGACY_API_KEY_PREFIX);
+}
 
 export type GeneratedKey = { key: string; prefix: string; hash: string };
 

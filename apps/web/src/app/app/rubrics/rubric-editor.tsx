@@ -65,7 +65,7 @@ export function RubricEditor({ rubricId, currentVersion, initial, history, sampl
   const save = async () => {
     setSaving(true);
     setSaveError(null);
-    const res = await saveRubric(rubricId, input).catch(() => ({ ok: false as const, error: "We could not reach Quellix. Try again." }));
+    const res = await saveRubric(rubricId, input).catch(() => ({ ok: false as const, error: "We could not reach Ormes. Try again." }));
     setSaving(false);
     if (!res.ok) return setSaveError(res.error);
     setConfirming(false);
