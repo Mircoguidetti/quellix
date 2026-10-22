@@ -57,7 +57,7 @@ class FakeNet:
         dst.write_bytes(b"x" * 60_000)
 
 
-PICK = px.PICKS[0]
+PICK = px.THIRD_PERSON[0]
 
 
 def test_fetch_pick_uses_the_page_link_first(tmp_path):
@@ -86,10 +86,11 @@ def test_fetch_pick_reports_every_exact_error(tmp_path):
     assert "PEXELS_API_KEY is not set" in msg
 
 
-def test_the_final_list_is_the_founders():
-    assert [p.pexels_id for p in px.PICKS] == [
+def test_the_landing_clip_and_the_third_person_set():
+    assert px.LANDING.pexels_id == 37443407 and px.LANDING.orientation == "landscape"
+    assert [p.pexels_id for p in px.THIRD_PERSON] == [
         7308220, 4520150, 11102752, 5592524, 4440711, 7641501, 9141844]
-    assert [p.orientation for p in px.PICKS].count("portrait") == 2
+    assert [p.orientation for p in px.THIRD_PERSON].count("portrait") == 2
 
 
 def test_fetch_pexels_keeps_going_after_one_failure(tmp_path):
@@ -99,7 +100,8 @@ def test_fetch_pexels_keeps_going_after_one_failure(tmp_path):
                 raise OSError("boom")
             super().download(url, dst, headers)
 
-    got, errors = sc.fetch_pexels(Flaky(page=PAGE), tmp_path, px.PICKS[:2], log=lambda s: None)
+    got, errors = sc.fetch_pexels(
+        Flaky(page=PAGE), tmp_path, px.THIRD_PERSON[:2], log=lambda s: None)
     assert [g.clip_id for g in got] == ["pexels_7308220"] and len(errors) == 1
     assert "pexels_4520150" in errors[0] and "boom" in errors[0]
     s = got[0].source
@@ -216,10 +218,12 @@ def test_produce_drops_a_clip_the_worker_rejects_and_adds_defective_copies(tmp_p
     assert hand["decision"]["reasons"][0]["hint"] == "Keep both hands in frame."   # untouched
     assert hand["decision"]["reasons"][0]["segments"] == [{"start_s": 0.5, "end_s": 1.5}]
     assert hand["variant"]["of"] == "clip-01" and hand["variant"]["kind"] == "hand"
-    assert hand["variant"]["tried"][0]["decision"] == "review"       # first recipe already flagged
+    assert hand["variant"]["tried"][0]["decision"] == "review"       # the first recipe shows it
+    assert len(hand["variant"]["tried"]) == 1 and hand["variant"]["tried"][0]["rank"] == 3
     dark = json.loads((final / "clip-01-dark.json").read_text())
-    assert [t["recipe"] for t in dark["variant"]["tried"]][-1] == dark["variant"]["recipe"]
-    assert len(dark["variant"]["tried"]) == 3        # none flagged: the strongest is kept
+    assert len(dark["variant"]["tried"]) == 3        # the worker never flags it: all were tried
+    assert dark["variant"]["recipe"] == dark["variant"]["tried"][0]["recipe"]   # first on ties
+    assert not list(final.glob(".variant-*"))
     entry = {c["id"]: c for c in manifest["clips"]}["clip-01-hand"]
     assert entry["variant_of"] == "clip-01" and entry["author"] == "Ada Lens"
     assert entry["page_url"].startswith("https://www.pexels.com/")
@@ -238,3 +242,70 @@ def test_author_from_the_other_formats_pexels_pages_use():
     assert px.meta_from_page(links, "p").author == "@dee"
     none = px.meta_from_page('<html><body>hello "creator": 3</body></html>', "p")
     assert none.author.startswith("unknown") and "creator" in none.debug
+
+
+def test_crop_plan_centres_the_9_16_window_and_moves_it_only_to_keep_the_hands():
+    plan = sc.crop_plan(1920, 1080, None)
+    assert plan["width_frac"] == pytest.approx(0.3164, abs=1e-3)
+    assert plan["x0"] == pytest.approx((1 - 0.3164) / 2, abs=1e-3) and not plan["moved"]
+    inside = sc.crop_plan(1920, 1080, (0.4, 0.6))
+    assert inside["centre_crop_keeps_hands"] and not inside["moved"]
+    right = sc.crop_plan(1920, 1080, (0.6, 0.85))             # the hands sit right of the centre
+    assert right["moved"] and not right["centre_crop_keeps_hands"]
+    assert right["x0"] <= 0.6 and right["x0"] + right["width_frac"] >= 0.85
+    wide = sc.crop_plan(1920, 1080, (0.1, 0.9))               # cannot hold them: stays centred
+    assert not wide["moved"] and not wide["centre_crop_keeps_hands"]
+    assert sc.crop_plan(1080, 1920, None)["width_frac"] == 1.0   # already portrait: no crop
+
+
+def test_variant_rank_prefers_the_defect_that_shows_as_intended():
+    def d(label, *checks):
+        return {"decision": label, "reasons": [{"check": c} for c in checks]}
+
+    assert sc.variant_rank("hand", None) == 0
+    assert sc.variant_rank("hand", d("accept")) == 0
+    assert sc.variant_rank("hand", d("reject", "technical")) == 1
+    assert sc.variant_rank("hand", d("review", "hands_visible", "technical")) == 2
+    assert sc.variant_rank("hand", d("review", "hands_visible")) == 3
+    assert sc.variant_rank("dark", d("reject", "technical")) == 2
+
+
+def test_landing_produces_a_mobile_crop_and_defective_copies(tmp_path, monkeypatch):
+    monkeypatch.setattr(sc, "DEFECT_SECONDS", 1.0)
+    monkeypatch.setattr(sc, "MOBILE_WIDTH", 40)
+    src = info("landing")
+    cand = sc.analyse("pexels_37443407", source_video(tmp_path, "land", n=36), FakeHands(),
+                      label_worker(), sc.DEFAULT_RUBRIC, source=src)
+    assert cand.hand_extent is not None and 0 <= cand.hand_extent[0] < cand.hand_extent[1] <= 1
+    final = tmp_path / "final"
+    manifest = sc.produce([cand], FakeHands(), label_worker(), sc.DEFAULT_RUBRIC, final, 1,
+                          width=160, variants_of=1, mobile_crop=True)
+    ids = {c["id"]: c for c in manifest["clips"]}
+    assert list(ids) == ["clip-01", "clip-01-mobile", "clip-01-hand", "clip-01-dark"]
+    mobile = ids["clip-01-mobile"]
+    assert mobile["height"] > mobile["width"] and mobile["variant_kind"] == "mobile_crop"
+    assert 0.0 <= mobile["crop"]["both_hands_whole_share"] <= 1.0
+    side = json.loads((final / "clip-01-mobile.json").read_text())
+    assert side["variant"]["kind"] == "mobile_crop"
+    assert side["video"]["height"] > side["video"]["width"]
+    assert ids["clip-01-hand"]["variant_kind"] == "hand"
+    assert "clip-01" in manifest["clips"][0]["id"] and "variant_of" not in manifest["clips"][0]
+
+
+def test_third_person_manifest_round_trips_and_keeps_no_truth(tmp_path):
+    from quellix_eval.datasets import third_person as tp
+
+    pick = px.THIRD_PERSON[0]
+    video = source_video(tmp_path, "tp")
+    cand = sc.analyse(pick.clip_id, video, FakeHands(), label_worker(("tp",)),
+                      sc.DEFAULT_RUBRIC, source=info("tp"))
+    rec = sc.third_person_record(cand, pick, "v1")
+    out = tmp_path / "test_sets" / "tp.jsonl"
+    assert tp.write_records([rec], out) == 1
+    back = tp.load_records(out)[0]
+    assert back.viewpoint == "third_person" and back.truth is None
+    assert back.page_url == pick.page and back.author == "Ada Lens"
+    assert back.observed.decision == "reject" and back.observed.reasons[0]["code"] == "privacy.face"
+    assert "file" not in out.read_text() and not list(out.parent.glob("*.mp4"))
+    with pytest.raises(ValueError):
+        tp.ThirdPersonRecord.model_validate({**rec.model_dump(), "viewpoint": "first_person"})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxRect, frameAt, groupClips, sourcesLabel, stepAt, type FrameRow, type ManifestClip } from "./clip-overlay";
+import { boxRect, frameAt, groupClips, sourcesLabel, splitVariants, stepAt, type FrameRow, type ManifestClip } from "./clip-overlay";
 
 const row = (t: number): FrameRow => ({
   t,
@@ -93,5 +93,13 @@ describe("groupClips", () => {
     expect(groups.map((g) => g.clip.id)).toEqual(["clip-01", "clip-02"]);
     expect(groups[0].variants.map((v) => v.id)).toEqual(["clip-01-hand", "clip-01-dark"]);
     expect(groups[1].variants).toEqual([]);
+  });
+
+  it("separates the mobile crop from the synthetic defects", () => {
+    const m = { ...clip("clip-01-mobile", "clip-01"), variant_kind: "mobile_crop" as const };
+    const h = { ...clip("clip-01-hand", "clip-01"), variant_kind: "hand" as const };
+    const { mobile, defects } = splitVariants([m, h]);
+    expect(mobile.map((c) => c.id)).toEqual(["clip-01-mobile"]);
+    expect(defects.map((c) => c.id)).toEqual(["clip-01-hand"]);
   });
 });

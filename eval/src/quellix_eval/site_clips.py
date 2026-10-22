@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field, replace
@@ -233,6 +234,7 @@ class Candidate:
     hist: np.ndarray | None = field(default=None, repr=False)
     rejected: str | None = None       # why it is not eligible
     source: SourceInfo | None = None
+    hand_extent: tuple[float, float] | None = None    # x-range (0-1) the hands span in the window
 
     @property
     def score(self) -> float:
@@ -322,6 +324,15 @@ def factory_of(clip_id: str) -> str:
     return m.group(0) if m else clip_id
 
 
+def hand_extent(per_frame: Sequence[Any]) -> tuple[float, float] | None:
+    """The horizontal range (0-1) the hands' boxes cover over these frames, if any is seen."""
+    xs = [b for f in per_frame for side in ("left", "right")
+          if (b := hand_box(f.hand(side))) is not None and f.hand(side).state != "absent"]
+    if not xs:
+        return None
+    return min(b[0] for b in xs), max(b[2] for b in xs)
+
+
 def analyse(
     clip_id: str, path: Path, hands: HandsLike, worker: WorkerCheck, rubric: Path,
     window_s: float = WINDOW_S, source: SourceInfo | None = None,
@@ -342,6 +353,8 @@ def analyse(
     if source.fixed and cand.window is not None and video_info(path)[0] <= window_s + 0.5:
         cand.window = replace(cand.window, start_s=0.0, end_s=video_info(path)[0])
     if cand.window is not None:
+        cand.hand_extent = hand_extent(
+            [f for f in per_frame if cand.window.start_s <= f.t_s <= cand.window.end_s])
         inside = [f for t, f in samples if cand.window.start_s <= t <= cand.window.end_s]
         ok, cand.luma, cand.contrast = light_ok(inside)
         if inside:
@@ -462,6 +475,52 @@ def render_clip(
     return encode_set(frames, poster, name, out_dir, fps, budgets or Budgets())
 
 
+# --- 9:16 crop for the mobile hero ------------------------------------------------------------
+
+MOBILE_WIDTH = 540         # the mobile hero shows it at 390 px: 540 x 960 is enough for 2x screens
+
+
+def crop_plan(src_w: int, src_h: int, extent: tuple[float, float] | None) -> dict[str, Any]:
+    """Where to cut a 9:16 portrait out of a landscape frame.
+
+    The centre crop, as asked. If the hands' horizontal range does not fit inside it but does
+    fit in a 9:16 window, the window moves to the hands (and `moved` says so).
+    """
+    frac = min(1.0, (9 / 16) * src_h / src_w)            # crop width as a share of the frame
+    x0 = (1 - frac) / 2
+    fits_centre = extent is None or (extent[0] >= x0 and extent[1] <= x0 + frac)
+    moved = False
+    if not fits_centre and extent is not None and extent[1] - extent[0] <= frac:
+        x0 = min(max((extent[0] + extent[1]) / 2 - frac / 2, 0.0), 1 - frac)
+        moved = True
+    return {"x0": round(x0, 4), "width_frac": round(frac, 4), "moved": moved,
+            "centre_crop_keeps_hands": fits_centre}
+
+
+def render_crop(
+    cand: Candidate, name: str, out_dir: Path, plan: dict[str, Any], width: int = MOBILE_WIDTH,
+    budgets: Budgets | None = None,
+) -> dict[str, Any]:
+    """The candidate's window cut to the 9:16 `plan`, as <name>.mp4 / .webm / .jpg."""
+    assert cand.window is not None
+    w = cand.window
+    _, src_w, src_h, src_fps = video_info(cand.path)
+    fps = min(src_fps, 30.0)
+    left = int(round(plan["x0"] * src_w)) // 2 * 2
+    cw = int(round(plan["width_frac"] * src_w)) // 2 * 2
+
+    def cropped(start: float, end: float, rate: float) -> Iterator[np.ndarray]:
+        frames = iter_frames(cand.path, rate, start, end, max_width=None)
+        return _scaled(((t, f[:, left:left + cw]) for t, f in frames), width)
+
+    mid = (w.start_s + w.end_s) / 2
+    options = list(cropped(mid - 0.5, mid + 0.5, 8))
+    poster = max(options, key=lambda f: cv2.Laplacian(
+        cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
+    return encode_set(lambda: cropped(w.start_s, w.end_s, fps), poster, name, out_dir, fps,
+                      budgets or Budgets(MP4_BUDGET, WEBM_BUDGET, POSTER_BUDGET))
+
+
 # --- defective versions of a clean clip (the Home "Why Ormes" scene, issue #69) ------------
 
 DEFECT_SECONDS = 3.0
@@ -481,19 +540,51 @@ def _timed(fn: Callable[[list], list], start_s: float, fps: float) -> Callable[[
 Recipe = tuple[str, Callable[[list], list]]
 
 
+def _slide(frames: list, dx: float) -> list:
+    """The frame slides sideways by dx (share of the width); the strip it leaves is black."""
+    out = []
+    for f in frames:
+        h, w = f.shape[:2]
+        shift = int(round(abs(dx) * w))
+        g = np.zeros_like(f)
+        if dx < 0:
+            g[:, : w - shift] = f[:, shift:]       # the camera turns right: the left side leaves
+        else:
+            g[:, shift:] = f[:, : w - shift]
+        out.append(g)
+    return out
+
+
 def defect_recipes(kind: str, start_s: float, fps: float) -> list[Recipe]:
     """Recipes to try, in order, for 'hand' (one hand leaves for ~3 s) or 'dark' (too dark)."""
     from .defects import generate as g
 
     if kind == "hand":
-        def zoom(x0: float) -> Callable[[list], list]:
-            return _timed(lambda fr: [g._zoom(f, x0, 0.5, 0.5) for f in fr], start_s, fps)
-
-        return [("hand_out_one: zoom on the bottom-right quarter", zoom(0.5)),
-                ("hand_out_one: zoom on the bottom-left quarter", zoom(0.0))]
+        return [
+            ("slide: the left hand leaves through the left edge",
+             _timed(lambda fr: _slide(fr, -0.4), start_s, fps)),
+            ("slide: the right hand leaves through the right edge",
+             _timed(lambda fr: _slide(fr, 0.4), start_s, fps)),
+            ("hand_out_one: zoom on the bottom-right quarter",
+             _timed(lambda fr: [g._zoom(f, 0.5, 0.5, 0.5) for f in fr], start_s, fps)),
+        ]
     return [(f"exposure x{gain}", _timed(lambda fr, gain=gain: g.exposure(fr, gain), start_s, fps))
             for gain in (0.25, 0.15)] + [
         ("motion_blur", _timed(lambda fr: g.motion_blur(fr, 41), start_s, fps))]
+
+
+EXPECTED_CHECK = {"hand": "hands_visible", "dark": "technical"}
+
+
+def variant_rank(kind: str, decision: dict[str, Any] | None) -> int:
+    """How well a defective copy shows its own defect: 3 = flagged for the expected check and
+    nothing else technical, 2 = flagged for the expected check, 1 = flagged, 0 = accepted."""
+    if not decision or decision.get("decision") in (None, "accept"):
+        return 0
+    checks = {r.get("check") for r in decision.get("reasons", [])}
+    if EXPECTED_CHECK[kind] not in checks:
+        return 1
+    return 3 if kind == "hand" and "technical" not in checks else 2
 
 
 def make_variant(
@@ -501,8 +592,8 @@ def make_variant(
 ) -> tuple[dict[str, Any], dict[str, Any] | None, dict[str, Any]]:
     """A defective copy of a clean delivered clip: (files, the worker's real decision, info).
 
-    Recipes are tried from mild to strong; the first one the worker does not simply accept is
-    kept, else the strongest (all are listed in `info["tried"]`, so the choice is visible).
+    Recipes are tried in order and ranked by how clearly the worker flags the intended defect
+    (`variant_rank`); the best one is kept, the first on ties. All are listed in `info["tried"]`.
     Nothing about the decision is edited: what the site shows is what the worker returned.
     """
     from .defects.generate import read_video
@@ -512,18 +603,27 @@ def make_variant(
     duration = len(clip.frames) / fps
     start_s = max(0.0, (duration - DEFECT_SECONDS) / 2)
     tried: list[dict[str, Any]] = []
-    files: dict[str, Any] = {}
-    decision: dict[str, Any] | None = None
-    label = ""
-    for label, recipe in defect_recipes(kind, start_s, fps):
+    best: tuple[int, int] | None = None            # (rank, index)
+    results: list[tuple[dict[str, Any], dict[str, Any] | None, str]] = []
+    for i, (label, recipe) in enumerate(defect_recipes(kind, start_s, fps)):
         frames = recipe(list(clip.frames))
         mid = frames[min(len(frames) - 1, int(round((start_s + DEFECT_SECONDS / 2) * fps)))]
-        files = encode_set(lambda f=frames: iter(f), mid, name, out_dir, fps, VARIANT_BUDGETS)
-        decision = worker(out_dir / files["mp4"], rubric)
-        verdict = (decision or {}).get("decision")
-        tried.append({"recipe": label, "decision": verdict})
-        if verdict not in (None, "accept"):
-            break          # the worker flags this one: keep it (otherwise the strongest is kept)
+        scratch = out_dir / f".variant-{name}-{i}"
+        files = encode_set(lambda f=frames: iter(f), mid, name, scratch, fps, VARIANT_BUDGETS)
+        decision = worker(scratch / files["mp4"], rubric)
+        rank = variant_rank(kind, decision)
+        tried.append({"recipe": label, "decision": (decision or {}).get("decision"), "rank": rank})
+        results.append((files, decision, label))
+        if best is None or rank > best[0]:
+            best = (rank, i)
+        if rank == 3:
+            break          # the defect shows up exactly as asked: stop here
+    assert best is not None
+    files, decision, label = results[best[1]]
+    for f in (out_dir / f".variant-{name}-{best[1]}").iterdir():
+        shutil.move(str(f), out_dir / f.name)
+    for d in out_dir.glob(f".variant-{name}-*"):
+        shutil.rmtree(d, ignore_errors=True)
     info = {"kind": kind, "recipe": label, "interval_s": [round(start_s, 2),
             round(start_s + DEFECT_SECONDS, 2)], "tried": tried}
     return files, decision, info
@@ -613,6 +713,7 @@ def produce(
     candidates: Sequence[Candidate], hands: HandsLike, worker: WorkerCheck, rubric: Path,
     final_dir: Path, picks_wanted: int = 6, quota: dict[str, int] | None = None,
     log: Callable[[str], None] = print, width: int = OUT_WIDTH, variants_of: int | None = None,
+    mobile_crop: bool = False,
 ) -> dict[str, Any]:
     """Render the picks and, for the `variants_of`-th published clip (1 = the first, or None),
     two defective versions: one hand leaves for ~3 s, and a too dark stretch."""
@@ -656,6 +757,24 @@ def produce(
         log(f"{name}: {cand.clip_id} {cand.window.start_s:.1f}-{cand.window.end_s:.1f}s "  # type: ignore[union-attr]
             f"bytes={files['bytes']}")
         if variants_of is not None and name == f"clip-{variants_of:02d}":
+            if mobile_crop:
+                _, sw, sh, _ = video_info(cand.path)
+                plan = crop_plan(sw, sh, cand.hand_extent)
+                mname = f"{name}-mobile"
+                mfiles = render_crop(cand, mname, final_dir, plan)
+                mmp4 = final_dir / mfiles["mp4"]
+                mdecision = worker(mmp4, rubric)
+                info = {"kind": "mobile_crop", "crop": plan}
+                mside = build_sidecar(cand, mname, mfiles, hands, mdecision, mmp4,
+                                      {"of": name, **info})
+                rows = mside["hands"]["frames"]
+                plan["both_hands_whole_share"] = round(sum(
+                    r["left"]["state"] == "full" and r["right"]["state"] == "full"
+                    for r in rows) / max(1, len(rows)), 3)
+                write_sidecar(mname, mside, mfiles)
+                clips.append(entry(mname, cand, mfiles, mside, mdecision, variant_of=name,
+                                   variant_kind="mobile_crop", crop=plan))
+                log(f"{mname}: 9:16 crop {plan} -> {(mdecision or {}).get('decision')}")
             for kind in ("hand", "dark"):
                 vname = f"{name}-{kind}"
                 vfiles, vdecision, info = make_variant(mp4, kind, vname, final_dir, worker, rubric)
@@ -663,7 +782,7 @@ def produce(
                                       final_dir / vfiles["mp4"], {"of": name, **info})
                 write_sidecar(vname, vside, vfiles)
                 clips.append(entry(vname, cand, vfiles, vside, vdecision,
-                                   variant_of=name, defect=info))
+                                   variant_of=name, variant_kind=kind, defect=info))
                 log(f"{vname}: {info['recipe']} -> {(vdecision or {}).get('decision')}")
     total = sum(sum(c["bytes"].values()) for c in clips)
     sources = sorted({(c["dataset"], c["license"]) for c in clips})
@@ -787,20 +906,27 @@ def fetch_pexels(
     return got, errors
 
 
-def run_pexels(  # pragma: no cover - network, models
-    a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
-) -> int:
+def download_pexels(a: argparse.Namespace, picks: Sequence[Any]) -> tuple[list[Fetched], str]:
     import os
 
     from .datasets import pexels
 
-    got, errors = fetch_pexels(pexels.UrllibNet(), a.out_dir, pexels.PICKS,
+    got, errors = fetch_pexels(pexels.UrllibNet(), a.out_dir, picks,
                                os.environ.get("PEXELS_API_KEY", ""))
-    status = (f"Pexels: {len(got)} of {len(pexels.PICKS)} videos downloaded."
-              + "".join(f"\n- DOWNLOAD FAILED, exact error: {e}" for e in errors))
+    status = (f"Pexels: {len(got)} of {len(picks)} videos downloaded."
+              + "".join(f"\n- DOWNLOAD/AUTHOR PROBLEM, exact text: {e}" for e in errors))
     print(status, flush=True)
     (a.out_dir / "pexels-status.txt").write_text(status + "\n")
-    (a.out_dir / "holoassist-status.txt").write_text("")
+    return got, status
+
+
+def run_landing(  # pragma: no cover - network, models
+    a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
+) -> int:
+    """The landing page's one clip: desktop cut, 9:16 mobile crop and two defective copies."""
+    from .datasets import pexels
+
+    got, _ = download_pexels(a, [pexels.LANDING])
     if not got:
         return 1
     cands = []
@@ -808,12 +934,53 @@ def run_pexels(  # pragma: no cover - network, models
         cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
         print(f"{item.clip_id}: " + (eligibility(cand) or "eligible"), flush=True)
         cands.append(cand)
-    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, len(got), variants_of=1)
+    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, 1, variants_of=1,
+                       mobile_crop=True)
     used = {x["source_clip"] for x in manifest["clips"]}
     (a.out_dir / "candidates.md").write_text(
         candidate_report(cands, [c for c in cands if c.clip_id in used]))
-    print(f"{len(manifest['clips'])} clips, {manifest['total_bytes']} bytes")
+    print(f"{len(manifest['clips'])} files, {manifest['total_bytes']} bytes")
     return 0 if manifest["clips"] else 1
+
+
+def third_person_record(cand: Candidate, pick: Any, version: str = "") -> Any:
+    from .datasets.third_person import Observed, ThirdPersonRecord
+
+    src, d = cand.source, cand.decision
+    dur, w, h, _ = video_info(cand.path)
+    keep = ("check", "code", "effect", "message")
+    return ThirdPersonRecord(
+        clip_id=cand.clip_id, page_url=pick.page, pexels_id=pick.pexels_id,
+        author=src.author if src and not src.author.startswith("unknown") else None,
+        author_url=(src.author_url or None) if src else None,
+        orientation=pick.orientation, task=pick.task, duration_s=round(dur, 2), width=w, height=h,
+        observed=Observed(
+            decision=(d or {}).get("decision"),
+            reasons=[{k: r.get(k) for k in keep} for r in (d or {}).get("reasons", [])],
+            both_hands_whole=round(cand.window.both_full, 3) if cand.window else None,
+            both_hands_working=round(cand.window.working, 3) if cand.window else None,
+            worker_version=version))
+
+
+def run_third_person(  # pragma: no cover - network, models
+    a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
+) -> int:
+    """Analyse the third-person clips and write the test-set manifest. No media is kept."""
+    from .datasets import pexels
+    from .datasets.third_person import write_records
+
+    got, _ = download_pexels(a, pexels.THIRD_PERSON)
+    by_id = {p.clip_id: p for p in pexels.THIRD_PERSON}
+    records = []
+    for item in got:
+        cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
+        records.append(third_person_record(cand, by_id[item.clip_id],
+                                           (cand.decision or {}).get("engine_version", "")))
+        print(f"{item.clip_id}: {records[-1].observed.decision}", flush=True)
+        item.path.unlink(missing_ok=True)       # the video is never kept
+    n = write_records(records, a.third_person_out)
+    print(f"{n} third-person records -> {a.third_person_out}")
+    return 0 if n else 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
@@ -825,7 +992,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--candidates", type=int, default=30)
     ap.add_argument("--holoassist", type=int, default=16, help="HoloAssist candidates (0 = skip)")
     ap.add_argument("--pexels", action="store_true",
-                    help="only the hand-picked Pexels clips (the landing page's footage)")
+                    help="the landing page's one Pexels clip: desktop, 9:16 crop, defective copies")
+    ap.add_argument("--third-person", action="store_true",
+                    help="the third-person Pexels test set: write its manifest, keep no media")
+    ap.add_argument("--third-person-out", type=Path,
+                    default=Path("test_sets/third_person_pexels.jsonl"))
     ap.add_argument("--picks", type=int, default=6)
     ap.add_argument("--min-picks", type=int, default=1)
     ap.add_argument("--out-dir", type=Path, default=Path("out/site-clips"))
@@ -839,7 +1010,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     a.out_dir.mkdir(parents=True, exist_ok=True)
     hands, worker = HandsModel(), worker_check_via_cli()
     if a.pexels:
-        return run_pexels(a, hands, worker)
+        return run_landing(a, hands, worker)
+    if a.third_person:
+        return run_third_person(a, hands, worker)
     manifest_path = a.out_dir / "candidates.jsonl"
     n = egocentric10k.build(
         manifest_path, a.out_dir / "candidates", clips=a.candidates, per_shard=2,

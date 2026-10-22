@@ -43,10 +43,13 @@ export type ClipSidecar = {
 
 export type ClipVariant = {
   of: string;
-  kind: "hand" | "dark";
-  recipe: string;
-  interval_s: [number, number];
-  tried: { recipe: string; decision: string | null }[];
+  kind: "hand" | "dark" | "mobile_crop";
+  /** Defective copies only. */
+  recipe?: string;
+  interval_s?: [number, number];
+  tried?: { recipe: string; decision: string | null }[];
+  /** The 9:16 mobile crop only: where the window was cut. */
+  crop?: { x0: number; width_frac: number; moved: boolean; both_hands_whole_share?: number };
 };
 
 export type ClipStep = { name: string; t_s: number; end_s?: number; source?: string };
@@ -66,6 +69,7 @@ export type ClipManifest = {
     author_url?: string;
     orientation?: string;
     variant_of?: string;
+    variant_kind?: "hand" | "dark" | "mobile_crop";
     decision: string | null;
     mp4: string;
     webm: string;
@@ -135,4 +139,13 @@ export function groupClips(clips: readonly ManifestClip[]): { clip: ManifestClip
 export const DEFECT_LABEL: Record<ClipVariant["kind"], string> = {
   hand: "One hand leaves the frame for about 3 s",
   dark: "About 3 s too dark",
+  mobile_crop: "Mobile hero: 9:16 crop of the same clip",
 };
+
+/** A group's variants split into the mobile crop and the synthetic defective copies. */
+export function splitVariants(variants: readonly ManifestClip[]) {
+  return {
+    mobile: variants.filter((v) => v.variant_kind === "mobile_crop"),
+    defects: variants.filter((v) => v.variant_kind !== "mobile_crop"),
+  };
+}

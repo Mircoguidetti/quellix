@@ -38,22 +38,26 @@ class Pick:
         return f"pexels_{self.pexels_id}"
 
 
-# The founder's final list (issue #60): landscape first (the first is the preferred desktop
-# hero), then portrait for the 390 px hero (the first portrait is the preferred mobile hero).
-PICKS: tuple[Pick, ...] = (
-    Pick(7308220, "a-woman-stacking-shirts", "Folding laundry", "landscape",
-         "preferred desktop hero"),
+# The landing page's only clip (founder decision, issue #60): first-person footage, top-down,
+# hands entering from the bottom. Landscape for the desktop hero; the mobile hero is a 9:16 crop.
+LANDING = Pick(37443407, "whipping-cream-with-electric-mixer-in-bowl",
+               "Whipping cream with an electric mixer", "landscape", "landing hero")
+
+# Third-person / tripod footage the founder picked first. Not for the site (labs buy first-person
+# video); kept as a test set for the gap we found: all our other tests are first-person.
+THIRD_PERSON: tuple[Pick, ...] = (
+    Pick(7308220, "a-woman-stacking-shirts", "Folding laundry", "landscape"),
     Pick(4520150, "man-putting-jeans-inside-the-box", "Packing jeans in a box", "landscape"),
     Pick(11102752, "close-up-on-person-cooking-in-pot", "Cooking in a pot", "landscape"),
     Pick(5592524, "person-cleaning-countertop-with-a-tissue", "Cleaning a countertop",
          "landscape"),
     Pick(4440711, "a-person-putting-clothes-on-the-washing-machine", "Loading a washing machine",
-         "landscape", "5 s: used whole"),
-    Pick(7641501, "woman-washing-cups-in-the-sink", "Washing cups", "portrait",
-         "preferred mobile hero"),
+         "landscape"),
+    Pick(7641501, "woman-washing-cups-in-the-sink", "Washing cups", "portrait"),
     Pick(9141844, "person-putting-folded-clothes-on-a-bag", "Putting folded clothes in a bag",
          "portrait"),
 )
+PICKS = (LANDING, *THIRD_PERSON)
 
 
 class Net(Protocol):
@@ -211,6 +215,7 @@ def fetch_pick(
         meta = meta_from_page(html, pick.page)
     except Exception as e:  # noqa: BLE001 - reported below if nothing else works
         errors.append(f"page {pick.page}: {type(e).__name__}: {e}")
+        meta = Meta(meta.author, "", pick.page, errors[-1])
     attempts: list[str] = []
     best = best_rendition(renditions_from_page(html, pick.pexels_id), pick.orientation)
     if best:
@@ -221,6 +226,12 @@ def fetch_pick(
             net.download(url, dst, {"Referer": pick.page})
             if dst.stat().st_size > 50_000:
                 log(f"Pexels: {pick.clip_id} downloaded from {url}")
+                if api_key and meta.author.startswith("unknown"):
+                    try:        # the file works but the page doesn't name the author: ask the API
+                        meta = api_rendition(net, pick.pexels_id, pick.orientation, api_key)[1]
+                    except Exception as e:  # noqa: BLE001
+                        meta = Meta(meta.author, "", pick.page,
+                                    f"{meta.debug} | API: {type(e).__name__}: {e}")
                 return dst, meta
             errors.append(f"{url}: file too small ({dst.stat().st_size} bytes)")
         except Exception as e:  # noqa: BLE001

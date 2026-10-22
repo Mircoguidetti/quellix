@@ -9,6 +9,7 @@ import {
   frameAt,
   groupClips,
   sourcesLabel,
+  splitVariants,
   stepAt,
   type ClipManifest,
   type ClipSidecar,
@@ -47,25 +48,31 @@ export function ClipPreview() {
         total. Boxes are the hands model&apos;s own output for each frame; the decision is the worker&apos;s verdict on the clip itself.
       </p>
       <div className="grid gap-14">
-        {groupClips(manifest.clips).map(({ clip, variants }) => (
-          <section key={clip.id} className="grid gap-6">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <ClipCard id={clip.id} />
-            </div>
-            {variants.length > 0 ? (
-              <div className="grid gap-4">
-                <h2 className="text-lg font-medium">
-                  The same clip with a synthetic defect, as Ormes returns it
-                </h2>
-                <div className="grid gap-10 lg:grid-cols-2">
-                  {variants.map((v) => (
-                    <ClipCard key={v.id} id={v.id} />
-                  ))}
-                </div>
+        {groupClips(manifest.clips).map(({ clip, variants }) => {
+          const { mobile, defects } = splitVariants(variants);
+          return (
+            <section key={clip.id} className="grid gap-8">
+              <div className="grid items-start gap-10 lg:grid-cols-2">
+                <ClipCard id={clip.id} />
+                {mobile.map((v) => (
+                  <ClipCard key={v.id} id={v.id} />
+                ))}
               </div>
-            ) : null}
-          </section>
-        ))}
+              {defects.length > 0 ? (
+                <div className="grid gap-4">
+                  <h2 className="text-lg font-medium">
+                    The same clip with a synthetic defect, as Ormes returns it
+                  </h2>
+                  <div className="grid gap-10 lg:grid-cols-2">
+                    {defects.map((v) => (
+                      <ClipCard key={v.id} id={v.id} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -189,7 +196,16 @@ function ClipCard({ id }: { id: string }) {
           </span>
           {src.orientation ? <span className="text-muted-foreground">{src.orientation}</span> : null}
         </p>
-        {variant ? (
+        {variant && variant.kind === "mobile_crop" ? (
+          <p>
+            <strong>{DEFECT_LABEL.mobile_crop}.</strong>{" "}
+            {variant.crop?.moved ? "The window was moved to keep the hands in frame." : "Centre crop."}
+            {variant.crop?.both_hands_whole_share !== undefined
+              ? ` Both hands whole in ${Math.round(variant.crop.both_hands_whole_share * 100)}% of the sampled frames.`
+              : null}
+          </p>
+        ) : null}
+        {variant && variant.kind !== "mobile_crop" && variant.interval_s ? (
           <p>
             <strong>Synthetic defect:</strong> {DEFECT_LABEL[variant.kind]} ({variant.recipe}, {variant.interval_s[0].toFixed(1)}
             –{variant.interval_s[1].toFixed(1)} s of {variant.of}).

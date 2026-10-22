@@ -1,10 +1,11 @@
 name: Site clips
 
 # Clips for the website, analysed by Ormes itself (issue #60).
-# "pexels" (default): downloads the founder's hand-picked Pexels videos, runs the worker on each
-# (a clip it would reject is listed with its reason and not used), cuts the best window and
-# writes MP4, WebM, poster and a JSON sidecar (the hands model's per-frame boxes and the
-# worker's decision) to apps/web/public/media/clips/, plus two defective copies of the first clip.
+# "pexels" (default): (1) the landing page's one Pexels clip: runs the worker, cuts the best
+# window and writes MP4, WebM, poster and a JSON sidecar (the hands model's per-frame boxes and
+# the worker's decision) to apps/web/public/media/clips/, plus its 9:16 mobile crop and two
+# defective copies; (2) the third-person Pexels test set: only a manifest under
+# eval/test_sets/ (no media, never shown on the site).
 # "eval-datasets": the earlier Build AI Egocentric-10K / HoloAssist selection (eval only).
 # Run it from the Actions tab, or push eval/site-clips-request.json to the agent/site-clips
 # branch. On a branch other than main the result is committed back.
@@ -82,6 +83,8 @@ jobs:
           if [ "${{ steps.n.outputs.src }}" = "pexels" ]; then
             uv run python -m quellix_eval.site_clips --pexels \
               --out-dir out/site-clips --final-dir ../apps/web/public/media/clips
+            uv run python -m quellix_eval.site_clips --third-person \
+              --out-dir out/third-person --third-person-out test_sets/third_person_pexels.jsonl
           else
             uv run python -m quellix_eval.site_clips \
               --candidates "${{ steps.n.outputs.n }}" --holoassist "${{ steps.n.outputs.h }}" \
@@ -105,7 +108,11 @@ jobs:
           print("|---|---|---|---|---|---|---|---|")
           for c in m["clips"]:
               b = c["bytes"]
-              kind = f"defective copy of {c['variant_of']} ({c['defect']['recipe']})" if c.get("variant_of") else c["task"]
+              kind = c["task"]
+              if c.get("variant_kind") == "mobile_crop":
+                  kind = f"9:16 mobile crop of {c['variant_of']} (hands whole {c['crop']['both_hands_whole_share']:.0%}, moved: {c['crop']['moved']})"
+              elif c.get("variant_of"):
+                  kind = f"defective copy of {c['variant_of']} ({c['defect']['recipe']})"
               page = c.get("page_url") or ""
               src = f"[{c['dataset']}]({page})" if page else f"{c['dataset']} ({c['license']})"
               print(f"| {c['id']} | {src} | {kind} | {c.get('author') or '-'} | {c['decision']} | {b['mp4']/1e6:.2f} MB | {b['webm']/1e6:.2f} MB | {b['poster']/1e3:.0f} kB |")
@@ -115,6 +122,19 @@ jobs:
             fi
             echo
             cat out/site-clips/pexels-status.txt out/site-clips/holoassist-status.txt 2>/dev/null || echo "(no download status written)"
+            echo
+            python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("test_sets/third_person_pexels.jsonl")
+          if p.exists():
+              print("### Third-person test set (eval only, not on the site)\n")
+              print("| clip | task | worker (observed) | reasons | both hands whole |")
+              print("|---|---|---|---|---|")
+              for line in p.read_text().splitlines():
+                  r = json.loads(line); o = r["observed"]
+                  why = "; ".join(x["message"] for x in o["reasons"]) or "-"
+                  print(f"| [{r['clip_id']}]({r['page_url']}) | {r['task']} | {o['decision']} | {why} | {o['both_hands_whole']} |")
+          PY
             echo
             echo "### Every candidate"
             echo
@@ -129,6 +149,7 @@ jobs:
           if-no-files-found: warn
           path: |
             apps/web/public/media/clips
+            eval/test_sets
             eval/out/site-clips/candidates.md
       - name: Commit the clips to this branch
         if: success() && github.ref != 'refs/heads/main'
@@ -136,7 +157,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -f apps/web/public/media/clips
+          git add -A -f apps/web/public/media/clips eval/test_sets
           if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
           git commit -m "web: real site clips picked and analysed by Ormes (run ${{ github.run_id }})"
           git push origin "HEAD:${{ github.ref_name }}"
