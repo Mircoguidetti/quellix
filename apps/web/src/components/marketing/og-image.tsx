@@ -37,7 +37,7 @@ export function ogImage(eyebrow: string, headline: string) {
           <div style={{ width: 30, height: 30, border: "3px solid #f2f3f5", borderRadius: 5, display: "flex", padding: 4 }}>
             <div style={{ flex: 1, border: "3px solid #8fb4ff", borderRadius: 2 }} />
           </div>
-          QUELLIX
+          ORMES
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 26, color: "#8fb4ff", letterSpacing: 3, textTransform: "uppercase" }}>{eyebrow}</div>

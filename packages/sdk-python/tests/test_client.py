@@ -6,11 +6,11 @@ from typing import Any
 
 import pytest
 
-from quellix import (
+from ormes import (
     APIError,
     AuthenticationError,
     NotFoundError,
-    Quellix,
+    Ormes,
     RateLimitError,
     TimeoutError,
     ValidationError,
@@ -24,9 +24,9 @@ RUBRIC = json.loads(
 RUBRIC_INPUT = {k: v for k, v in RUBRIC.items() if k not in {"id", "version"}}
 
 
-def make(api: MockApi, sleeps: list[float] | None = None, **kwargs: Any) -> Quellix:
+def make(api: MockApi, sleeps: list[float] | None = None, **kwargs: Any) -> Ormes:
     record = sleeps if sleeps is not None else []
-    return Quellix(
+    return Ormes(
         kwargs.pop("api_key", API_KEY),
         base_url=BASE,
         transport=api.sync_transport(),
@@ -173,10 +173,27 @@ def test_create_retried_with_same_key_but_complete_is_not(api: MockApi) -> None:
 
 
 def test_environment_configuration(api: MockApi, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("QUELLIX_API_KEY", raising=False)
+    monkeypatch.delenv("ORMES_API_KEY", raising=False)
     with pytest.raises(Exception, match="API key"):
-        Quellix(transport=api.sync_transport())
+        Ormes(transport=api.sync_transport())
+    monkeypatch.setenv("ORMES_API_KEY", API_KEY)
+    monkeypatch.setenv("ORMES_BASE_URL", BASE)
+    with pytest.raises(NotFoundError), Ormes(transport=api.sync_transport()) as client:
+        client.videos.get("missing")
+
+
+def test_legacy_quellix_environment_names_still_work(
+    api: MockApi, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("ORMES_API_KEY", raising=False)
+    monkeypatch.delenv("ORMES_BASE_URL", raising=False)
     monkeypatch.setenv("QUELLIX_API_KEY", API_KEY)
     monkeypatch.setenv("QUELLIX_BASE_URL", BASE)
-    with pytest.raises(NotFoundError), Quellix(transport=api.sync_transport()) as client:
+    with pytest.raises(NotFoundError), Ormes(transport=api.sync_transport()) as client:
+        client.videos.get("missing")
+    # The new names win when both are set.
+    monkeypatch.setenv("ORMES_API_KEY", "orm_live_other")
+    with pytest.raises(Exception, match="401|nauthor|uthentic"), Ormes(
+        transport=api.sync_transport()
+    ) as client:
         client.videos.get("missing")

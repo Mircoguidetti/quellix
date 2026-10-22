@@ -68,7 +68,9 @@ export function createFakeDb(handler: Handler, opts: { exists?: boolean; sendErr
   return { db: db as never, calls, rpc, signedUpload };
 }
 
-export const KEY = "qx_live_testkey_0123456789abcdef";
+export const KEY = "orm_live_testkey_0123456789abcdef";
+/** A key issued before the rename. */
+export const LEGACY_KEY = "qx_live_testkey_0123456789abcdef";
 export const ORG = "11111111-1111-4111-8111-111111111111";
 export const RUBRIC = "22222222-2222-4222-8222-222222222222";
 export const VIDEO = "33333333-3333-4333-8333-333333333333";

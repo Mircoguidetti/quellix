@@ -1,4 +1,4 @@
-"""A mock Quellix API built from packages/contracts/openapi.yaml.
+"""A mock Ormes API built from packages/contracts/openapi.yaml.
 
 Routes, success status codes and request-body validation come from the spec; response bodies
 come from small stateful handlers. Used through httpx.MockTransport (sync and async).
@@ -20,7 +20,7 @@ SPEC: dict[str, Any] = yaml.safe_load(
     (Path(__file__).parents[2] / "contracts" / "openapi.yaml").read_text()
 )
 BASE = "http://mock.test/api/v1"
-API_KEY = "qx_live_test"
+API_KEY = "orm_live_test"
 
 
 @dataclass

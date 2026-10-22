@@ -21,7 +21,7 @@ type Props = {
 };
 
 /**
- * Video with the decision's reasons pinned to the timeline. Works without a file too: Quellix
+ * Video with the decision's reasons pinned to the timeline. Works without a file too: Ormes
  * deletes videos after analysis, so the timeline still shows where each reason happened.
  * Give it a `key` per video so its playback state starts fresh.
  */

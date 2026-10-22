@@ -13,7 +13,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,12 +26,13 @@ BUCKET = "videos"  # private bucket, paths org/<org_id>/<video_id>/<filename>
 # A crashed worker's message reappears after this; must exceed the Modal function timeout.
 VISIBILITY_TIMEOUT_S = 2100
 MAX_ATTEMPTS = 3
+REVIEW_RETENTION = timedelta(days=14)  # founder data rule: a review video is kept at most this long
 RETRY_DELAYS_S = (60, 300)  # wait before attempt 2 and 3
-SIGNATURE_HEADER = "Quellix-Signature"
+SIGNATURE_HEADER = "Ormes-Signature"
 
 
 def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
-    """``Quellix-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
+    """``Ormes-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
     HMAC-SHA256 of ``"<t>.<raw body>"`` (the timestamp lets receivers reject replays)."""
     t = int(time.time()) if timestamp is None else timestamp
     digest = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
@@ -62,6 +63,7 @@ class JobContext:
     video_status: str = "queued"
     video_created_at: str | None = None
     external_id: str | None = None
+    delete_after: str | None = None
 
 
 class SupabaseStore:
@@ -99,10 +101,50 @@ class SupabaseStore:
         msg = rows[0]["message"]
         return Job(rows[0]["msg_id"], msg["job_id"], msg["video_id"])
 
-    def video_storage_path(self, video_id: str) -> str | None:
+    def video_retention(self, video_id: str) -> tuple[str | None, str | None]:
+        """-> (storage_path, delete_after) of a video row."""
         rows = self._rest("GET", "videos", params={"id": f"eq.{video_id}",
-                                                   "select": "storage_path"})
-        return rows[0]["storage_path"] if rows else None
+                                                   "select": "storage_path,delete_after"})
+        return (rows[0]["storage_path"], rows[0]["delete_after"]) if rows else (None, None)
+
+    def latest_decision(self, video_id: str) -> str | None:
+        rows = self._rest("GET", "decisions", params={
+            "video_id": f"eq.{video_id}", "select": "decision", "order": "created_at.desc",
+            "limit": "1"})
+        return rows[0]["decision"] if rows else None
+
+    def keep_for_review(self, video_id: str) -> str:
+        """Keep the file for a person to review; schedule its deletion. -> delete_after."""
+        when = (datetime.now(UTC) + REVIEW_RETENTION).isoformat()
+        self.set_video(video_id, delete_after=when)
+        return when
+
+    # ------------------------------------------------------------------ retention sweeps
+    def purge_expired(self, now: datetime | None = None) -> list[str]:
+        """Delete the file of every video whose ``delete_after`` has passed. -> video ids."""
+        due = (now or datetime.now(UTC)).isoformat()
+        rows = self._rest("GET", "videos", params={
+            "select": "id,storage_path", "storage_path": "not.is.null",
+            "delete_after": f"lt.{due}", "limit": "200"})
+        return self._delete_files(rows)
+
+    def purge_reviewed(self) -> list[str]:
+        """Delete the file of every kept video that already has a review decision (a safety
+        net: the review screen deletes it at review time)."""
+        rows = self._rest("GET", "videos", params={
+            "select": "id,storage_path,reviews!inner(id)", "storage_path": "not.is.null",
+            "delete_after": "not.is.null", "limit": "200"})
+        return self._delete_files(rows)
+
+    def _delete_files(self, rows: list[dict[str, Any]]) -> list[str]:
+        done = []
+        for row in rows:
+            try:
+                self.delete_video_file(row["id"], row["storage_path"])
+                done.append(row["id"])
+            except Exception:  # one bad file must not stop the sweep; it is retried next run
+                log.exception("could not delete the file of video %s", row["id"])
+        return done
 
     def archive_job(self, job: Job) -> None:
         self._pgmq("archive", {"queue_name": QUEUE, "message_id": job.msg_id})
@@ -119,7 +161,7 @@ class SupabaseStore:
         jobs = self._rest("GET", "jobs", params={"id": f"eq.{job.job_id}", "select": "attempts"})
         videos = self._rest("GET", "videos", params={
             "id": f"eq.{job.video_id}",
-            "select": "org_id,status,created_at,external_id,storage_path,filename,"
+            "select": "org_id,status,created_at,external_id,storage_path,filename,delete_after,"
                       "rubric_id,rubric_version,"
                       "organizations(training_opt_in,allow_external_models)"})
         if not jobs or not videos:
@@ -137,7 +179,7 @@ class SupabaseStore:
         return JobContext(job, v["org_id"], v["storage_path"], v["filename"], rubric,
                           jobs[0]["attempts"], bool(v["organizations"]["training_opt_in"]),
                           bool(v["organizations"]["allow_external_models"]),
-                          v["status"], v["created_at"], v["external_id"])
+                          v["status"], v["created_at"], v["external_id"], v["delete_after"])
 
     def start_job(self, job_id: str, attempts: int) -> None:
         self._rest("PATCH", "jobs", params={"id": f"eq.{job_id}"}, json_body={

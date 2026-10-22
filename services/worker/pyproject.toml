@@ -1,7 +1,7 @@
 [project]
 name = "quellix-worker"
 version = "0.1.0"
-description = "Quellix video pipeline: checks, rubric evaluation, decision."
+description = "Ormes video pipeline: checks, rubric evaluation, decision."
 requires-python = ">=3.12"
 dependencies = [
   "av>=19.0.2",
@@ -24,6 +24,7 @@ embed = [
 [dependency-groups]
 dev = [
   "pytest>=8",
+  "quellix-hands",
   "ruff>=0.7",
 ]
 
@@ -43,3 +44,6 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+quellix-hands = { path = "../../models/hands", editable = true }

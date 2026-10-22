@@ -60,7 +60,7 @@ export function SecurityPage() {
           <div className="rows">{" "}
             <div className="rw">
               <h3>No training without opt-in.</h3>
-              <p>Your videos train nothing unless you turn on training in Settings. If you do, they train Quellix’s own models only, and you pay less.</p></div>{" "}
+              <p>Your videos train nothing unless you turn on training in Settings. If you do, they train Ormes’s own models only, and you pay less.</p></div>{" "}
             <div className="rw">
               <h3>No third-party models by default.</h3>
               <p>Customer video is never sent to an external model provider unless your organisation enables it. It is off by default.</p></div>{" "}

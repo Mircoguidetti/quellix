@@ -1,1 +1,1 @@
-"""Quellix evaluation tools."""
+"""Ormes evaluation tools."""

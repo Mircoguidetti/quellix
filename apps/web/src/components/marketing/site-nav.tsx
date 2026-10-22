@@ -28,7 +28,7 @@ export function SiteNav() {
       <div className="in">
         <Link className="logo" href="/">
           <i aria-hidden="true" />
-          QUELLIX
+          ORMES
         </Link>
         <nav className="nn" aria-label="Main">
           {LINKS.map((l) => (

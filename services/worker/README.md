@@ -1,6 +1,6 @@
 # services/worker
 
-The Quellix video pipeline (decode, checks, rubric evaluation, decision). Runs on Modal.
+The Ormes video pipeline (decode, checks, rubric evaluation, decision). Runs on Modal.
 See `CLAUDE.md` for the architecture and the measurement contract.
 
 ## Local
@@ -19,12 +19,13 @@ pgmq queue `video_jobs`. On Modal:
    container per message.
 2. `process` downloads the file from the private `videos` bucket, runs the pipeline, writes the
    `decisions` row (decision, reasons, every measurement, rubric id + version), sets the video to
-   `decided`, deletes the file (`storage_path = null`, `file_deleted_at`), records
+   `decided`, deletes the file (`storage_path = null`, `file_deleted_at`) unless the decision is
+   `review` (see Data retention), records
    `jobs.cost_usd`, sends the signed `video.decided` webhook and archives the message.
 3. A failed attempt is retried (the message is re-sent after 60 s, then 300 s). After the third
    failure the job and the video are `failed` with the error in `jobs.error`, the customer file
    is deleted, and the message is archived; nothing is decided and nothing is silently rejected.
-4. The webhook carries `Quellix-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`
+4. The webhook carries `Ormes-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`
    (see `openapi.yaml`), signed with `webhooks.signing_secret`.
 
 Containers scale to zero. The default is CPU (2 cores, 4 GiB); a GPU is opt-in (below).
@@ -62,3 +63,30 @@ the function's compute (modal.com/pricing); otherwise only API spend is recorded
 `scripts/smoke_test.py` creates a test org (`quellix-smoke-test`), uploads a generated clip,
 enqueues it, waits up to 5 minutes, asserts a schema-valid decision and that the file was deleted,
 and cleans up. Run it by hand with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set.
+
+## Data retention
+
+Founder rule (root `CLAUDE.md`): we keep what surrounds the video, not the video.
+
+- **accept / reject:** the file is deleted right after the decision is written.
+- **review:** the file is kept so a person can watch it; `videos.delete_after = now + 14 days`.
+  It is deleted when a review decision is recorded (the web review screen does this) or when
+  `delete_after` passes: the Modal function `retention_sweep` runs daily at 03:17 UTC and deletes
+  expired files and kept files that already have a review row.
+- **final processing failure:** the file is deleted after the last attempt.
+- **kept per customer, never deleted by the worker:** decisions, reasons, every measurement,
+  rubric versions, reviewer overrides with their note, lab outcomes, fingerprints. The worker only
+  ever deletes Storage objects and queue messages (asserted by a test).
+
+## Models in the pipeline
+
+- **Hands** (`models/hands`, package `quellix_hands`, MediaPipe Hand Landmarker, Apache-2.0): used
+  when the package and its weights are present (the Modal image bakes in
+  `/models/hand_landmarker.task`, sha256-checked; `QUELLIX_HANDS_MODEL_PATH`). `QUELLIX_HANDS=off`
+  forces the placeholder, which sends every video to review. When no manipulation was detected
+  (or too few frames), the four ratios are withheld, so the rubric reports "could not be measured"
+  and the video goes to review: never a pass or a fail.
+- **Tasks** (`models/tasks`, package `quellix_tasks`): used only when `QUELLIX_TASKS_HEAD` points
+  to a trained head file and the package plus SigLIP weights are installed. Not in the Modal image
+  yet (SigLIP needs torch + transformers, ~2 GB, and there is no trained head). Otherwise: external
+  judge only if the organisation allows it, else the check errors and the video goes to review.

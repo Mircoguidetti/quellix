@@ -1,6 +1,8 @@
-# Quellix
+# Ormes
 
-Quellix decides which first-person (egocentric) videos a data collector should pay for. A collector uploads a video with its task and the lab's spec (the **rubric**); Quellix returns `accept`, `reject` or `review` with human-readable reasons. Reviewers only see `review` cases.
+> Product name: **Ormes** (renamed from Quellix on 2026-10-22; the repository, Python packages and env vars keep the `quellix` name until a planned internal rename). All user-facing text says Ormes.
+
+Ormes decides which first-person (egocentric) videos a data collector should pay for. A collector uploads a video with its task and the lab's spec (the **rubric**); Ormes returns `accept`, `reject` or `review` with human-readable reasons. Reviewers only see `review` cases.
 
 - **Customer:** data collectors for whom review is a cost (they pay contributors and bill labs per accepted hour). Not labs.
 - **Promise:** fewer review hours and the lab's spec applied the same way to every video. We do NOT promise what the lab will accept.
@@ -33,7 +35,7 @@ Each folder has its own `CLAUDE.md`. Read it before working there. **Stay inside
 - A false reject costs an honest contributor money. A doubtful case goes to `review`, never silently to `reject`.
 - **Data rule (founder-approved, 2026-10-21): we keep what surrounds the video, not the video.**
   - Customer videos are deleted after analysis. Exception: a video whose decision is `review` is kept until a person decides it, at most 14 days, then deleted anyway. A video that fails processing is deleted after the last attempt.
-  - Videos are never used for training, resold or shown to another customer, unless the customer has opted in (`organizations.training_opt_in`, which earns a discount). Opted-in videos train Quellix's own models only.
+  - Videos are never used for training, resold or shown to another customer, unless the customer has opted in (`organizations.training_opt_in`, which earns a discount). Opted-in videos train Ormes's own models only.
   - We always keep, per customer: decisions, reasons, every measurement, rubric versions, reviewer overrides (with their note), lab outcomes, and fingerprints. These are our labels and our moat; they are never shared across customers in v1.
 - Fingerprints are scoped to the customer that produced them. No cross-customer matching in v1.
 - Main metric: **precision and recall on rejections**, compared against the customer's base rate. Generic "agreement" is not a metric we report.

@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 /*
- * Quellix design tokens. Source of truth: docs/design/landing-reference.html.
+ * Ormes design tokens. Source of truth: docs/design/landing-reference.html.
  * Brand colours are fixed; surface tokens switch between the light content area (default)
  * and dark surfaces (landing, auth, sidebar) through the `.dark` class.
  */

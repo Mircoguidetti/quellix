@@ -6,7 +6,7 @@ Dashboard, public API (`/api/v1/*`), auth and public pages. Next.js 16 (App Rout
 
 ```bash
 pnpm --filter @quellix/web dev        # needs Supabase env vars (.env.example)
-pnpm --filter @quellix/web dev:demo   # no Supabase: seeded demo data, demo@quellix.dev / quellix-demo
+pnpm --filter @quellix/web dev:demo   # no Supabase: seeded demo data, demo@ormes.dev / ormes-demo
 ```
 
 ## Checks

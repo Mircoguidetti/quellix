@@ -36,6 +36,12 @@ TEXT_SHA256 = "03f550c6b406fda8bf54bd8327815f6c7e2edd98cea02348c93d879254366587"
 TEXT_URL = (f"https://media.githubusercontent.com/media/opencv/opencv_zoo/{YUNET_COMMIT}/"
             "models/text_detection_ppocr/text_detection_en_ppocrv3_2023may.onnx")
 TEXT_PATH = "/models/text_detection_en_ppocrv3_2023may.onnx"
+# MediaPipe Hand Landmarker (Apache-2.0) for models/hands; same URL / sha256 as
+# quellix_hands.weights (a test keeps them equal). CPU only.
+HANDS_URL = ("https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/"
+             "float16/1/hand_landmarker.task")
+HANDS_SHA256 = "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+HANDS_PATH = "/models/hand_landmarker.task"
 
 
 def compute_usd_per_second() -> float:
@@ -89,32 +95,64 @@ def poll_once(spawn) -> int:
     return n
 
 
+def sweep() -> dict[str, int]:
+    """Daily: delete review videos whose 14 days have passed, and kept videos that already
+    have a review decision."""
+    from .store import SupabaseStore
+
+    store = SupabaseStore()
+    return {"expired": len(store.purge_expired()), "reviewed": len(store.purge_reviewed())}
+
+
 try:
     import modal
 except ImportError:  # modal is an optional extra; keep the module importable
     modal = None
 
+def contracts_dir(module_file: str | Path = __file__) -> Path | None:
+    """The repo's packages/contracts, found by walking up from this file; None when it is not
+    there. Inside the Modal container this module lives at /root/quellix_worker/modal_app.py,
+    which has no repo around it (and only two parents): never index a fixed parent."""
+    for parent in Path(module_file).resolve().parents:
+        candidate = parent / "packages" / "contracts"
+        try:
+            if candidate.is_dir():
+                return candidate
+        except OSError:  # e.g. PermissionError under /root on Python 3.12
+            continue
+    return None
+
+
 if modal is not None:
-    _contracts = Path(__file__).resolve().parents[4] / "packages" / "contracts"
-    _pip = ["av", "numpy", "opencv-python-headless", "pdqhash", "httpx", "jsonschema"]
+    _pip = ["av", "numpy", "opencv-python-headless", "pdqhash", "httpx", "jsonschema",
+            "mediapipe>=0.10.20"]  # models/hands detector (pulls opencv-contrib; both coexist)
     if GPU:
         _pip += ["torch", "transformers"]  # DINOv2 embedder
     image = (
         modal.Image.debian_slim(python_version="3.12")
-        .apt_install("libgl1", "libglib2.0-0", "build-essential", "curl")
+        .apt_install("libgl1", "libglib2.0-0", "libegl1", "libgles2", "build-essential",
+                     "curl")
         .pip_install(*_pip)
         .run_commands(
             f"mkdir -p /models && curl -fsSL -o {YUNET_PATH} {YUNET_URL}",
             f'echo "{YUNET_SHA256}  {YUNET_PATH}" | sha256sum -c -',
             f"curl -fsSL -o {TEXT_PATH} {TEXT_URL}",
             f'echo "{TEXT_SHA256}  {TEXT_PATH}" | sha256sum -c -',
+            f"curl -fsSL -o {HANDS_PATH} {HANDS_URL}",
+            f'echo "{HANDS_SHA256}  {HANDS_PATH}" | sha256sum -c -',
         )
         .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
-              "QUELLIX_TEXT_MODEL_PATH": TEXT_PATH,
+              "QUELLIX_TEXT_MODEL_PATH": TEXT_PATH, "QUELLIX_HANDS_MODEL_PATH": HANDS_PATH,
               **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
-        .add_local_dir(str(_contracts), "/packages/contracts", copy=True)
-        .add_local_python_source("quellix_worker")
     )
+    # Local files are added only while building / deploying from the repo; inside the container
+    # the image already holds them (QUELLIX_CONTRACTS_DIR=/packages/contracts).
+    if modal.is_local():
+        _contracts = contracts_dir()
+        if _contracts is None:
+            raise RuntimeError("packages/contracts not found next to services/worker")
+        image = image.add_local_dir(str(_contracts), "/packages/contracts", copy=True)
+        image = image.add_local_python_source("quellix_worker", "quellix_hands")
     app = modal.App("quellix-worker", image=image,
                     secrets=[modal.Secret.from_name(SECRET_NAME)])
 
@@ -127,5 +165,9 @@ if modal is not None:
     @app.function(schedule=modal.Period(minutes=1), timeout=120, max_containers=1)
     def poller() -> int:
         return poll_once(lambda *a: process.spawn(*a))
+
+    @app.function(schedule=modal.Cron("17 3 * * *"), timeout=900, max_containers=1)
+    def retention_sweep() -> dict[str, int]:
+        return sweep()
 else:
     app = None

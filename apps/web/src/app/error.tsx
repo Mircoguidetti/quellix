@@ -13,7 +13,7 @@ export default function RootError({ error, retry }: { error: unknown; retry: () 
     <PublicShell>
       <h1 className="text-[clamp(32px,5vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]">We could not load your workspace</h1>
       <p className="mt-4 max-w-[56ch] text-[16px] text-muted-foreground">
-        Quellix could not reach its database. It is usually a short outage. Try again in a moment; if it keeps happening, contact support and mention the time it happened.
+        Ormes could not reach its database. It is usually a short outage. Try again in a moment; if it keeps happening, contact support and mention the time it happened.
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button variant="pill" size="xl" onClick={() => retry()}>

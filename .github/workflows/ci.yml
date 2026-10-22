@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [services/worker, eval]
+        project: [services/worker, eval, models/hands, models/tasks]
     defaults:
       run:
         working-directory: ${{ matrix.project }}

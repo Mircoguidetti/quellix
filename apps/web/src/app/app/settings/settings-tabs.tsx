@@ -58,7 +58,7 @@ type Props = {
   trainingOptIn: boolean;
 };
 
-const NETWORK = "We could not reach Quellix. Check your connection.";
+const NETWORK = "We could not reach Ormes. Check your connection.";
 
 export function SettingsTabs(props: Props) {
   const router = useRouter();
@@ -182,7 +182,7 @@ function ApiKeys({ keys, canEdit }: { keys: Key[]; canEdit: boolean }) {
         title="API keys"
         description={
           <>
-            Send <code className="font-mono text-[12.5px] text-foreground">Authorization: Bearer qx_live_…</code> to <code className="font-mono text-[12.5px] text-foreground">/api/v1</code>. We store only a hash of each key.
+            Send <code className="font-mono text-[12.5px] text-foreground">Authorization: Bearer orm_live_…</code> to <code className="font-mono text-[12.5px] text-foreground">/api/v1</code>. We store only a hash of each key.
           </>
         }
         action={
@@ -195,7 +195,7 @@ function ApiKeys({ keys, canEdit }: { keys: Key[]; canEdit: boolean }) {
         }
       />
       {keys.length === 0 ? (
-        <EmptyState icon={KeyRound} title="No API keys yet" description="Create a key to send videos from your platform to Quellix." />
+        <EmptyState icon={KeyRound} title="No API keys yet" description="Create a key to send videos from your platform to Ormes." />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
           <Table>
@@ -397,7 +397,7 @@ function Webhooks({ hooks, canEdit }: { hooks: Hook[]; canEdit: boolean }) {
           <DialogHeader>
             <DialogTitle>{secret ? "Webhook added" : "Add a webhook"}</DialogTitle>
             <DialogDescription>
-              {secret ? "Verify the Quellix-Signature header of each delivery with this signing secret." : "An https endpoint on your side that accepts POST requests."}
+              {secret ? "Verify the Ormes-Signature header of each delivery with this signing secret." : "An https endpoint on your side that accepts POST requests."}
             </DialogDescription>
           </DialogHeader>
           {secret ? (
@@ -423,7 +423,7 @@ function Webhooks({ hooks, canEdit }: { hooks: Hook[]; canEdit: boolean }) {
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://example.com/hooks/quellix"
+                placeholder="https://example.com/hooks/ormes"
                 className="font-mono text-[13px]"
                 autoFocus
                 aria-invalid={Boolean(error)}
@@ -668,7 +668,7 @@ function Privacy({ allowExternal, trainingOptIn, canEdit }: { allowExternal: boo
   };
   return (
     <section className="grid gap-4">
-      <SectionHead title="Data & privacy" description="How Quellix handles your contributors' videos. These rules apply to every video, in every decision." />
+      <SectionHead title="Data & privacy" description="How Ormes handles your contributors' videos. These rules apply to every video, in every decision." />
       <Card className="grid gap-4 p-5">
         <div className="flex items-start justify-between gap-6">
           <div className="grid gap-1.5">
@@ -676,7 +676,7 @@ function Privacy({ allowExternal, trainingOptIn, canEdit }: { allowExternal: boo
               Allow third-party models
             </Label>
             <p className="max-w-[60ch] text-[13.5px] text-muted-foreground">
-              Off by default. Your videos are analysed by Quellix&apos;s own models. When on, we may send a video to Google Gemini or TwelveLabs for tasks our models do not cover yet. Each
+              Off by default. Your videos are analysed by Ormes&apos;s own models. When on, we may send a video to Google Gemini or TwelveLabs for tasks our models do not cover yet. Each
               decision records which model produced each measurement.
             </p>
           </div>
@@ -689,8 +689,8 @@ function Privacy({ allowExternal, trainingOptIn, canEdit }: { allowExternal: boo
             <h3 className="text-[15px] font-medium">Training on your videos</h3>
             <p className="max-w-[60ch] text-[13.5px] text-muted-foreground">
               {trainingOptIn
-                ? "Your organization opted in: your videos train Quellix's own models only, never anyone else's. Contact us to opt out; it applies to every future video."
-                : "Never. Your videos are not used to train any model, resold or shown to another customer. Opting in is a separate agreement, with a discount, and only trains Quellix's own models."}
+                ? "Your organization opted in: your videos train Ormes's own models only, never anyone else's. Contact us to opt out; it applies to every future video."
+                : "Never. Your videos are not used to train any model, resold or shown to another customer. Opting in is a separate agreement, with a discount, and only trains Ormes's own models."}
             </p>
           </div>
           <Badge tone={trainingOptIn ? "review" : "accept"}>{trainingOptIn ? "opted in" : "off"}</Badge>

@@ -11,9 +11,9 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", 
 export const metadata: Metadata = {
   // Absolute URLs for Open Graph images. siteUrl() never throws, whatever the env holds.
   metadataBase: new URL(siteUrl()),
-  title: { default: "Quellix", template: "%s · Quellix" },
+  title: { default: "Ormes", template: "%s · Ormes" },
   description:
-    "Quellix applies your lab's spec to every first-person video you collect and decides accept, reject or review, so your reviewers only see the doubtful cases.",
+    "Ormes applies your lab's spec to every first-person video you collect and decides accept, reject or review, so your reviewers only see the doubtful cases.",
 };
 
 export const viewport: Viewport = { themeColor: "#000000" };

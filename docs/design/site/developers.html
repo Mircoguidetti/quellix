@@ -1,6 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Quellix Developers</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ormes Developers</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="The Quellix API, SDKs, decision object and webhooks.">
+<meta name="description" content="The Ormes API, SDKs, decision object and webhooks.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -355,7 +355,7 @@ td code{font-family:var(--f-mono);font-size:12.5px;color:var(--fg)}
 .dual .pn{min-height:0}
 .dual .x-note{margin-top:0}
 </style>
-</head><body><header class="nv" id="nv"><div class="in"><a class="logo" href="index.html"><i aria-hidden="true"></i>QUELLIX</a>
+</head><body><header class="nv" id="nv"><div class="in"><a class="logo" href="index.html"><i aria-hidden="true"></i>ORMES</a>
 <nav class="nn" aria-label="Main"><a class="lk" href="product.html">Product</a><a class="lk" href="developers.html" aria-current="page">Developers</a><a class="lk" href="security.html">Security</a><a class="lk si" href="https://quellix-orpin.vercel.app/login">Sign in</a><a class="pill" href="https://quellix-orpin.vercel.app/signup">Start a pilot</a>
 <button class="mb" id="mb" type="button" aria-label="Menu" aria-expanded="false" aria-controls="mp"><i></i><i></i></button></nav></div>
 <div class="mp" id="mp"><a href="product.html">Product</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://quellix-orpin.vercel.app/login">Sign in</a><a class="g" href="https://quellix-orpin.vercel.app/signup">Start a pilot</a></div></header>
@@ -364,13 +364,13 @@ td code{font-family:var(--f-mono);font-size:12.5px;color:var(--fg)}
 <div class="eyebrow">Developers</div>
 <h1>Three calls from upload to decision.</h1>
 <p class="hl">A REST API with TypeScript and Python SDKs. Create a video, upload the file, get the decision by webhook.</p>
-<div class="hb"><span class="x-t">npm install @quellix/sdk</span><span class="x-t">pip install quellix</span><span class="badge">early access</span></div>
+<div class="hb"><span class="x-t">npm install @ormes/sdk</span><span class="x-t">pip install ormes</span><span class="badge">early access</span></div>
 <nav class="toc" aria-label="On this page"><a href="#quickstart">Quickstart</a><a href="#endpoints">Endpoints</a><a href="#decision">Decision object</a><a href="#webhooks">Webhooks</a><a href="#errors">Errors</a></nav>
 </div></section>
 
 <section class="sec" id="quickstart"><div class="wrap">
 <h2>Quickstart</h2>
-<p class="lead">Create an API key in Settings. The SDK reads it from <code class="x-t">QUELLIX_API_KEY</code>.</p>
+<p class="lead">Create an API key in Settings. The SDK reads it from <code class="x-t">ORMES_API_KEY</code>.</p>
 <div class="int">
 <div class="steps">
 <div><b>1</b><h3>Create the video</h3><p><code>POST /v1/videos</code> with the rubric and file details returns a signed <code>upload_url</code>.</p></div>
@@ -378,9 +378,9 @@ td code{font-family:var(--f-mono);font-size:12.5px;color:var(--fg)}
 <div><b>3</b><h3>Get the decision</h3><p>The <code>video.decided</code> webhook, or <code>GET /v1/videos/{id}</code>. The SDK’s <code>upload()</code> and <code>waitForDecision()</code> do all three.</p></div>
 </div>
 <div class="code" data-tabs><div class="tabs" role="tablist"><button role="tab" aria-selected="true">TypeScript</button><button role="tab" aria-selected="false">Python</button><button role="tab" aria-selected="false">cURL</button><button class="cp" type="button">Copy</button></div>
-<pre role="tabpanel"><span class="k">import</span> { Quellix } <span class="k">from</span> <span class="s">"@quellix/sdk"</span>;
+<pre role="tabpanel"><span class="k">import</span> { Ormes } <span class="k">from</span> <span class="s">"@ormes/sdk"</span>;
 
-<span class="k">const</span> qx = <span class="k">new</span> Quellix(); <span class="c">// reads QUELLIX_API_KEY</span>
+<span class="k">const</span> qx = <span class="k">new</span> Ormes(); <span class="c">// reads ORMES_API_KEY</span>
 
 <span class="k">const</span> video = <span class="k">await</span> qx.videos.upload(<span class="s">"./v_88214.mp4"</span>, {
   rubricId: <span class="s">"rub_load_dishwasher"</span>,
@@ -390,9 +390,9 @@ td code{font-family:var(--f-mono);font-size:12.5px;color:var(--fg)}
 
 d.decision;      <span class="c">// "reject"</span>
 d.reasons[0];    <span class="c">// hands_visible.below_min, 61% (min 80%)</span></pre>
-<pre role="tabpanel" hidden><span class="k">from</span> quellix <span class="k">import</span> Quellix
+<pre role="tabpanel" hidden><span class="k">from</span> ormes <span class="k">import</span> Ormes
 
-qx = Quellix()  <span class="c"># reads QUELLIX_API_KEY</span>
+qx = Ormes()  <span class="c"># reads ORMES_API_KEY</span>
 
 video = qx.videos.upload(<span class="s">"v_88214.mp4"</span>,
                          rubric_id=<span class="s">"rub_load_dishwasher"</span>,
@@ -402,13 +402,13 @@ d = qx.videos.wait_for_decision(video.id)
 d.decision      <span class="c"># "reject"</span>
 d.reasons[0]    <span class="c"># hands_visible.below_min, 61% (min 80%)</span></pre>
 <pre role="tabpanel" hidden><span class="c"># 1. register the video, get a signed upload URL</span>
-curl -X POST $QX/v1/videos -H <span class="s">"Authorization: Bearer $QUELLIX_API_KEY"</span> \
+curl -X POST $QX/v1/videos -H <span class="s">"Authorization: Bearer $ORMES_API_KEY"</span> \
   -d <span class="s">'{"rubric_id":"rub_load_dishwasher","filename":"v_88214.mp4",
        "content_type":"video/mp4","size_bytes":48211234}'</span>
 <span class="c"># 2. PUT the file to upload_url</span>
 curl -X PUT <span class="s">"$UPLOAD_URL"</span> -H <span class="s">"Content-Type: video/mp4"</span> --data-binary @v_88214.mp4
 <span class="c"># 3. start the analysis; the decision arrives by webhook</span>
-curl -X POST $QX/v1/videos/$ID/complete -H <span class="s">"Authorization: Bearer $QUELLIX_API_KEY"</span></pre>
+curl -X POST $QX/v1/videos/$ID/complete -H <span class="s">"Authorization: Bearer $ORMES_API_KEY"</span></pre>
 </div>
 </div></div></section>
 
@@ -425,7 +425,7 @@ curl -X POST $QX/v1/videos/$ID/complete -H <span class="s">"Authorization: Beare
 <tr><td><span class="mth p">POST</span><code>/v1/rubrics</code></td><td>Create a rubric (version 1).</td></tr>
 <tr><td><span class="mth u">PUT</span><code>/v1/rubrics/{id}</code></td><td>Save a new version. Old versions are kept.</td></tr>
 </tbody></table></div>
-<p class="note">Authentication: <code>Authorization: Bearer qx_live_…</code>. We store only a hash of each key.</p>
+<p class="note">Authentication: <code>Authorization: Bearer orm_live_…</code>. We store only a hash of each key.</p>
 </div></section>
 
 <section class="sec" id="decision"><div class="wrap">
@@ -453,13 +453,13 @@ curl -X POST $QX/v1/videos/$ID/complete -H <span class="s">"Authorization: Beare
 <h2>Webhooks</h2>
 <p class="lead"><code class="x-t">video.decided</code> is sent when a decision is ready. Each request is signed with your webhook secret.</p>
 <div class="dual">
-<div class="code"><pre><span class="c">Quellix-Signature: t=1761062400,v1=5f2b…c9</span>
+<div class="code"><pre><span class="c">Ormes-Signature: t=1761062400,v1=5f2b…c9</span>
 
 <span class="c">// v1 = HMAC-SHA256(secret, `${t}.${rawBody}`)</span>
-<span class="k">import</span> { verifySignature } <span class="k">from</span> <span class="s">"@quellix/sdk"</span>;
+<span class="k">import</span> { verifySignature } <span class="k">from</span> <span class="s">"@ormes/sdk"</span>;
 
 <span class="k">const</span> ok = <span class="k">await</span> verifySignature(rawBody,
-  req.headers[<span class="s">"quellix-signature"</span>], secret);
+  req.headers[<span class="s">"ormes-signature"</span>], secret);
 <span class="k">if</span> (!ok) <span class="k">return</span> res.status(<span class="n">400</span>).end();</pre></div>
 <div class="frd">
 <div><h3>Verify every request</h3><p>Compare in constant time and reject timestamps older than five minutes. Both SDKs do this for you.</p></div>
@@ -482,7 +482,7 @@ curl -X POST $QX/v1/videos/$ID/complete -H <span class="s">"Authorization: Beare
 <section class="end" id="start"><div class="glow" aria-hidden="true"></div>
 <div class="z"><h2>Ship it this afternoon.</h2><p>Create a key, send one video and read the decision. The pilot is free.</p>
 <div class="cta"><a class="b w" href="https://quellix-orpin.vercel.app/signup">Start a free pilot</a><a class="b o" href="developers.html">Read the API</a></div></div>
-<footer class="ft"><span>QUELLIX</span><nav class="cols" aria-label="Footer"><a href="product.html">Product</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://quellix-orpin.vercel.app/data">Data handling</a><a href="https://quellix-orpin.vercel.app/dpa">DPA</a></nav></footer>
+<footer class="ft"><span>ORMES</span><nav class="cols" aria-label="Footer"><a href="product.html">Product</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://quellix-orpin.vercel.app/data">Data handling</a><a href="https://quellix-orpin.vercel.app/dpa">DPA</a></nav></footer>
 <p class="note" style="padding:0 16px 28px">Demo footage on this site: Build AI Egocentric-10K, Apache 2.0.</p>
 </section>
 </main>

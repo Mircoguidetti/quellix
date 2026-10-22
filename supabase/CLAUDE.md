@@ -1,6 +1,6 @@
 # supabase
 
-Database schema for Quellix (Postgres on Supabase, EU region).
+Database schema for Ormes (Postgres on Supabase, EU region).
 
 - `migrations/` - append-only. Add a new file `YYYYMMDDHHMMSS_<name>.sql`; never edit one that has been applied.
 - Every table with customer data has `org_id` and Row Level Security. Dashboard users go through RLS (`is_member`, `is_admin`); the worker and the API's server-side code use the service role.

@@ -7,6 +7,11 @@ on:
       - "services/worker/**"
       - ".github/workflows/worker.yml"
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to Modal before the smoke test (untick to only run the smoke test)"
+        type: boolean
+        default: true
 
 concurrency:
   group: worker-deploy
@@ -60,7 +65,7 @@ jobs:
           fi
 
       - name: Deploy
-        if: steps.secret.outputs.ready == 'true'
+        if: steps.secret.outputs.ready == 'true' && (github.event_name != 'workflow_dispatch' || inputs.deploy == true)
         run: uv run modal deploy -m quellix_worker.modal_app
 
       - name: Smoke test (upload a clip, wait for a decision)

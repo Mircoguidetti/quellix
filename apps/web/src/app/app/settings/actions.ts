@@ -56,7 +56,7 @@ export async function addWebhook(url: string): Promise<Ok<{ secret: string }>> {
     const clean = z
       .string()
       .trim()
-      .url("Enter a full URL, like https://example.com/hooks/quellix.")
+      .url("Enter a full URL, like https://example.com/hooks/ormes.")
       .refine((u) => u.startsWith("https://"), "Webhook URLs must use https.")
       .parse(url);
     const secret = `whsec_${randomBytes(24).toString("base64url")}`;
@@ -103,7 +103,7 @@ export async function inviteMember(email: string, role: string): Promise<Ok<{ ex
     const invited = await db.auth.admin.inviteUserByEmail(address, { redirectTo: `${siteUrl()}/auth/callback?next=/reset-password` });
     if (invited.data?.user) userId = invited.data.user.id;
     else {
-      // Already has a Quellix account: add them directly.
+      // Already has an Ormes account: add them directly.
       const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
       const found = data?.users.find((u) => u.email?.toLowerCase() === address);
       if (!found) return { ok: false, error: "We could not send the invitation. Try again." };

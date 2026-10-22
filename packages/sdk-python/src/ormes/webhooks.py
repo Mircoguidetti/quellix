@@ -4,12 +4,24 @@ import hashlib
 import hmac
 import re
 import time
+from collections.abc import Mapping
 
 from .errors import WebhookSignatureError
 from .types import VideoDecidedEvent
 
-SIGNATURE_HEADER = "Quellix-Signature"
+SIGNATURE_HEADER = "Ormes-Signature"
+# Sent before the rename; only read as a fallback.
+LEGACY_SIGNATURE_HEADER = "Quellix-Signature"
 _HEX = re.compile(r"^[0-9a-fA-F]+$")
+
+
+def signature_from_headers(headers: Mapping[str, str]) -> str | None:
+    """The signature header of a webhook request: `Ormes-Signature`, else the legacy name.
+
+    Header names are matched case-insensitively, so this works with any framework's headers.
+    """
+    lowered = {k.lower(): v for k, v in headers.items()}
+    return lowered.get(SIGNATURE_HEADER.lower()) or lowered.get(LEGACY_SIGNATURE_HEADER.lower())
 
 
 def verify_signature(
@@ -20,7 +32,7 @@ def verify_signature(
     tolerance: float = 300,
     now: float | None = None,
 ) -> bool:
-    """Verify the `Quellix-Signature` header against the raw request body.
+    """Verify the `Ormes-Signature` header against the raw request body.
 
     Accepts `t=<unix>,v1=<hex>` (HMAC-SHA256 over ``"<t>.<body>"``, rejected when older than
     `tolerance` seconds) and the bare hex HMAC of the body the API sends today (no timestamp to

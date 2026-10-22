@@ -1031,6 +1031,7 @@ provides-extras = ["modal", "embed"]
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8" },
+    { name = "quellix-hands", editable = "../models/hands" },
     { name = "ruff", specifier = ">=0.7" },
 ]
 

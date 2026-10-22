@@ -1,14 +1,14 @@
-"""Python SDK for the Quellix API."""
+"""Python SDK for the Ormes API."""
 
-from ._async_client import AsyncQuellix
-from ._client import Quellix
+from ._async_client import AsyncOrmes
+from ._client import Ormes
 from ._core import DEFAULT_BASE_URL
 from .errors import (
     APIError,
     AuthenticationError,
     ConnectionError,
     NotFoundError,
-    QuellixError,
+    OrmesError,
     RateLimitError,
     TimeoutError,
     ValidationError,
@@ -22,21 +22,28 @@ from .types import (
     Video,
     VideoDecidedEvent,
 )
-from .webhooks import SIGNATURE_HEADER, construct_event, verify_signature
+from .webhooks import (
+    LEGACY_SIGNATURE_HEADER,
+    SIGNATURE_HEADER,
+    construct_event,
+    signature_from_headers,
+    verify_signature,
+)
 
 __all__ = [
     "DEFAULT_BASE_URL",
+    "LEGACY_SIGNATURE_HEADER",
     "SIGNATURE_HEADER",
     "APIError",
-    "AsyncQuellix",
+    "AsyncOrmes",
     "AuthenticationError",
     "ConnectionError",
     "CreateVideoResponse",
     "Decision",
     "LabOutcome",
     "NotFoundError",
-    "Quellix",
-    "QuellixError",
+    "Ormes",
+    "OrmesError",
     "RateLimitError",
     "Rubric",
     "TimeoutError",
@@ -45,5 +52,6 @@ __all__ = [
     "VideoDecidedEvent",
     "WebhookSignatureError",
     "construct_event",
+    "signature_from_headers",
     "verify_signature",
 ]

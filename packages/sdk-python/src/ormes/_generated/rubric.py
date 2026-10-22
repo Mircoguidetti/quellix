@@ -12,7 +12,7 @@ class Task(BaseModel):
     )
     library_id: str | None = Field(
         None,
-        description="Id of a task in the Quellix task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model.",
+        description="Id of a task in the Ormes task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model.",
     )
     description: constr(min_length=1)
     steps: list[str] | None = None

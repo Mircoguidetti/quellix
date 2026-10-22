@@ -1504,6 +1504,29 @@ wheels = [
 ]
 
 [[package]]
+name = "quellix-hands"
+version = "0.1.0"
+source = { editable = "../../models/hands" }
+dependencies = [
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "av", marker = "extra == 'eval'", specifier = ">=13" },
+    { name = "mediapipe", marker = "extra == 'mediapipe'", specifier = ">=0.10.20" },
+    { name = "numpy", specifier = ">=2" },
+]
+provides-extras = ["mediapipe", "eval"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "av", specifier = ">=13" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "ruff", specifier = ">=0.7" },
+]
+
+[[package]]
 name = "quellix-worker"
 version = "0.1.0"
 source = { editable = "." }
@@ -1528,6 +1551,7 @@ modal = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "quellix-hands" },
     { name = "ruff" },
 ]
 
@@ -1548,6 +1572,7 @@ provides-extras = ["modal", "embed"]
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8" },
+    { name = "quellix-hands", editable = "../../models/hands" },
     { name = "ruff", specifier = ">=0.7" },
 ]
 

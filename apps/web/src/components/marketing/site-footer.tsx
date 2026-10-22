@@ -4,7 +4,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="ft">
-      <span>QUELLIX</span>
+      <span>ORMES</span>
       <nav className="cols" aria-label="Footer">
         <Link href="/product">Product</Link>
         <Link href="/developers">Developers</Link>

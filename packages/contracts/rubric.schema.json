@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://quellix.ai/schemas/rubric.schema.json",
+  "$id": "https://ormes.ai/schemas/rubric.schema.json",
   "title": "Rubric",
   "description": "A collector's acceptance spec for one task, usually copied from the lab's spec. Checks produce measurements; the rubric turns measurements into pass / fail / uncertain. A failed critical check rejects; a failed non-critical check, or an uncertain critical one, sends the video to review.",
   "type": "object",
@@ -17,7 +17,7 @@
       "properties": {
         "library_id": {
           "type": "string",
-          "description": "Id of a task in the Quellix task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model."
+          "description": "Id of a task in the Ormes task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model."
         },
         "description": { "type": "string", "minLength": 1 },
         "steps": { "type": "array", "items": { "type": "string" } },

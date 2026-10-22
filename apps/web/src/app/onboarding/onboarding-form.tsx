@@ -70,7 +70,7 @@ export function OnboardingForm({ additional, greeting }: { additional: boolean; 
             />
             {error && <FormAlert>{error}</FormAlert>}
             <Button type="submit" variant="pill" size="lg" className="mt-1 w-full" loading={pending}>
-              {additional ? "Create organization" : "Continue to Quellix"}
+              {additional ? "Create organization" : "Continue to Ormes"}
             </Button>
             {additional && (
               <Link href="/app" className="mx-auto rounded text-[13px] text-muted-foreground hover:text-foreground">

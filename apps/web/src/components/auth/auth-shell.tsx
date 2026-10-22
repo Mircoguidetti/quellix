@@ -10,7 +10,7 @@ export function AuthShell({ children, footer }: { children: React.ReactNode; foo
         className="pointer-events-none absolute left-1/2 top-[-18%] aspect-square w-[min(900px,150vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(143,180,255,0.14),rgba(143,180,255,0))]"
       />
       <header className="relative mx-auto flex h-16 w-full max-w-[1120px] items-center px-4 sm:px-6">
-        <Link href="/" className="rounded-md" aria-label="Quellix home">
+        <Link href="/" className="rounded-md" aria-label="Ormes home">
           <Logo />
         </Link>
       </header>

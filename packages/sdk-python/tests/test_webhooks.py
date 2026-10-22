@@ -5,7 +5,7 @@ import hmac
 
 import pytest
 
-from quellix import WebhookSignatureError, construct_event, verify_signature
+from ormes import WebhookSignatureError, construct_event, verify_signature
 
 SECRET = "whsec_test"
 BODY = (
@@ -55,3 +55,13 @@ def test_construct_event() -> None:
     assert event.data.id == "vid_1"
     with pytest.raises(WebhookSignatureError):
         construct_event(BODY, "00", SECRET)
+
+
+def test_signature_header_names() -> None:
+    from ormes import LEGACY_SIGNATURE_HEADER, SIGNATURE_HEADER, signature_from_headers
+
+    assert SIGNATURE_HEADER == "Ormes-Signature" and LEGACY_SIGNATURE_HEADER == "Quellix-Signature"
+    assert signature_from_headers({"ormes-signature": "a"}) == "a"
+    assert signature_from_headers({"Quellix-Signature": "b"}) == "b"
+    assert signature_from_headers({"Ormes-Signature": "a", "Quellix-Signature": "b"}) == "a"
+    assert signature_from_headers({"X-Other": "c"}) is None

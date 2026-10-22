@@ -8,5 +8,5 @@ export function isDemoMode(): boolean {
 }
 
 export const DEMO_SESSION_COOKIE = "qx_demo_session";
-export const DEMO_EMAIL = "demo@quellix.dev";
-export const DEMO_PASSWORD = "quellix-demo";
+export const DEMO_EMAIL = "demo@ormes.dev";
+export const DEMO_PASSWORD = "ormes-demo";

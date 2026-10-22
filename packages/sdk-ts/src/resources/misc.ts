@@ -15,7 +15,7 @@ export class Review {
 export class LabOutcomes {
   constructor(private readonly http: HttpClient) {}
 
-  /** Records what the lab decided, used to measure Quellix's precision. */
+  /** Records what the lab decided, used to measure Ormes's precision. */
   submit(videoId: string, input: LabOutcome, options: Opts = {}): Promise<Video> {
     return this.http.request("POST", `/videos/${encodeURIComponent(videoId)}/lab-outcome`, { body: input, ...options });
   }

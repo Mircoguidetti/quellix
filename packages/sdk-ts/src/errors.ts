@@ -5,14 +5,14 @@ export interface ErrorBody {
   fields?: unknown;
 }
 
-export class QuellixError extends Error {
+export class OrmesError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = new.target.name;
   }
 }
 
-export class APIError extends QuellixError {
+export class APIError extends OrmesError {
   readonly status: number;
   readonly code: string;
   readonly requestId: string | undefined;
@@ -65,10 +65,10 @@ export class RateLimitError extends APIError {
 }
 
 /** Network failure, timeout or abort; no HTTP response was received. */
-export class ConnectionError extends QuellixError {}
+export class ConnectionError extends OrmesError {}
 
 /** `waitForDecision` ran out of time. */
-export class TimeoutError extends QuellixError {}
+export class TimeoutError extends OrmesError {}
 
 export function errorFromResponse(
   status: number,

@@ -24,7 +24,7 @@ export function ResolveDialog({ contestId }: { contestId: string }) {
     if (!status) return setError("Choose an outcome.");
     setSaving(true);
     setError(null);
-    const res = await resolveContestAction(contestId, { status, note: note.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Quellix." }));
+    const res = await resolveContestAction(contestId, { status, note: note.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Ormes." }));
     setSaving(false);
     if (!res.ok) return setError(res.error);
     setOpen(false);
