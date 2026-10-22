@@ -8,7 +8,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-CheckLabel = Literal["pass", "fail", "unknown"]
+# "uncertain": the right answer is "could not tell" (e.g. no manipulation for hands_visible):
+# the check must end uncertain / error, i.e. in review, never in pass or fail.
+CheckLabel = Literal["pass", "fail", "uncertain", "unknown"]
 LabelsSource = Literal["human", "synthetic", "baseline"]
 
 # Datasets whose licenses forbid commercial use. Never allowed in a manifest.
