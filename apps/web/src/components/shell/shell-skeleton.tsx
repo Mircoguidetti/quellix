@@ -12,7 +12,7 @@ export function ShellSkeleton({ collapsed = false, children }: { collapsed?: boo
           <Skeleton className="h-[42px] w-full rounded-lg" />
         </div>
         <div className="flex flex-col gap-0.5 px-3">
-          {NAV.map((n) => (
+          {NAV.filter((n) => !n.flag).map((n) => (
             <div key={n.href} className="flex h-9 items-center gap-3 px-2.5">
               <Skeleton className="size-[18px] rounded" />
               {!collapsed && <Skeleton className="h-3 w-20" />}

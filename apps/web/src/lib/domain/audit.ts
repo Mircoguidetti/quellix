@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { errors } from "@/lib/api/errors";
 import { checkLabel, reasonLabel } from "@/lib/format";
+import { pilotsEnabled } from "@/lib/pilots/flag";
 
 // Lab audit export (issue #25, part 2): what a lab asks a collector for in procurement, per rubric
 // version over a batch of videos. A batch is a window of days (UTC) on the date a video was received.
@@ -351,7 +352,7 @@ export function auditResponse(report: AuditReport, format: "json" | "csv", downl
 
 // ---------------------------------------------------------------- loading
 
-async function pageAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }>, cap: number): Promise<T[]> {
+export async function pageAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }>, cap: number): Promise<T[]> {
   const out: T[] = [];
   for (let offset = 0; ; offset += PAGE) {
     const { data, error } = await fetchPage(offset, offset + PAGE - 1);
@@ -362,14 +363,14 @@ async function pageAll<T>(fetchPage: (from: number, to: number) => PromiseLike<{
   }
 }
 
-function chunks<T>(items: T[], size: number): T[][] {
+export function chunks<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
 }
 
 /** Runs `fn` over the chunks a few at a time, so a large window does not open hundreds of requests at once. */
-async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
   const worker = async () => {
@@ -403,6 +404,8 @@ export async function loadAudit(db: SupabaseClient, orgId: string, q: AuditQuery
       .lt("created_at", toIso);
     if (q.rubric_id) query = query.eq("rubric_id", q.rubric_id);
     if (q.version) query = query.eq("rubric_version", q.version);
+    // Shadow pilot videos are not production decisions (issue #65).
+    if (pilotsEnabled()) query = query.eq("shadow", false);
     return query.order("created_at", { ascending: true }).order("id", { ascending: true }).range(a, b);
   }, MAX_AUDIT_VIDEOS);
   if (videos.length > MAX_AUDIT_VIDEOS) {

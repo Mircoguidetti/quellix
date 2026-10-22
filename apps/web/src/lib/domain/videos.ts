@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { errors } from "@/lib/api/errors";
 import type { CreateVideoInput } from "@/lib/api/schemas";
 import { QUEUE_NAME, VIDEO_BUCKET, requireUuid, storagePathFor } from "./ids";
+import { pilotsEnabled } from "@/lib/pilots/flag";
 
 type VideoRow = {
   id: string;
@@ -146,6 +147,8 @@ export async function listVideoItems(db: SupabaseClient, orgId: string, f: ListF
 
   for (let i = 0; i < maxBatches && page.length <= f.limit; i++) {
     let q = db.from("videos").select(VIDEO_COLUMNS).eq("org_id", orgId);
+    // Shadow pilot videos live in their pilot's report, not in the customer's lists (issue #65).
+    if (pilotsEnabled()) q = q.eq("shadow", false);
     if (f.status) q = q.eq("status", f.status);
     if (f.rubricId) q = q.eq("rubric_id", f.rubricId);
     if (f.createdFrom) q = q.gte("created_at", f.createdFrom);
@@ -181,7 +184,8 @@ export async function listVideos(db: SupabaseClient, orgId: string, f: ListFilte
   return { data: items.map((i) => i.view), next_cursor };
 }
 
-export async function createVideo(db: SupabaseClient, orgId: string, input: CreateVideoInput) {
+/** `shadow`: a pilot video (issue #65): no webhooks, no contributor feedback, kept out of the usual views. */
+export async function createVideo(db: SupabaseClient, orgId: string, input: CreateVideoInput, opts: { shadow?: boolean } = {}) {
   requireUuid(input.rubric_id, "Rubric");
   const { data: rubric, error: rError } = await db
     .from("rubrics")
@@ -218,6 +222,8 @@ export async function createVideo(db: SupabaseClient, orgId: string, input: Crea
       filename: input.filename,
       content_type: input.content_type,
       size_bytes: input.size_bytes,
+      // Only written for pilots, so the insert works before the pilots migration exists.
+      ...(opts.shadow ? { shadow: true } : {}),
     })
     .select(VIDEO_COLUMNS)
     .single();
@@ -352,29 +358,27 @@ export async function completeUpload(db: SupabaseClient, orgId: string, videoId:
   if (cError) throw errors.internal();
   if (!claimed?.length) throw errors.conflict("Video is no longer awaiting upload");
 
-  const rollback = async (jobId?: string) => {
-    if (jobId) await db.from("jobs").delete().eq("id", jobId);
+  await enqueueJob(db, video.id, async () => {
     await db.from("videos").update({ status: "awaiting_upload" }).eq("id", video.id);
-  };
+  });
+  return getVideo(db, orgId, video.id);
+}
 
-  const { data: job, error: jError } = await db
-    .from("jobs")
-    .insert({ video_id: video.id, status: "queued" })
-    .select("id")
-    .single();
+/** Creates the job and puts it on the queue; on failure removes the job and runs `rollback`. */
+export async function enqueueJob(db: SupabaseClient, videoId: string, rollback: () => Promise<void>): Promise<void> {
+  const { data: job, error: jError } = await db.from("jobs").insert({ video_id: videoId, status: "queued" }).select("id").single();
   if (jError || !job) {
     await rollback();
     throw errors.internal();
   }
-
   const { error: qError } = await db
     .schema("pgmq_public")
-    .rpc("send", { queue_name: QUEUE_NAME, message: { job_id: job.id, video_id: video.id } });
+    .rpc("send", { queue_name: QUEUE_NAME, message: { job_id: job.id, video_id: videoId } });
   if (qError) {
-    await rollback(job.id);
+    await db.from("jobs").delete().eq("id", job.id);
+    await rollback();
     throw errors.internal("Could not queue the analysis");
   }
-  return getVideo(db, orgId, video.id);
 }
 
 export type ReviewItem = {
@@ -414,12 +418,10 @@ async function pendingReviewRows(db: SupabaseClient, orgId: string, limit = 100)
   const ids = [...new Set((decisions ?? []).map((d) => d.video_id as string))];
   if (!ids.length) return [];
 
-  const { data: rows, error: vError } = await db
-    .from("videos")
-    .select(VIDEO_COLUMNS)
-    .eq("org_id", orgId)
-    .in("id", ids)
-    .order("created_at", { ascending: false });
+  let vq = db.from("videos").select(VIDEO_COLUMNS).eq("org_id", orgId).in("id", ids);
+  // Nobody reviews a shadow pilot video: the collector's reviewers already did (issue #65).
+  if (pilotsEnabled()) vq = vq.eq("shadow", false);
+  const { data: rows, error: vError } = await vq.order("created_at", { ascending: false });
   if (vError) throw errors.internal();
   const videos = (rows ?? []) as VideoRow[];
   const views = await attachDetails(db, videos);

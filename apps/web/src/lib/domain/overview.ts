@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { errors } from "@/lib/api/errors";
 import { reasonLabel } from "@/lib/format";
 import { countReviewQueue } from "./videos";
+import { pilotsEnabled } from "@/lib/pilots/flag";
 
 const DAY = 24 * 60 * 60 * 1000;
 export const TREND_DAYS = 14;
@@ -102,7 +103,12 @@ export function computeOverview(videos: VideoIn[], decisions: DecisionIn[], wait
 export async function loadOverview(db: SupabaseClient, orgId: string, now = Date.now()): Promise<Overview> {
   const since = new Date(startOfDayUTC(now) - (TREND_DAYS - 1) * DAY).toISOString();
   const [videos, decisions, waiting] = await Promise.all([
-    db.from("videos").select("id, created_at").eq("org_id", orgId).gte("created_at", since).limit(20000),
+    (pilotsEnabled()
+      ? db.from("videos").select("id, created_at").eq("org_id", orgId).eq("shadow", false)
+      : db.from("videos").select("id, created_at").eq("org_id", orgId)
+    )
+      .gte("created_at", since)
+      .limit(20000),
     db.from("decisions").select("video_id, decision, reasons, created_at").eq("org_id", orgId).gte("created_at", since).limit(20000),
     countReviewQueue(db, orgId),
   ]);
