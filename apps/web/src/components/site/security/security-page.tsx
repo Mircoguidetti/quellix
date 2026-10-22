@@ -34,9 +34,9 @@ const KEPT: { icon: LucideIcon; text: string }[] = [
   { icon: FlaskConical, text: "Your lab’s outcomes" },
   { icon: Fingerprint, text: "Fingerprints that can’t be turned back into video" },
 ];
-const NOT_KEPT: { icon: LucideIcon; text: string }[] = [
+const NOT_KEPT: { icon: LucideIcon; text: string; note?: string }[] = [
   { icon: FileVideo, text: "The video, after the analysis" },
-  { icon: UserX, text: "Contributor names, emails or payment details: only your opaque id" },
+  { icon: UserX, text: "Contributor names, emails or payment details", note: "only your opaque id" },
   { icon: EyeOff, text: "Anything visible to another customer" },
 ];
 
@@ -102,10 +102,13 @@ export function SecurityPage() {
               Not kept
             </p>
             <ul className="mt-5 flex flex-col">
-              {NOT_KEPT.map(({ icon: Icon, text }) => (
+              {NOT_KEPT.map(({ icon: Icon, text, note }) => (
                 <li key={text} className="flex items-center gap-3 border-t border-hairline py-3 text-[15px] text-muted-foreground">
                   <Icon {...ICON} className="size-4 shrink-0" />
-                  <span className="decoration-no/60 decoration-1 [text-decoration-line:line-through]">{text}</span>
+                  <span>
+                    <span className="decoration-no/60 decoration-1 [text-decoration-line:line-through]">{text}</span>
+                    {note ? <span className="ml-2 font-mono text-[12px] text-foreground">{note}</span> : null}
+                  </span>
                 </li>
               ))}
             </ul>

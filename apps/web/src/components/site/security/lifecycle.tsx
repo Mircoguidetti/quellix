@@ -50,8 +50,8 @@ export function Lifecycle() {
         <span aria-hidden className="absolute h-px bg-white/15" style={{ top: ROW1, left: COLS[0], right: "12.5%" }} />
         <span aria-hidden className="absolute w-px border-l border-dashed border-brand/50" style={{ left: COLS[2], top: ROW1, height: ROW2 - ROW1 }} />
         <span aria-hidden className="absolute h-px border-t border-dashed border-brand/50" style={{ top: ROW2, left: COLS[2], width: "25%" }} />
-        <span aria-hidden className={cn(s.dot, "absolute z-20 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.15)]")} style={{ top: ROW1 }} />
-        <span aria-hidden className={cn(s.branchDot, "absolute z-20 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand shadow-[0_0_0_4px_rgba(143,180,255,0.2)]")} />
+        <span aria-hidden className={cn(s.dot, "absolute z-[5] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.15)]")} style={{ top: ROW1 }} />
+        <span aria-hidden className={cn(s.branchDot, "absolute z-[5] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand shadow-[0_0_0_4px_rgba(143,180,255,0.2)]")} />
         <ol>
           {MAIN.map((n, i) => (
             <li key={n.title} className={cn(n.cls, "absolute flex w-[22%] -translate-x-1/2 flex-col items-center text-center")} style={{ left: COLS[i], top: 0 }}>

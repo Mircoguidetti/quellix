@@ -18,7 +18,7 @@ export function ContestFlow() {
             <p className="mt-1 text-[12.5px] text-[#5c626b]">Load the dishwasher · uploaded Oct 21</p>
             <div className="mt-3 rounded-xl border border-[#f3c9c2] bg-[#fdeeeb] p-3 text-[13px]">
               <p className="font-medium text-[#b5321f]">Right hand not in view while handling</p>
-              <p className="mt-0.5 font-mono text-[11.5px] text-[#b5321f]/80">61% · minimum 80%</p>
+              <p className="mt-0.5 font-mono text-[11.5px] text-[#b5321f]">61% · minimum 80%</p>
             </div>
             <p className="mt-3 rounded-xl border border-[#e6e8eb] bg-white p-3 text-[13px] text-[#5c626b]">
               My hand was behind the plate, it never left the frame.

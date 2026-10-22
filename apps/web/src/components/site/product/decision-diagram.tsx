@@ -180,7 +180,7 @@ export function DecisionDiagram() {
         </div>
       </div>
 
-      <div ref={boxRef} className="relative grid grid-cols-[1fr_1.15fr_0.9fr] gap-x-6 px-3 py-6 sm:gap-x-16 sm:px-8 sm:py-10 lg:gap-x-24">
+      <div ref={boxRef} className="relative grid grid-cols-[42px_minmax(0,1fr)_96px] gap-x-5 px-3 py-6 sm:grid-cols-[1fr_1.15fr_0.9fr] sm:gap-x-16 sm:px-8 sm:py-10 lg:gap-x-24">
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0" width={size.w} height={size.h}>
           {EDGES.map((e) => {
             const d = paths[e.id];
@@ -216,12 +216,12 @@ export function DecisionDiagram() {
                   onBlur={() => setHovered(null)}
                   onClick={() => setPinned((p) => (p === c.key ? null : c.key))}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-xl border px-2 py-2 text-left text-[13px] transition-colors duration-300 sm:gap-2.5 sm:px-3 sm:text-[14.5px]",
+                    "flex w-full items-center justify-center gap-2 rounded-xl border px-2 py-2 text-left text-[13px] transition-colors duration-300 sm:justify-start sm:gap-2.5 sm:px-3 sm:text-[14.5px]",
                     on ? "border-white/40 bg-white/[0.07] text-foreground" : ok ? "border-ok/30 text-foreground" : "border-hairline text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <c.icon {...ICON} className={cn("size-4 shrink-0", ok && "text-ok")} />
-                  <span className="truncate">{c.label}</span>
+                  <span className="sr-only truncate sm:not-sr-only">{c.label}</span>
                 </button>
               </li>
             );
