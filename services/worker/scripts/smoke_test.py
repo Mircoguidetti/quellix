@@ -69,7 +69,11 @@ def _check(resp: httpx.Response, stage: str, what: str) -> httpx.Response:
     """Raise a SmokeError that names the call, the HTTP status and the response body."""
     if resp.is_success:
         return resp
-    raise SmokeError(stage, f"{what} -> HTTP {resp.status_code}: {_one_line(resp.text)}")
+    hint = ""
+    if "PGRST106" in resp.text:  # PostgREST: schema not exposed
+        hint = (" FIX: Supabase Dashboard > Project Settings > API > Exposed schemas: add"
+                " pgmq_public, then Save.")
+    raise SmokeError(stage, f"{what} -> HTTP {resp.status_code}: {_one_line(resp.text)}{hint}")
 
 
 def annotation(stage: str, reason: str) -> str:

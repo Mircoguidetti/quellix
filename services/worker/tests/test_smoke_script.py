@@ -112,6 +112,15 @@ def test_enqueue_failure_names_the_stage_status_and_body(tmp_path):
     assert "HTTP 406" in exc.value.reason and "pgmq_public" in exc.value.reason
 
 
+def test_unexposed_schema_gets_an_actionable_hint(tmp_path):
+    body = '{"code":"PGRST106","message":"Invalid schema: pgmq_public"}'
+    s = smoke.Smoke("https://x.supabase.co", "svc", httpx.Client(
+        transport=httpx.MockTransport(_failing({"/rpc/send": (406, body)}))))
+    with pytest.raises(smoke.SmokeError) as exc:
+        s.setup(smoke.make_clip(tmp_path / "c.mp4"))
+    assert "Exposed schemas" in exc.value.reason and "pgmq_public" in exc.value.reason
+
+
 def test_upload_failure_names_the_bucket(tmp_path):
     handler = _failing({"/smoke.mp4": (404, '{"error":"Bucket not found"}')})
     s = smoke.Smoke("https://x.supabase.co", "svc", httpx.Client(
