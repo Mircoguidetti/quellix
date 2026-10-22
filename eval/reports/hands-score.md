@@ -9,7 +9,7 @@ Every rate has a Wilson 95% interval and its count.
 | model | clips | base reject rate | false reject rate | false accept rate | review rate |
 |---|---|---|---|---|---|
 | before (v0) | 124 | 0.91 [0.85-0.95] (113/124) | 1.00 [0.74-1.00] (11/11) | 0.01 [0.00-0.05] (1/113) | 0.05 [0.02-0.10] (6/124) |
-| after (v1@0.2) | 124 | 0.91 [0.85-0.95] (113/124) | 0.91 [0.62-0.98] (10/11) | 0.05 [0.02-0.11] (6/113) | 0.01 [0.00-0.04] (1/124) |
+| after (v1@0.2) | 124 | 0.91 [0.85-0.95] (113/124) | 0.91 [0.62-0.98] (10/11) | 0.04 [0.02-0.10] (5/113) | 0.01 [0.00-0.04] (1/124) |
 
 ## Synthetic hands slice (Egocentric-10K + hand defects)
 
@@ -17,6 +17,24 @@ Every rate has a Wilson 95% interval and its count.
 |---|---|---|---|---|---|
 | before (v0) | 70 | 0.43 [0.32-0.55] (30/70) | 0.80 [0.65-0.90] (32/40) | 0.07 [0.02-0.21] (2/30) | 0.27 [0.18-0.39] (19/70) |
 | after (v1@0.2) | 70 | 0.43 [0.32-0.55] (30/70) | 0.78 [0.62-0.88] (31/40) | 0.07 [0.02-0.21] (2/30) | 0.10 [0.05-0.19] (7/70) |
+
+### Validation windows labelled pass, one by one
+
+Label ratio = share of manipulation frames with both hands fully visible in HoloAssist's own hand tracking; the others are the model's measurements.
+
+| window | label ratio | before | status | after | status |
+|---|---|---|---|---|---|
+| holo_hands_z025-june-21-22-printer_big | 0.9845559845559846 | 0.1818 | fail | 0.6711 | fail |
+| holo_hands_z068-june-29-22-rashult_assemble | 0.9915824915824916 | 0.2875 | fail | 0.6875 | fail |
+| holo_hands_z060-june-28-22-switch | 0.8622881355932204 | 0.1831 | fail | 0.675 | fail |
+| holo_hands_z168-sep-01-22-gladom_disassemble | 0.9137323943661971 | 0.4203 | fail | 0.7857 | fail |
+| holo_hands_z153-aug-25-22-gopro | 0.8775510204081632 | 0.2375 | fail | 0.775 | fail |
+| holo_hands_z071-june-29-22-knarrevik_assemble | 0.9916107382550335 | 0.4026 | fail | 0.7625 | fail |
+| holo_hands_z041-june-24-22-marius_assemble | 0.875 | 0.0 | fail | 0.075 | fail |
+| holo_hands_z062-june-29-22-rashult_assemble_broken | 0.9620034542314335 | 0.6125 | fail | 0.7625 | fail |
+| holo_hands_z078-july-01-22-gladom_disassemble | 0.9318568994889267 | 0.45 | fail | 0.8375 | pass |
+| holo_hands_z078-july-01-22-gopro | 0.960552268244576 | 0.2241 | fail | 0.3816 | fail |
+| holo_hands_z168-sep-01-22-gladom_assemble | 0.9263698630136986 | 0.3443 | fail | 0.7606 | fail |
 
 ## Dev slice (HoloAssist train windows): how the threshold was chosen
 
@@ -33,7 +51,7 @@ Rule: lowest false reject rate + false accept rate; ties go to the higher thresh
 
 | clip | before: both hands, manipulation | status | after: both hands | status |
 |---|---|---|---|---|
-| pexels_7204592 (Washing up in the sink, first-person) | 0.38 | fail | 0.83 | pass |
+| pexels_7204592 (Washing up in the sink, first-person) | 0.38 | fail | 0.79 | fail |
 | pexels_7418650 (Making a salad, first-person) | 0.28 | fail | 0.35 | fail |
 | pexels_37443407 (Whipping cream with an electric mixer, first-person) | 0.00 | fail | 0.00 | fail |
 | pexels_7658012 (Putting ground coffee in a filter, first-person) | None | error | 0.25 | fail |
@@ -65,6 +83,6 @@ Rule: lowest false reject rate + false accept rate; ties go to the higher thresh
   },
   "overlays": 12
  },
- "minutes": 111.7
+ "minutes": 61.4
 }
 ```
