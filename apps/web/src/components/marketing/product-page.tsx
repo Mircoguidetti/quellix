@@ -283,7 +283,7 @@ export function ProductPage() {
             <Link className="b w" href="/signup">Start a free pilot</Link>
             <Link className="b o" href="/developers">Read the API</Link></div></div>{" "}
         <SiteFooter />{" "}
-        <p className="note" style={{ padding: "0 16px 28px" }}>Demo footage on this site: Build AI Egocentric-10K, Apache 2.0.</p>{" "}</section>{" "}
+        </section>{" "}
     </main>
   );
 }
