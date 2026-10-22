@@ -54,3 +54,12 @@ Egocentric-10K shard per factory (never whole shards), transcodes them small (20
 privacy = reject, originality; hands and task off), runs the worker with a shared fingerprint
 store (`QUELLIX_FINGERPRINT_DB`) and writes `report.md` to the job summary and as an artifact.
 Source clips are assumed acceptable (not human-labelled); the report says so.
+
+### Phases, budgets and the Gemini spend cap
+
+The driver runs the Gemini phase **first**, on a fixed subset (the first 20 originals and their
+variants, 80 clips), with its own time budget (12 min, never more than the job has left after
+the worker's minimum) and a spend cap (1 USD per run, checked before every clip, so the
+overshoot is at most one clip). Then the worker runs the same subset first and the remaining
+clips while time is left until the driver's 38-minute job budget. Clips an engine never reaches
+are reported as "not run", not as failures, and the report shows spend and time used per phase.
