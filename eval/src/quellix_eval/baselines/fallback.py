@@ -12,7 +12,13 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from .common import ModelResponse, VideoModelClient
-from .retry import RetryingClient, is_hard_quota, is_model_unavailable, is_rate_limit
+from .retry import (
+    RetryingClient,
+    is_billing_problem,
+    is_hard_quota,
+    is_model_unavailable,
+    is_rate_limit,
+)
 
 
 class FallbackClient:
@@ -36,6 +42,7 @@ class FallbackClient:
         self.first_rate_limit_body: str | None = None
         self.served: Counter[str] = Counter()
         self.dropped: dict[str, str] = {}      # model -> why it was dropped
+        self.blocked: str | None = None        # billing problem: nothing will work, stop calling
 
     @property
     def current(self) -> str:
@@ -52,6 +59,8 @@ class FallbackClient:
         return True
 
     def generate(self, video_path: Path, prompt: str) -> ModelResponse:
+        if self.blocked:
+            raise RuntimeError(self.blocked)
         while True:
             if self._client is None:
                 try:
@@ -66,6 +75,14 @@ class FallbackClient:
             except Exception as e:  # noqa: BLE001
                 if self.first_rate_limit_body is None:
                     self.first_rate_limit_body = client.first_rate_limit_body
+                if is_billing_problem(e):
+                    # Credits belong to the whole project: other models fail the same way, and
+                    # every further call would only burn the time budget.
+                    self.blocked = (
+                        "Gemini billing problem (credits depleted / billing not set up); "
+                        f"no further calls: {' '.join(str(e).split())[:300]}"
+                    )
+                    raise RuntimeError(self.blocked) from e
                 if is_model_unavailable(e):
                     if self._advance("not available for this key (404)"):
                         continue
@@ -89,6 +106,9 @@ class FallbackClient:
         text = "Gemini models used: " + "; ".join(parts) + "."
         if self.dropped:
             text += " Dropped: " + "; ".join(f"`{m}` ({w})" for m, w in self.dropped.items()) + "."
+        if self.blocked:
+            text += " **BLOCKED: Gemini needs billing/credits before it can run.**"
         if self.first_rate_limit_body:
-            text += f" First raw 429 body: `{' '.join(self.first_rate_limit_body.split())[:600]}`"
+            body = " ".join(self.first_rate_limit_body.split())[:600]
+            text += f" First raw quota/billing error: `{body}`"
         return text

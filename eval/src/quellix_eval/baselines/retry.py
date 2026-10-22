@@ -21,6 +21,14 @@ def is_rate_limit(exc: BaseException) -> bool:
     return "429" in text or "RESOURCE_EXHAUSTED" in text or "rate limit" in text.lower()
 
 
+def is_billing_problem(exc: BaseException) -> bool:
+    """Credits depleted / billing not set up (HTTP 402). Waiting or another model won't fix it:
+    the credits belong to the whole project."""
+    if getattr(exc, "code", None) == 402 or getattr(exc, "status_code", None) == 402:
+        return True
+    return bool(re.search(r"\b402\b|prepay|credits are depleted|billing", str(exc), re.I))
+
+
 def is_hard_quota(exc: BaseException) -> bool:
     """A 429 that waiting will not fix: no free quota for this model, or the daily cap is hit."""
     text = str(exc)
@@ -81,11 +89,12 @@ class RetryingClient:
             try:
                 return self.inner.generate(video_path, prompt)
             except Exception as e:  # noqa: BLE001
-                if not is_rate_limit(e):
+                billing = is_billing_problem(e)
+                if not billing and not is_rate_limit(e):
                     raise
                 if self.first_rate_limit_body is None:
                     self.first_rate_limit_body = str(e)[:2000]
-                if is_hard_quota(e) or attempt == self.max_retries:
+                if billing or is_hard_quota(e) or attempt == self.max_retries:
                     raise
                 delay = retry_delay_s(e) or self.base_backoff_s * 2**attempt
                 if self._out_of_time(delay):
