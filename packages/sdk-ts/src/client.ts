@@ -3,7 +3,7 @@ import { LabOutcomes, Review, Rubrics } from "./resources/misc";
 import { Videos } from "./resources/videos";
 import { constructEvent, verifySignature } from "./webhooks";
 
-export class Quellix {
+export class Ormes {
   readonly videos: Videos;
   readonly review: Review;
   readonly labOutcome: LabOutcomes;

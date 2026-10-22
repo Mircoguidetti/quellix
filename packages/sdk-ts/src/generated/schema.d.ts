@@ -90,7 +90,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record what the lab decided about this video, used to measure Quellix's precision */
+        /** Record what the lab decided about this video, used to measure Ormes's precision */
         post: operations["setLabOutcome"];
         delete?: never;
         options?: never;
@@ -150,9 +150,11 @@ export interface webhooks {
         /**
          * Sent when a decision is ready.
          * @description Signed with HMAC-SHA256 using the webhook's signing secret. The header is
-         *     `Quellix-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
+         *     `Ormes-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
          *     string `<t>.<raw request body>`. Receivers must recompute it over the raw body,
          *     compare in constant time and reject timestamps older than a few minutes (replay).
+         *     Deliveries sent before the rename used the header name `Quellix-Signature` with the same
+         *     format; receivers may read it as a fallback.
          */
         post: {
             parameters: {
@@ -258,7 +260,7 @@ export interface components {
         };
         /**
          * Decision
-         * @description What Quellix decided about one video, why, and on what measurements. Produced by services/worker, stored in the decisions table, returned by the API and the webhook.
+         * @description What Ormes decided about one video, why, and on what measurements. Produced by services/worker, stored in the decisions table, returned by the API and the webhook.
          */
         "decision.schema": {
             video_id: string;
@@ -305,7 +307,7 @@ export interface components {
             version: number;
             name: string;
             task: {
-                /** @description Id of a task in the Quellix task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model. */
+                /** @description Id of a task in the Ormes task library (e.g. 'load_dishwasher'). When absent, task completion falls back to a general model. */
                 library_id?: string;
                 description: string;
                 steps?: string[];

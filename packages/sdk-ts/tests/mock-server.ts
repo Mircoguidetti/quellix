@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { parse } from "yaml";
 
 /**
- * A mock Quellix API built from packages/contracts/openapi.yaml: routes,
+ * A mock Ormes API built from packages/contracts/openapi.yaml: routes,
  * success status codes and request-body validation all come from the spec.
  * Only the response bodies are produced by hand-written, stateful handlers.
  */
@@ -102,7 +102,7 @@ export interface MockServer {
   close(): Promise<void>;
 }
 
-export async function startMockServer(apiKey = "qx_live_test"): Promise<MockServer> {
+export async function startMockServer(apiKey = "orm_live_test"): Promise<MockServer> {
   const operations = buildOperations();
   const videos = new Map<string, Json & { gets?: number }>();
   const rubrics = new Map<string, Json[]>();

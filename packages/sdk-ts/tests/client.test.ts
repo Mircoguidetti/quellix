@@ -5,20 +5,23 @@ import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   APIError,
+  LEGACY_SIGNATURE_HEADER,
+  SIGNATURE_HEADER,
   AuthenticationError,
   NotFoundError,
-  Quellix,
+  Ormes,
   RateLimitError,
   TimeoutError,
   ValidationError,
   constructEvent,
+  signatureFromHeaders,
   verifySignature,
 } from "../src/index";
 import { startMockServer, type MockServer } from "./mock-server";
 
 let mock: MockServer;
 const noSleep = async () => {};
-const client = (extra = {}) => new Quellix({ apiKey: "qx_live_test", baseUrl: mock.url, sleep: noSleep, ...extra });
+const client = (extra = {}) => new Ormes({ apiKey: "orm_live_test", baseUrl: mock.url, sleep: noSleep, ...extra });
 const videoParams = { rubric_id: "rub_x", filename: "clip.mp4", content_type: "video/mp4" as const };
 
 beforeAll(async () => {
@@ -37,7 +40,7 @@ describe("videos", () => {
     expect(res.video.status).toBe("awaiting_upload");
     expect(res.upload_url).toContain("/__upload/");
     expect(mock.requests[0]!.headers["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/);
-    expect(mock.requests[0]!.headers.authorization).toBe("Bearer qx_live_test");
+    expect(mock.requests[0]!.headers.authorization).toBe("Bearer orm_live_test");
   });
 
   it("uploads bytes with progress and completes", async () => {
@@ -128,7 +131,7 @@ describe("review, lab outcome and rubrics", () => {
 
 describe("errors and retries", () => {
   it("maps statuses to typed errors", async () => {
-    await expect(new Quellix({ apiKey: "wrong", baseUrl: mock.url }).videos.get("x")).rejects.toBeInstanceOf(AuthenticationError);
+    await expect(new Ormes({ apiKey: "wrong", baseUrl: mock.url }).videos.get("x")).rejects.toBeInstanceOf(AuthenticationError);
     await expect(client().videos.get("missing")).rejects.toBeInstanceOf(NotFoundError);
     const err = await client().videos.create({ ...videoParams, size_bytes: 0 }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ValidationError);
@@ -171,20 +174,34 @@ describe("errors and retries", () => {
   });
 
   it("requires an API key", () => {
-    const saved = process.env.QUELLIX_API_KEY;
-    delete process.env.QUELLIX_API_KEY;
-    expect(() => new Quellix()).toThrow(/API key/);
-    if (saved) process.env.QUELLIX_API_KEY = saved;
+    const saved = process.env.ORMES_API_KEY;
+    delete process.env.ORMES_API_KEY;
+    expect(() => new Ormes()).toThrow(/API key/);
+    if (saved) process.env.ORMES_API_KEY = saved;
   });
 
-  it("reads QUELLIX_BASE_URL and QUELLIX_API_KEY from the environment", async () => {
-    process.env.QUELLIX_API_KEY = "qx_live_test";
+  it("still reads the pre-rename QUELLIX_* variables, and prefers the new names", async () => {
+    process.env.QUELLIX_API_KEY = "orm_live_test";
     process.env.QUELLIX_BASE_URL = mock.url;
     try {
-      await expect(new Quellix().videos.get("missing")).rejects.toBeInstanceOf(NotFoundError);
+      await expect(new Ormes().videos.get("missing")).rejects.toBeInstanceOf(NotFoundError);
+      process.env.ORMES_API_KEY = "wrong";
+      await expect(new Ormes().videos.get("missing")).rejects.toBeInstanceOf(AuthenticationError);
     } finally {
       delete process.env.QUELLIX_API_KEY;
       delete process.env.QUELLIX_BASE_URL;
+      delete process.env.ORMES_API_KEY;
+    }
+  });
+
+  it("reads ORMES_BASE_URL and ORMES_API_KEY from the environment", async () => {
+    process.env.ORMES_API_KEY = "orm_live_test";
+    process.env.ORMES_BASE_URL = mock.url;
+    try {
+      await expect(new Ormes().videos.get("missing")).rejects.toBeInstanceOf(NotFoundError);
+    } finally {
+      delete process.env.ORMES_API_KEY;
+      delete process.env.ORMES_BASE_URL;
     }
   });
 });
@@ -224,5 +241,17 @@ describe("webhooks", () => {
     const event = await constructEvent(body, hmac(body), secret);
     expect(event.data.id).toBe("vid_1");
     await expect(constructEvent(body, "00", secret)).rejects.toThrow(/signature/i);
+  });
+});
+
+describe("signature header names", () => {
+  it("uses Ormes-Signature and falls back to the legacy name", () => {
+    expect(SIGNATURE_HEADER).toBe("Ormes-Signature");
+    expect(LEGACY_SIGNATURE_HEADER).toBe("Quellix-Signature");
+    expect(signatureFromHeaders({ "ormes-signature": "a" })).toBe("a");
+    expect(signatureFromHeaders({ "Quellix-Signature": "b" })).toBe("b");
+    expect(signatureFromHeaders({ "Ormes-Signature": "a", "Quellix-Signature": "b" })).toBe("a");
+    expect(signatureFromHeaders(new Headers({ "quellix-signature": "c" }))).toBe("c");
+    expect(signatureFromHeaders({ "x-other": "d" })).toBeUndefined();
   });
 });

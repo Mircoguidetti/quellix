@@ -1,4 +1,4 @@
-import { APIError, QuellixError, TimeoutError } from "../errors";
+import { APIError, OrmesError, TimeoutError } from "../errors";
 import type { HttpClient } from "../http";
 import type {
   CreateVideoRequest,
@@ -100,9 +100,9 @@ export class Videos {
     const size = params.size_bytes ?? resolved.size;
     const filename = params.filename ?? resolved.filename;
     const contentType = params.content_type ?? contentTypeOf(resolved.contentType, filename);
-    if (size === undefined) throw new QuellixError("`size_bytes` is required when uploading a stream.");
-    if (!filename) throw new QuellixError("`filename` is required when it cannot be inferred from the source.");
-    if (!contentType) throw new QuellixError("`content_type` is required: use video/mp4, video/quicktime or video/webm.");
+    if (size === undefined) throw new OrmesError("`size_bytes` is required when uploading a stream.");
+    if (!filename) throw new OrmesError("`filename` is required when it cannot be inferred from the source.");
+    if (!contentType) throw new OrmesError("`content_type` is required: use video/mp4, video/quicktime or video/webm.");
 
     const created = await this.create(
       { ...params, filename, content_type: contentType, size_bytes: size },

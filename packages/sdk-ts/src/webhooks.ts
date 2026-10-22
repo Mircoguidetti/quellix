@@ -1,7 +1,30 @@
-import { QuellixError } from "./errors";
+import { OrmesError } from "./errors";
 import type { VideoDecidedEvent } from "./types";
 
-export const SIGNATURE_HEADER = "Quellix-Signature";
+export const SIGNATURE_HEADER = "Ormes-Signature";
+/** Sent before the rename; only read as a fallback. */
+export const LEGACY_SIGNATURE_HEADER = "Quellix-Signature";
+
+/**
+ * The signature header of a webhook request: `Ormes-Signature`, else the legacy
+ * `Quellix-Signature`. Works with any `Headers`-like object (`get`) or a plain record
+ * (names matched case-insensitively).
+ */
+export function signatureFromHeaders(
+  headers: { get(name: string): string | null | undefined } | Record<string, string | string[] | undefined>,
+): string | undefined {
+  const read = (name: string): string | undefined => {
+    if (typeof (headers as { get?: unknown }).get === "function") {
+      return (headers as { get(name: string): string | null | undefined }).get(name) ?? undefined;
+    }
+    const entry = Object.entries(headers as Record<string, string | string[] | undefined>).find(
+      ([key]) => key.toLowerCase() === name.toLowerCase(),
+    );
+    const value = entry?.[1];
+    return Array.isArray(value) ? value[0] : value;
+  };
+  return read(SIGNATURE_HEADER) || read(LEGACY_SIGNATURE_HEADER) || undefined;
+}
 
 export interface VerifyOptions {
   /** Maximum age of a timestamped signature, in seconds. Default 300. */
@@ -10,12 +33,12 @@ export interface VerifyOptions {
   now?: number;
 }
 
-export class WebhookSignatureError extends QuellixError {}
+export class WebhookSignatureError extends OrmesError {}
 
 const encoder = new TextEncoder();
 
 /**
- * Verifies the `Quellix-Signature` header against the raw request body.
+ * Verifies the `Ormes-Signature` header against the raw request body.
  *
  * Accepts the timestamped form `t=<unix>,v1=<hex>` (signature over `"<t>.<body>"`,
  * rejected when older than `toleranceSeconds`) and the legacy bare-hex form
