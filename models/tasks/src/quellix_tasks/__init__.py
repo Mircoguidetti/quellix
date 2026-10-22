@@ -1,4 +1,4 @@
-"""Quellix task library: did the person complete the rubric's task, and when did each step happen.
+"""Ormes task library: did the person complete the rubric's task, and when did each step happen.
 
 Pipeline: frames (about 1 fps) and the rubric's steps / final state are embedded in a shared
 image-text space (SigLIP 2) -> per-frame step similarities -> in-order step alignment
