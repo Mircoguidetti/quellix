@@ -1,0 +1,86 @@
+name: Blur diagnosis
+
+# The blur check before / after the plain-background fix (#22): the founder's Pexels clips
+# (coffee, pestle, 7 third-person clips; Pexels downloads only work from Actions) and benchmark
+# v2's synthetic slice. Commits the report and small annotated frames to
+# eval/reports/blur-diagnosis/ on the branch it runs on, and posts the report on issue #22.
+# Start it from the Actions tab, or push a file under eval/requests/blur/ to agent/blur-fix.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: Egocentric-10K originals for the synthetic slice (0 = skip)
+        default: "40"
+  push:
+    branches: [agent/blur-fix]
+    paths: ["eval/requests/blur/**"]
+
+concurrency:
+  group: blur-diagnosis-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  diagnose:
+    name: Blur before / after
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --extra data
+      - name: Score
+        env:
+          IN_SOURCES: ${{ inputs.sources }}
+        run: |
+          n="${IN_SOURCES:-40}"
+          case "$n" in ''|*[!0-9]*) echo "sources must be an integer" >&2; exit 1;; esac
+          uv run python -m quellix_eval.blur_diagnosis --out out/blur \
+            --report-dir reports/blur-diagnosis --sources "$n" \
+            --run "run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)"
+      - name: Commit the report to this branch
+        id: commit
+        if: success() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A eval/reports/blur-diagnosis
+          git rm -q --cached eval/reports/blur-diagnosis/comment.md 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -q -m "eval: blur diagnosis report (run ${{ github.run_id }})"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post the report on issue #22
+        if: success() && steps.commit.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: https://github.com/${{ github.repository }}/blob/${{ steps.commit.outputs.sha }}/eval/reports/blur-diagnosis/
+        run: |
+          python3 - <<'PY'
+          import os
+          s = open("reports/blur-diagnosis/comment.md").read()
+          # ?raw=true makes GitHub serve the image itself (works on private repositories)
+          s = s.replace("{IMAGE_BASE}", os.environ["BASE"]).replace(".jpg)", ".jpg?raw=true)")
+          open("out/comment.md", "w").write(s[:60000])
+          PY
+          gh issue comment 22 -R "${{ github.repository }}" --body-file out/comment.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: blur-diagnosis
+          if-no-files-found: warn
+          path: eval/reports/blur-diagnosis
