@@ -103,8 +103,21 @@ try:
 except ImportError:  # modal is an optional extra; keep the module importable
     modal = None
 
+def contracts_dir(module_file: str | Path = __file__) -> Path | None:
+    """The repo's packages/contracts, found by walking up from this file; None when it is not
+    there. Inside the Modal container this module lives at /root/quellix_worker/modal_app.py,
+    which has no repo around it (and only two parents): never index a fixed parent."""
+    for parent in Path(module_file).resolve().parents:
+        candidate = parent / "packages" / "contracts"
+        try:
+            if candidate.is_dir():
+                return candidate
+        except OSError:  # e.g. PermissionError under /root on Python 3.12
+            continue
+    return None
+
+
 if modal is not None:
-    _contracts = Path(__file__).resolve().parents[4] / "packages" / "contracts"
     _pip = ["av", "numpy", "opencv-python-headless", "pdqhash", "httpx", "jsonschema"]
     if GPU:
         _pip += ["torch", "transformers"]  # DINOv2 embedder
@@ -121,9 +134,15 @@ if modal is not None:
         .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
               "QUELLIX_TEXT_MODEL_PATH": TEXT_PATH,
               **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
-        .add_local_dir(str(_contracts), "/packages/contracts", copy=True)
-        .add_local_python_source("quellix_worker")
     )
+    # Local files are added only while building / deploying from the repo; inside the container
+    # the image already holds them (QUELLIX_CONTRACTS_DIR=/packages/contracts).
+    if modal.is_local():
+        _contracts = contracts_dir()
+        if _contracts is None:
+            raise RuntimeError("packages/contracts not found next to services/worker")
+        image = image.add_local_dir(str(_contracts), "/packages/contracts", copy=True)
+        image = image.add_local_python_source("quellix_worker")
     app = modal.App("quellix-worker", image=image,
                     secrets=[modal.Secret.from_name(SECRET_NAME)])
 
