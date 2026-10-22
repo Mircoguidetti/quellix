@@ -142,6 +142,9 @@ class EngineRun:
     latencies_s: list[float] = field(default_factory=list)    # wall time per clip
     errors: list[str] = field(default_factory=list)           # failure messages (first few)
     not_run: int = 0                                          # clips skipped by a budget or cap
+    # clip_id -> the decision's per-check results ({status, measurements, model}), for reports
+    # that look inside one check (e.g. the hands ratios per defect kind).
+    checks_by_clip: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def latency_pct(self, q: float) -> float | None:
         if not self.latencies_s:
@@ -170,6 +173,7 @@ def evaluate_engine(
     latencies: list[float] = []
     errors: list[str] = []
     not_run = 0
+    checks_by_clip: dict[str, dict[str, Any]] = {}
     for clip in clips:
         t0 = time.monotonic()
         res = engine(clip, rubric_for(base_rubric, clip))
@@ -190,6 +194,7 @@ def evaluate_engine(
             pairs.append(("review", clip.truth))   # a failed run is never a silent accept/reject
             continue
         pairs.append((res.decision["decision"], clip.truth))
+        checks_by_clip[clip.clip_id] = res.decision.get("checks", {})
         for check, expected in clip.checks.items():
             if expected == "unknown":
                 excluded[check] += 1
@@ -201,7 +206,7 @@ def evaluate_engine(
         raise NothingRun(f"{name}: no clip was run")
     return EngineRun(name, report(pairs, costs), {k: dict(v) for k, v in confusion.items()},
                      cost, hours, failures, dict(excluded), decisions, latencies, errors,
-                     not_run)
+                     not_run, checks_by_clip)
 
 
 def _f(x: float | None) -> str:

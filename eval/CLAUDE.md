@@ -50,10 +50,23 @@ env-overridable (see `baselines/*.py`); check them against the providers' curren
 `.github/workflows/eval.yml` (manual run, or push to `main` of a file under `eval/requests/`,
 optionally `{"clips": N}`) runs `python -m quellix_eval.ci`: streams the first clips of one
 Egocentric-10K shard per factory (never whole shards), transcodes them small (20 s, 640 px,
-15 fps), adds 3 synthetic defects per clip (`rubrics/eval_v0.json`: technical, framing,
-privacy = reject, originality; hands and task off), runs the worker with a shared fingerprint
-store (`QUELLIX_FINGERPRINT_DB`) and writes `report.md` to the job summary and as an artifact.
-Source clips are assumed acceptable (not human-labelled); the report says so.
+15 fps), adds 3 synthetic defects per clip (2 general ones round-robin + 1 hand defect),
+runs the worker with a shared fingerprint store (`QUELLIX_FINGERPRINT_DB`) and writes
+`report.md` to the job summary and as an artifact. Rubric `rubrics/eval_v0.json`: technical,
+framing, privacy (faces / documents / screens = review, #47), originality, hands_visible
+(manipulation, both hands, min 0.8); task off. Source clips are assumed acceptable (not
+human-labelled, hands assumed visible); the report says so.
+
+### Hands (#53)
+
+Hand defects change the middle 60% of a clip (`HAND_INTERVAL`): `hand_out_one` (zoom on the
+bottom-right quarter: the left hand leaves), `hands_out_both` (zoom on the top half: both
+leave), `hand_truncated` (zoom on the top 70%: the bottom edge cuts the hands) are expected to
+`fail`; `no_manipulation` (one frame held) is expected `uncertain` (a manifest label meaning
+"must go to review"). Hand variants leave technical / privacy / originality `unknown`; other
+variants leave hands `unknown`. The run needs the real hands model: `uv sync --extra hands`,
+`python -m quellix_hands.weights download` and, on Linux, `libegl1 libgles2 libgl1`;
+`quellix_eval.ci` refuses to start with the placeholder (`--allow-placeholder-hands` overrides).
 
 ### Phases, budgets and the Gemini spend cap
 
@@ -63,3 +76,5 @@ the worker's minimum) and a spend cap (1 USD per run, checked before every clip,
 overshoot is at most one clip). Then the worker runs the same subset first and the remaining
 clips while time is left until the driver's 38-minute job budget. Clips an engine never reaches
 are reported as "not run", not as failures, and the report shows spend and time used per phase.
+The Gemini retry client also stops at the phase deadline, so one clip stuck in 429 backoff
+cannot eat the worker's time.
