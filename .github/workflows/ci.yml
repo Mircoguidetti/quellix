@@ -23,7 +23,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      # A bare host (no scheme) must not break the build: the app normalises it (issue #35).
       - run: pnpm build
+        env:
+          NEXT_PUBLIC_SITE_URL: quellix-orpin.vercel.app
 
   python:
     name: Python (${{ matrix.project }})

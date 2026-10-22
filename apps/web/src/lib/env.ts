@@ -19,6 +19,4 @@ export function supabaseServiceRoleKey(): string {
   return required("SUPABASE_SERVICE_ROLE_KEY");
 }
 
-export function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-}
+export { siteUrl } from "./site-url";
