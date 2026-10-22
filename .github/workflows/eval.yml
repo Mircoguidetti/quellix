@@ -1,6 +1,7 @@
 name: Eval
 
-# Evaluation: Build AI Egocentric-10K clips + synthetic defects, worker engine, plus Gemini
+# Evaluation: Build AI Egocentric-10K clips + synthetic defects (including hand defects, #53),
+# worker engine with the real hands model (MediaPipe Hand Landmarker), plus Gemini
 # (cheapest Flash-Lite, free tier) when the GEMINI_API_KEY secret exists. The report is posted
 # on issue #16. Start it from the Actions tab (workflow_dispatch) or by pushing a file under
 # eval/requests/ to main. A request file may contain {"clips": N}; the default is 40.
@@ -44,7 +45,18 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --extra data --extra gemini
+      - name: System libraries for MediaPipe (hands model)
+        working-directory: .
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libegl1 libgles2 libgl1
+      - run: uv sync --extra data --extra gemini --extra hands
+      - name: Hands model weights (sha256-checked, cached)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/quellix/hands
+          key: hands-landmarker-fbc2a300
+      - run: uv run python -m quellix_hands.weights download
       - name: Decide how many clips
         id: n
         env:
