@@ -11,6 +11,7 @@ from typing import Any
 from . import media
 from .checks import framing, hands, originality, privacy, task_baseline, technical
 from .contracts import validate_decision, validate_rubric
+from .jsonable import to_py
 from .rubric import CheckOutput, evaluate
 
 
@@ -19,9 +20,9 @@ class PipelineConfig:
     sample_fps: float = media.DEFAULT_SAMPLE_FPS
     # Customer video goes to Gemini / TwelveLabs only when the organisation allows it.
     allow_external_models: bool = False
-    # Modal bills GPU per second. 0 on CPU-only runs; the Modal function reads the real rate
-    # from QUELLIX_GPU_USD_PER_SECOND (the price of the chosen GPU on modal.com/pricing).
-    gpu_usd_per_second: float = 0.0
+    # Modal bills compute per second (CPU cores + memory, or GPU). 0 on local runs; the Modal
+    # function reads the real rate from QUELLIX_COMPUTE_USD_PER_SECOND (see .env.example).
+    compute_usd_per_second: float = 0.0
     org_id: str = "local"
 
 
@@ -43,6 +44,12 @@ class PipelineResult:
     duration_s: float | None = None
     timings_ms: dict[str, int] = field(default_factory=dict)
     models: dict[str, str] = field(default_factory=dict)
+
+
+def _plain(out: CheckOutput) -> CheckOutput:
+    if out.measurements is None:
+        return out
+    return CheckOutput(measurements=to_py(out.measurements), model=out.model)
 
 
 def _critical_reject(rubric: Mapping[str, Any], outputs: dict[str, CheckOutput]) -> bool:
@@ -102,10 +109,11 @@ def run_pipeline(
             outputs["task_completed"], api_cost = timed("task_completed", lambda: task_baseline.run(
                 rubric, video.path, video.info.duration_s, deps.task_judge))
 
+    outputs = {n: _plain(o) for n, o in outputs.items()}  # numpy scalars never reach JSON
     decision = evaluate(video_id, rubric, outputs)
     validate_decision(decision)
-    gpu_cost = (time.monotonic() - started) * config.gpu_usd_per_second
-    cost = {"gpu_usd": round(gpu_cost, 6), "api_usd": round(api_cost, 6),
-            "total_usd": round(gpu_cost + api_cost, 6)}
+    compute_cost = (time.monotonic() - started) * config.compute_usd_per_second
+    cost = {"compute_usd": round(compute_cost, 6), "api_usd": round(api_cost, 6),
+            "total_usd": round(compute_cost + api_cost, 6)}
     models = {n: o.model for n, o in outputs.items() if o.model}
     return PipelineResult(decision, cost, fingerprints, video.info.duration_s, timings, models)

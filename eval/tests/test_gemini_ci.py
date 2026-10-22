@@ -114,40 +114,142 @@ def test_missing_key_skips_gemini_and_says_so():
     assert list(engines) == ["worker"] and "SKIPPED" in notes[0] and "GEMINI_API_KEY" in notes[0]
 
 
-def test_broken_gemini_setup_skips_gemini():
+def test_models_are_tried_cheapest_first():
+    from quellix_eval.prices import gemini_models_by_price
+
+    order = gemini_models_by_price()
+    assert order[0] == "gemini-3.1-flash-lite" and order[-1] == "gemini-3.1-pro-preview"
+    engines, notes = ci.build_engines({"GEMINI_API_KEY": "k"}, gemini_factory=lambda m: Flaky([]))
+    assert list(engines) == ["worker", "gemini"]
+    assert order[0] in notes[0] and "SKIPPED" not in notes[0]
+
+
+QUOTA_0 = ("429 RESOURCE_EXHAUSTED. Quota exceeded for metric "
+           "generate_content_free_tier_requests, limit: 0, model: {model}")
+
+
+class ByModel:
+    """A fake Gemini where every model id behaves differently."""
+
+    def __init__(self, behaviour):
+        self.behaviour, self.calls = behaviour, []
+
+    def factory(self, model):
+        outer = self
+
+        class C:
+            name = model
+
+            def generate(self, path, prompt):
+                outer.calls.append(model)
+                b = outer.behaviour[model]
+                if b == "ok":
+                    return ModelResponse(json.dumps(OK), 0.01)
+                raise RuntimeError(b.replace("{model}", model))
+
+        return C()
+
+
+def fallback(behaviour, models, patience=2):
+    from quellix_eval.baselines.fallback import FallbackClient
+
+    by = ByModel(behaviour)
+    clock = Clock()
+    fb = FallbackClient(
+        models, by.factory,
+        lambda inner: retrying(inner, clock, min_interval_s=0, max_retries=1, base_backoff_s=1),
+        patience=patience)
+    return fb, by
+
+
+def test_no_free_quota_falls_back_to_the_next_model_without_waiting():
+    fb, by = fallback({"a": QUOTA_0, "b": "ok"}, ["a", "b"])
+    assert fb.generate(Path("x"), "p").cost_usd == 0.01
+    assert by.calls == ["a", "b"] and fb.current == "b"
+    assert "no free quota" in fb.dropped["a"]
+    assert "limit: 0" in fb.first_rate_limit_body and "model: a" in fb.first_rate_limit_body
+    fb.generate(Path("x"), "p")
+    assert by.calls == ["a", "b", "b"] and fb.served["b"] == 2
+    text = fb.describe()
+    assert "`b`: 2 clips served" in text and "limit: 0" in text
+    assert "First raw quota/billing error" in text
+
+
+def test_unknown_model_id_falls_back():
+    fb, _ = fallback({"a": "404 NOT_FOUND. models/a is not found", "b": "ok"}, ["a", "b"])
+    fb.generate(Path("x"), "p")
+    assert fb.current == "b" and "404" in fb.dropped["a"]
+
+
+def test_persistent_rate_limit_drops_a_model_after_two_clips():
+    fb, by = fallback({"a": "429 slow down", "b": "ok"}, ["a", "b"])
+    with pytest.raises(RuntimeError):       # first clip: gives up, model kept
+        fb.generate(Path("x"), "p")
+    assert fb.current == "a"
+    fb.generate(Path("x"), "p")             # second clip in a row: drop "a", "b" answers
+    assert fb.current == "b" and fb.served["b"] == 1 and "rate limited" in fb.dropped["a"]
+
+
+def test_other_errors_do_not_drop_a_model_and_last_model_gives_up():
+    fb, _ = fallback({"a": "500 boom", "b": "ok"}, ["a", "b"])
+    with pytest.raises(RuntimeError, match="boom"):
+        fb.generate(Path("x"), "p")
+    assert fb.current == "a"
+    fb, _ = fallback({"a": QUOTA_0}, ["a"])
+    with pytest.raises(RuntimeError):
+        fb.generate(Path("x"), "p")
+
+
+def test_broken_client_construction_falls_through_and_is_reported(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+
     def boom(model):
         raise ImportError("no google-genai")
 
-    engines, notes = ci.build_engines({"GEMINI_API_KEY": "k"}, gemini_factory=boom)
-    assert list(engines) == ["worker"] and "no google-genai" in notes[0]
+    engines, notes = ci.build_engines({"GEMINI_API_KEY": "k"}, [sys.executable, str(FAKE)], boom)
+    rubric = json.loads(ci.DEFAULT_RUBRIC.read_text())
+    rubric["checks"]["technical"].update(min_width=64, min_height=48)
+    rp = tmp_path / "r.json"
+    rp.write_text(json.dumps(rubric))
+    report = ci.run_ci(tmp_path / "out", 2, fake_source, engines, rp, notes=notes,
+                       subset_sources={"gemini": 1})
+    assert "no google-genai" in report and "gemini (4 clips)" in report
 
 
-def test_both_engines_side_by_side_and_one_clip_failure_is_isolated(tmp_path, monkeypatch):
+def test_subset_run_compares_worker_and_gemini_on_the_same_clips(tmp_path, monkeypatch):
     monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
-    monkeypatch.setattr(ci, "cheapest_gemini_flash_lite", lambda: "gemini-3.1-flash-lite")
-    models = []
-    # clip 1 is rate limited forever (all retries fail), the rest answer fine
-    inner = Flaky(["429"] * 3)
-
-    def factory(model):
-        models.append(model)
-        return inner
-
+    by = ByModel({"gemini-3.1-flash-lite": QUOTA_0, "gemini-3.5-flash-lite": "ok"})
     engines, notes = ci.build_engines(
-        {"GEMINI_API_KEY": "k"}, [sys.executable, str(FAKE)], factory,
-        gemini_budget_s=3600, gemini_interval_s=0, gemini_retries=2, sleep=lambda s: None)
+        {"GEMINI_API_KEY": "k"}, [sys.executable, str(FAKE)], by.factory,
+        gemini_budget_s=3600, gemini_interval_s=0, sleep=lambda s: None)
     rubric = json.loads(ci.DEFAULT_RUBRIC.read_text())
     rubric["checks"]["technical"].update(min_width=64, min_height=48)
     rp = tmp_path / "rubric.json"
     rp.write_text(json.dumps(rubric))
-    report = ci.run_ci(tmp_path / "out", 3, fake_source, engines, rp, notes=notes)
-    assert models == ["gemini-3.1-flash-lite"]
-    assert "| worker |" in report and "| gemini |" in report
-    assert "Gemini model: `gemini-3.1-flash-lite`" in report
-    assert "First failures of **gemini**" in report and "Per check, side by side" in report
-    assert "assumed acceptable" in report
-    gem_row = next(ln for ln in report.splitlines() if ln.startswith("| gemini | "))
-    assert gem_row.split("|")[-2].strip() == "1"      # only the first clip failed
+    report = ci.run_ci(tmp_path / "out", 3, fake_source, engines, rp, notes=notes,
+                       subset_sources={"gemini": 2})
+    manifest = ci.load_manifest(tmp_path / "out" / "manifest.jsonl")
+    assert len(manifest) == 12 and len(ci.subset_for(manifest, 2)) == 8
+    for col in ("worker (all 12)", "worker (same 8)", "gemini (8 clips)"):
+        assert f"| {col} |" in report
+    assert "`gemini-3.5-flash-lite`: 8 clips served" in report
+    assert "no free quota" in report and "First raw quota/billing error" in report
+    assert "limit: 0" in report
+    assert by.calls.count("gemini-3.1-flash-lite") == 1       # tried once, then dropped
+    assert "| gemini (8 clips) |" in report
+
+
+def test_subset_is_fixed_originals_plus_their_variants():
+    from quellix_eval.datasets.manifest import ClipRecord, TaskSpec
+
+    def rec(i):
+        return ClipRecord(clip_id=i, source="synthetic", license="synthetic", path="p",
+                          task=TaskSpec(description="d"), truth="accept")
+
+    m = [rec(i) for i in ("s0", "s1", "s2", "s10")] + [
+        rec(f"{s}__{v}") for s in ("s0", "s1", "s2", "s10") for v in ("blur", "face")]
+    ids = [c.clip_id for c in ci.subset_for(m, 2)]
+    assert ids == ["s0", "s1", "s0__blur", "s0__face", "s1__blur", "s1__face"]
 
 
 def test_check_metrics():
@@ -156,3 +258,32 @@ def test_check_metrics():
     assert m["precision"] == pytest.approx(0.75) and m["recall"] == pytest.approx(0.6)
     assert m["flag_recall"] == pytest.approx(0.8) and m["review_rate"] == pytest.approx(2 / 20)
     assert ci.check_metrics({})["precision"] is None
+
+
+BILLING = ("402 RESOURCE_EXHAUSTED. {'error': {'code': 402, 'message': 'Your prepayment credits "
+           "are depleted. Please go to AI Studio to manage your project and billing.', "
+           "'status': 'RESOURCE_EXHAUSTED'}}")
+
+
+def test_depleted_credits_stop_gemini_at_once_and_say_so():
+    from quellix_eval.baselines.retry import is_billing_problem, is_rate_limit
+
+    assert is_billing_problem(RuntimeError(BILLING)) and is_rate_limit(RuntimeError(BILLING))
+    assert not is_billing_problem(RuntimeError("429 RESOURCE_EXHAUSTED limit: 0"))
+    clock = Clock()
+    fb, by = fallback({"a": BILLING, "b": "ok"}, ["a", "b"])
+    for _ in range(3):
+        with pytest.raises(RuntimeError, match="billing problem"):
+            fb.generate(Path("x"), "p")
+    assert by.calls == ["a"]                  # one real call, then nothing: no retries, no b
+    assert fb.current == "a" and clock.sleeps == []
+    text = fb.describe()
+    assert "BLOCKED" in text and "prepayment credits are depleted" in text
+
+
+def test_billing_error_is_not_retried_inside_the_retrying_client():
+    clock = Clock()
+    inner = Flaky([BILLING])
+    with pytest.raises(RuntimeError):
+        retrying(inner, clock, min_interval_s=0).generate(Path("x"), "p")
+    assert inner.calls == 1 and clock.sleeps == []

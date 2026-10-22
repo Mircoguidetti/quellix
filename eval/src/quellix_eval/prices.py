@@ -78,3 +78,9 @@ def cheapest_gemini_flash_lite(on: date | None = None) -> str:
         return gemini_cost(model, 1_000_000, 1_000_000, on)
 
     return min((m for m in GEMINI_PRICES if "flash-lite" in m), key=cost)
+
+
+def gemini_models_by_price(on: date | None = None) -> list[str]:
+    """Every priced Gemini model, cheapest first (input + output per 1M tokens)."""
+    on = on or date.today()
+    return sorted(GEMINI_PRICES, key=lambda m: gemini_cost(m, 1_000_000, 1_000_000, on))

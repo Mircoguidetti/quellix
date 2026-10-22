@@ -15,6 +15,7 @@ a mix of worker error and genuinely bad source footage. Hands and task are not e
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import os
 import re
@@ -24,15 +25,18 @@ import time
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 from .baselines.common import VideoModelClient
+from .baselines.fallback import FallbackClient
 from .baselines.retry import RetryingClient
 from .datasets import egocentric10k
 from .datasets.manifest import ClipRecord, load_manifest, write_manifest
 from .defects.build import build_variants
-from .prices import cheapest_gemini_flash_lite
+from .prices import gemini_models_by_price
 from .run import (
     Engine,
+    EngineResult,
     EngineRun,
     baseline_engine,
     evaluate_engine,
@@ -48,6 +52,7 @@ CI_VARIANTS = (
 VARIANTS_PER_CLIP = 3
 DEFAULT_CLIPS = 40
 MIN_FACTORIES = 8
+GEMINI_SUBSET_SOURCES = 20     # Gemini sees 20 originals + their variants (80 clips)
 GEMINI_BUDGET_S = 18 * 60      # whole run must stay well under 45 minutes
 GEMINI_INTERVAL_S = 6.0        # 10 requests per minute, inside the free tier
 
@@ -134,7 +139,7 @@ def _count_line(requested: int | None, n_src: int, total: int) -> str:
 def render_report(
     runs: Sequence[EngineRun],
     clips: Sequence[ClipRecord],
-    notes: Sequence[str] = (),
+    notes: Sequence[str | Callable[[], str]] = (),
     requested: int | None = None,
 ) -> str:
     n_src = sum(1 for c in clips if "__" not in c.clip_id)
@@ -159,7 +164,7 @@ def render_report(
         "these numbers show detection ability, not production performance.",
         "- Gemini does not see a fingerprint store, so it cannot catch duplicates by design.",
     ]
-    lines += [f"- **{n}**" for n in notes]
+    lines += [f"- **{text}**" for n in notes if (text := n() if callable(n) else n)]
 
     lines += ["", "## Per check, side by side",
               "precision / recall / flag recall / review rate (share of this check's clips that "
@@ -233,6 +238,30 @@ def render_report(
     return "\n".join(lines) + "\n"
 
 
+def subset_for(manifest: Sequence[ClipRecord], n_sources: int) -> list[ClipRecord]:
+    """The first `n_sources` originals and all of their variants (a fixed, reproducible subset)."""
+    keep = [c.clip_id for c in manifest if "__" not in c.clip_id][:n_sources]
+    prefixes = tuple(f"{k}__" for k in keep)
+    return [c for c in manifest if c.clip_id in keep or c.clip_id.startswith(prefixes)]
+
+
+def _recording(engine: Engine, store: dict[str, EngineResult]) -> Engine:
+    def run(clip: ClipRecord, rubric: Mapping[str, Any]) -> EngineResult:
+        t0 = time.monotonic()
+        res = engine(clip, rubric)
+        store[clip.clip_id] = dataclasses.replace(res, latency_s=time.monotonic() - t0)
+        return res
+
+    return run
+
+
+def _replay(store: dict[str, EngineResult]) -> Engine:
+    def run(clip: ClipRecord, rubric: Mapping[str, Any]) -> EngineResult:
+        return store.get(clip.clip_id) or EngineResult(None, error="not run")
+
+    return run
+
+
 def run_ci(
     out_dir: Path,
     clips: int,
@@ -240,8 +269,12 @@ def run_ci(
     engines: Mapping[str, Engine],
     rubric_path: Path = DEFAULT_RUBRIC,
     keep_media: bool = False,
-    notes: Sequence[str] = (),
+    notes: Sequence[str | Callable[[], str]] = (),
+    subset_sources: Mapping[str, int] | None = None,
 ) -> str:
+    """Run every engine; engines named in `subset_sources` only see that many originals (and
+    their variants). The worker's results on that same subset are replayed from its full run,
+    so the comparison is like for like and nothing is run (or fingerprinted) twice."""
     out_dir.mkdir(parents=True, exist_ok=True)
     work = out_dir / "work"
     sources_manifest = out_dir / "sources.jsonl"
@@ -249,7 +282,20 @@ def run_ci(
     manifest = build_eval_manifest(load_manifest(sources_manifest), work / "variants")
     write_manifest(manifest, out_dir / "manifest.jsonl")
     rubric = json.loads(rubric_path.read_text())
-    runs = [evaluate_engine(name, engine, manifest, rubric) for name, engine in engines.items()]
+    subset_sources = subset_sources or {}
+    runs: list[EngineRun] = []
+    worker_results: dict[str, EngineResult] = {}
+    for name, engine in engines.items():
+        if name not in subset_sources:
+            eng = _recording(engine, worker_results) if name == "worker" else engine
+            runs.append(evaluate_engine(name, eng, manifest, rubric))
+            continue
+        subset = subset_for(manifest, subset_sources[name])
+        if "worker" in engines and worker_results and len(subset) < len(manifest):
+            runs[0] = dataclasses.replace(runs[0], name=f"worker (all {len(manifest)})")
+            runs.append(evaluate_engine(
+                f"worker (same {len(subset)})", _replay(worker_results), subset, rubric))
+        runs.append(evaluate_engine(f"{name} ({len(subset)} clips)", engine, subset, rubric))
     report = render_report(runs, manifest, notes, requested=clips)
     (out_dir / "report.md").write_text(report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -279,28 +325,37 @@ def build_engines(
     gemini_interval_s: float = GEMINI_INTERVAL_S,
     gemini_retries: int = 5,
     sleep: Callable[[float], None] = time.sleep,
-) -> tuple[dict[str, Engine], list[str]]:
-    """The worker always; Gemini only when its key is set. Returns (engines, report notes)."""
+) -> tuple[dict[str, Engine], list[str | Callable[[], str]]]:
+    """The worker always; Gemini only when its key is set. Returns (engines, report notes).
+
+    Gemini tries the cheapest model first and falls back to the next cheapest the key can use.
+    Some notes are callables, resolved when the report is rendered (after the run).
+    """
     engines: dict[str, Engine] = {"worker": worker_engine(worker_cmd)}
-    notes: list[str] = []
+    notes: list[str | Callable[[], str]] = []
     if not env.get("GEMINI_API_KEY"):
         notes.append("Gemini was SKIPPED: the GEMINI_API_KEY secret is not set.")
         return engines, notes
-    model = env.get("GEMINI_MODEL") or cheapest_gemini_flash_lite()
-    try:
-        client = RetryingClient(
-            gemini_factory(model), min_interval_s=gemini_interval_s,
-            max_retries=gemini_retries, deadline_s=gemini_budget_s, sleep=sleep,
+    models = [env["GEMINI_MODEL"]] if env.get("GEMINI_MODEL") else gemini_models_by_price()
+    deadline = time.monotonic() + gemini_budget_s
+
+    def wrap(inner: VideoModelClient) -> RetryingClient:
+        return RetryingClient(
+            inner, min_interval_s=gemini_interval_s, max_retries=gemini_retries,
+            deadline_s=max(0.0, deadline - time.monotonic()), sleep=sleep,
         )
-    except Exception as e:  # noqa: BLE001 - a broken Gemini setup must not sink the worker run
-        notes.append(f"Gemini was SKIPPED: could not start the client ({e}).")
-        return engines, notes
+
+    client = FallbackClient(models, gemini_factory, wrap)
     engines["gemini"] = baseline_engine(client)
     notes.append(
-        f"Gemini model: `{model}` (free tier, public Build AI clips only, no customer data). "
-        f"Calls are paced at {gemini_interval_s:.0f}s, 429s are retried, and the Gemini phase "
-        f"stops after {gemini_budget_s / 60:.0f} minutes (remaining clips count as failed)."
+        f"Gemini (free tier, public Build AI clips only, no customer data), cheapest model "
+        f"first: {', '.join(f'`{m}`' for m in models)}. Calls are paced at "
+        f"{gemini_interval_s:.0f}s, 429s are retried, and the Gemini phase stops after "
+        f"{gemini_budget_s / 60:.0f} minutes (remaining clips count as failed). Gemini sees "
+        f"only {GEMINI_SUBSET_SOURCES} originals and their variants; the worker is shown on "
+        "the same subset and on everything."
     )
+    notes.append(client.describe)
     return engines, notes
 
 
@@ -317,7 +372,8 @@ def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None
     os.environ.setdefault("QUELLIX_FINGERPRINT_DB", str(out_dir / "fingerprints.json"))
     out_dir.mkdir(parents=True, exist_ok=True)
     engines, notes = build_engines(env, a.worker_cmd)
-    report = run_ci(out_dir, a.clips, _hf_source, engines, a.rubric, notes=notes)
+    report = run_ci(out_dir, a.clips, _hf_source, engines, a.rubric, notes=notes,
+                    subset_sources={"gemini": GEMINI_SUBSET_SOURCES})
     print(report)
     return 0
 
