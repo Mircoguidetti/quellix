@@ -86,8 +86,10 @@ def test_fetch_pick_reports_every_exact_error(tmp_path):
     assert "PEXELS_API_KEY is not set" in msg
 
 
-def test_the_landing_clip_and_the_third_person_set():
-    assert px.LANDING.pexels_id == 37443407 and px.LANDING.orientation == "landscape"
+def test_the_landing_clips_and_the_third_person_set():
+    assert [p.pexels_id for p in px.LANDING_CLIPS] == [7204592, 7418650, 37443407, 7658012]
+    assert px.LANDING is px.LANDING_CLIPS[0] and px.LANDING.orientation == "landscape"
+    assert not {p.pexels_id for p in px.LANDING_CLIPS} & {p.pexels_id for p in px.THIRD_PERSON}
     assert [p.pexels_id for p in px.THIRD_PERSON] == [
         7308220, 4520150, 11102752, 5592524, 4440711, 7641501, 9141844]
     assert [p.orientation for p in px.THIRD_PERSON].count("portrait") == 2
@@ -309,3 +311,19 @@ def test_third_person_manifest_round_trips_and_keeps_no_truth(tmp_path):
     assert "file" not in out.read_text() and not list(out.parent.glob("*.mp4"))
     with pytest.raises(ValueError):
         tp.ThirdPersonRecord.model_validate({**rec.model_dump(), "viewpoint": "first_person"})
+
+
+def test_variants_follow_the_hero_clip_not_the_first_number(tmp_path, monkeypatch):
+    monkeypatch.setattr(sc, "DEFECT_SECONDS", 1.0)
+    monkeypatch.setattr(sc, "MOBILE_WIDTH", 40)
+    other = sc.analyse("pexels_2", source_video(tmp_path, "o", seed=2), FakeHands(),
+                       label_worker(), sc.DEFAULT_RUBRIC, source=info("o"))
+    hero = sc.analyse("pexels_1", source_video(tmp_path, "h", seed=1), FakeHands(),
+                      label_worker(), sc.DEFAULT_RUBRIC, source=info("h"))
+    final = tmp_path / "final"
+    manifest = sc.produce([other, hero], FakeHands(), label_worker(), sc.DEFAULT_RUBRIC, final, 2,
+                          width=160, mobile_crop=True, hero="pexels_1")
+    by_id = {c["id"]: c for c in manifest["clips"]}
+    assert list(by_id) == ["clip-01", "clip-02", "clip-02-mobile", "clip-02-hand", "clip-02-dark"]
+    assert by_id["clip-02"]["source_clip"] == "pexels_1"
+    assert by_id["clip-02-hand"]["variant_of"] == "clip-02"

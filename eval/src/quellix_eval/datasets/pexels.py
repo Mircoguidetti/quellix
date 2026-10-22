@@ -38,10 +38,20 @@ class Pick:
         return f"pexels_{self.pexels_id}"
 
 
-# The landing page's only clip (founder decision, issue #60): first-person footage, top-down,
-# hands entering from the bottom. Landscape for the desktop hero; the mobile hero is a 9:16 crop.
-LANDING = Pick(37443407, "whipping-cream-with-electric-mixer-in-bowl",
-               "Whipping cream with an electric mixer", "landscape", "landing hero")
+# The landing page's clips (founder's final list, issue #60): first-person footage, arms coming
+# up from the bottom of the frame, no body, no face. The first is the desktop hero; its 9:16
+# crop is the mobile hero and the defective copies are made from it. The others are for the other
+# Home sections.
+LANDING_CLIPS: tuple[Pick, ...] = (
+    Pick(7204592, "person-washing-a-drinking-glass", "Washing up in the sink", "landscape",
+         "desktop hero"),
+    Pick(7418650, "a-person-making-a-salad", "Making a salad", "landscape"),
+    Pick(37443407, "whipping-cream-with-electric-mixer-in-bowl",
+         "Whipping cream with an electric mixer", "landscape"),
+    Pick(7658012, "putting-ground-coffee-in-a-filter", "Putting ground coffee in a filter",
+         "landscape"),
+)
+LANDING = LANDING_CLIPS[0]
 
 # Third-person / tripod footage the founder picked first. Not for the site (labs buy first-person
 # video); kept as a test set for the gap we found: all our other tests are first-person.
@@ -57,7 +67,7 @@ THIRD_PERSON: tuple[Pick, ...] = (
     Pick(9141844, "person-putting-folded-clothes-on-a-bag", "Putting folded clothes in a bag",
          "portrait"),
 )
-PICKS = (LANDING, *THIRD_PERSON)
+PICKS = (*LANDING_CLIPS, *THIRD_PERSON)
 
 
 class Net(Protocol):

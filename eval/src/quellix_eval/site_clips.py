@@ -713,10 +713,11 @@ def produce(
     candidates: Sequence[Candidate], hands: HandsLike, worker: WorkerCheck, rubric: Path,
     final_dir: Path, picks_wanted: int = 6, quota: dict[str, int] | None = None,
     log: Callable[[str], None] = print, width: int = OUT_WIDTH, variants_of: int | None = None,
-    mobile_crop: bool = False,
+    mobile_crop: bool = False, hero: str | None = None,
 ) -> dict[str, Any]:
-    """Render the picks and, for the `variants_of`-th published clip (1 = the first, or None),
-    two defective versions: one hand leaves for ~3 s, and a too dark stretch."""
+    """Render the picks. For the hero (the source clip id `hero`, else the `variants_of`-th
+    published clip) also its 9:16 mobile crop (`mobile_crop`) and two defective copies: one hand
+    leaves for ~3 s, and a too dark stretch."""
     picks = select_picks(candidates, picks_wanted, quota=quota)
     final_dir.mkdir(parents=True, exist_ok=True)
     for old in [*final_dir.glob("clip-*"), final_dir / "manifest.json"]:
@@ -756,7 +757,9 @@ def produce(
         clips.append(entry(name, cand, files, sidecar, decision))
         log(f"{name}: {cand.clip_id} {cand.window.start_s:.1f}-{cand.window.end_s:.1f}s "  # type: ignore[union-attr]
             f"bytes={files['bytes']}")
-        if variants_of is not None and name == f"clip-{variants_of:02d}":
+        is_hero = (cand.clip_id == hero) if hero else (
+            variants_of is not None and name == f"clip-{variants_of:02d}")
+        if is_hero:
             if mobile_crop:
                 _, sw, sh, _ = video_info(cand.path)
                 plan = crop_plan(sw, sh, cand.hand_extent)
@@ -923,10 +926,10 @@ def download_pexels(a: argparse.Namespace, picks: Sequence[Any]) -> tuple[list[F
 def run_landing(  # pragma: no cover - network, models
     a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
 ) -> int:
-    """The landing page's one clip: desktop cut, 9:16 mobile crop and two defective copies."""
+    """The landing page's clips; the hero also gets a 9:16 mobile crop and two defective copies."""
     from .datasets import pexels
 
-    got, _ = download_pexels(a, [pexels.LANDING])
+    got, _ = download_pexels(a, pexels.LANDING_CLIPS)
     if not got:
         return 1
     cands = []
@@ -934,8 +937,8 @@ def run_landing(  # pragma: no cover - network, models
         cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
         print(f"{item.clip_id}: " + (eligibility(cand) or "eligible"), flush=True)
         cands.append(cand)
-    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, 1, variants_of=1,
-                       mobile_crop=True)
+    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, len(cands),
+                       mobile_crop=True, hero=pexels.LANDING.clip_id)
     used = {x["source_clip"] for x in manifest["clips"]}
     (a.out_dir / "candidates.md").write_text(
         candidate_report(cands, [c for c in cands if c.clip_id in used]))
@@ -992,7 +995,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--candidates", type=int, default=30)
     ap.add_argument("--holoassist", type=int, default=16, help="HoloAssist candidates (0 = skip)")
     ap.add_argument("--pexels", action="store_true",
-                    help="the landing page's one Pexels clip: desktop, 9:16 crop, defective copies")
+                    help="the landing page's Pexels clips (hero: 9:16 crop, defective copies)")
     ap.add_argument("--third-person", action="store_true",
                     help="the third-person Pexels test set: write its manifest, keep no media")
     ap.add_argument("--third-person-out", type=Path,
