@@ -40,7 +40,7 @@ function Tile({
             <Icon {...ICON} className="size-[18px]" />
           </span>
           {title}
-          {primary ? <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.1em] text-brand">core</span> : null}
+          {primary ? <span className="ml-auto rounded-full bg-brand/12 px-2 py-px text-[12px] text-brand">Core</span> : null}
         </h3>
         <p className="text-[14.5px] leading-relaxed text-muted-foreground">{text}</p>
       </div>

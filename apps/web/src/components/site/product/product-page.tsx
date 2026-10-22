@@ -16,7 +16,7 @@ import {
   Scale,
   UserRoundSearch,
 } from "lucide-react";
-import { ButtonLink, Eyebrow, H2, ICON, Lead, PageIntro, Section, Soon } from "../primitives";
+import { ButtonLink, H2, ICON, Lead, PageIntro, Section, Soon } from "../primitives";
 import { ContestFlow } from "./contest-flow";
 import { DecisionDiagram } from "./decision-diagram";
 import { Keycaps } from "./keycaps";
@@ -80,7 +80,6 @@ export function ProductPage() {
   return (
     <main>
       <PageIntro
-        eyebrow="Product"
         title="How Ormes decides"
         intro="What each check measures, how your rubric turns it into a decision, and the tools around it: review, contests and your lab’s outcomes."
         nav={NAV}
@@ -105,7 +104,6 @@ export function ProductPage() {
       </Section>
 
       <Section id="checks">
-        <Eyebrow icon={ListChecks}>Checks reference</Eyebrow>
         <H2>Every check, what it measures, what you set.</H2>
         <Lead>Each check can be critical (a failure rejects), not critical (a failure goes to review), or turned off. Defaults below.</Lead>
         <div className="mt-10 overflow-hidden rounded-[20px] border border-hairline">
@@ -147,7 +145,6 @@ export function ProductPage() {
       </Section>
 
       <Section id="rubrics">
-        <Eyebrow icon={GitBranch}>Rubrics</Eyebrow>
         <H2>Versioned, and previewed before you save.</H2>
         <Lead>Change a threshold and see how recent decisions would change before anything goes live. Each task has its own rubric; each decision records the version it used.</Lead>
         <div className="mt-10">
@@ -156,7 +153,6 @@ export function ProductPage() {
       </Section>
 
       <Section id="review">
-        <Eyebrow icon={Keyboard}>Review</Eyebrow>
         <H2>Only doubtful videos, decided from the keyboard.</H2>
         <Lead>Each video in review arrives with its reasons pinned to the timeline. Reviewers jump between flagged moments and decide with one key.</Lead>
         <div className="mt-10">
@@ -165,7 +161,6 @@ export function ProductPage() {
       </Section>
 
       <Section id="contests">
-        <Eyebrow icon={Scale}>Contests</Eyebrow>
         <H2>A person can always contest.</H2>
         <Lead>A contributor who disagrees with a rejection opens a contest from a link. A person on your team upholds or overturns it, with a note.</Lead>
         <div className="mt-10">
@@ -176,7 +171,6 @@ export function ProductPage() {
       <Section id="lab">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
-            <Eyebrow icon={FlaskConical}>Lab outcomes</Eyebrow>
             <H2>Measured against your lab, not against itself.</H2>
             <Lead>
               Send the lab’s accept or reject for delivered videos. Ormes reports precision and recall on rejections against your reject rate, per rubric version.

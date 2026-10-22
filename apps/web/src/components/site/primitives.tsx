@@ -30,15 +30,6 @@ export function Section({
   );
 }
 
-export function Eyebrow({ icon: Icon, children, className }: { icon?: LucideIcon; children: React.ReactNode; className?: string }) {
-  return (
-    <p className={cn("mb-4 inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.14em] text-brand", className)}>
-      {Icon ? <Icon {...ICON} className="size-3.5" /> : null}
-      {children}
-    </p>
-  );
-}
-
 export function H2({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
     <h2 id={id} className={cn("max-w-[22ch] text-balance text-[clamp(30px,4.2vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]", className)}>
@@ -56,7 +47,7 @@ export function Soon({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-2 py-px align-middle font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-brand",
+        "inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-2 py-px align-middle text-[11.5px] font-medium text-brand",
         className,
       )}
     >
@@ -66,9 +57,9 @@ export function Soon({ className }: { className?: string }) {
 }
 
 /** Marks numbers that are illustrative, not measured. */
-export function Example({ className, children = "example" }: { className?: string; children?: React.ReactNode }) {
+export function Example({ className, children = "Example" }: { className?: string; children?: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center rounded border border-hairline px-1.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground", className)}>
+    <span className={cn("inline-flex items-center rounded border border-hairline px-1.5 text-[12px] text-muted-foreground", className)}>
       {children}
     </span>
   );
@@ -113,12 +104,10 @@ export function ButtonLink({
  * The nav sticks under the site header so each section stays one tap away.
  */
 export function PageIntro({
-  eyebrow,
   title,
   intro,
   nav,
 }: {
-  eyebrow: string;
   title: string;
   intro: string;
   nav: { href: string; label: string; icon: LucideIcon }[];
@@ -126,7 +115,6 @@ export function PageIntro({
   return (
     <>
       <Wrap className="pb-8 pt-14 sm:pt-20">
-        <p className="mb-3 font-mono text-[12px] uppercase tracking-[0.14em] text-brand">{eyebrow}</p>
         <h1 className="text-balance text-[clamp(36px,5.4vw,60px)] font-medium leading-[1.02] tracking-[-0.035em]">{title}</h1>
         <p className="mt-4 max-w-[62ch] text-pretty text-[17px] leading-relaxed text-muted-foreground">{intro}</p>
       </Wrap>

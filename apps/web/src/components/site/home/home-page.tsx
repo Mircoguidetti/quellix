@@ -6,17 +6,11 @@ import {
   FileSignature,
   FlaskConical,
   Gavel,
-  Keyboard,
-  ListChecks,
-  Lock,
-  MessageSquareText,
   Percent,
   Plus,
-  Route,
   Sparkles,
-  Workflow,
 } from "lucide-react";
-import { ButtonLink, Eyebrow, H2, ICON, Lead, MoreLink, Section, Wrap } from "../primitives";
+import { ButtonLink, H2, ICON, Lead, MoreLink, Section, Wrap } from "../primitives";
 import { CheckTiles } from "./check-tiles";
 import { ContributorFeedback } from "./contributor-phone";
 import { Hero } from "./hero";
@@ -69,7 +63,6 @@ export function HomePage() {
       <Hero />
 
       <Section id="flow" className="pt-10 sm:pt-16">
-        <Eyebrow icon={Route}>Where videos go</Eyebrow>
         <H2>Your reviewers only see the doubtful ones.</H2>
         <Lead>
           Your upload checks catch blur. Hands out of frame, tasks stopped early and faces in view still need a person. Ormes makes those calls and
@@ -81,7 +74,6 @@ export function HomePage() {
       </Section>
 
       <Section id="checks">
-        <Eyebrow icon={ListChecks}>What gets checked</Eyebrow>
         <H2>The checks your reviewers do, on every video.</H2>
         <Lead>Each check returns a measurement and the moments it found. Your rubric decides what rejects, what goes to review and what is ignored.</Lead>
         <div className="mt-12">
@@ -93,7 +85,6 @@ export function HomePage() {
       </Section>
 
       <Section id="console">
-        <Eyebrow icon={Keyboard}>Review console</Eyebrow>
         <H2>Doubtful cases take seconds, not minutes.</H2>
         <Lead>Reviewers never watch a whole video. They jump to the flagged moments, decide with one key and move on. Every override is kept with its note.</Lead>
         <div className="mt-12">
@@ -102,7 +93,6 @@ export function HomePage() {
       </Section>
 
       <Section id="coach">
-        <Eyebrow icon={MessageSquareText}>Contributor feedback</Eyebrow>
         <H2>Fewer rejections, not only faster ones.</H2>
         <Lead>
           A reject is an hour you can’t bill and money an honest contributor doesn’t get. Ormes says what went wrong and when, while they can still
@@ -114,7 +104,6 @@ export function HomePage() {
       </Section>
 
       <Section id="api">
-        <Eyebrow icon={Workflow}>Integration</Eyebrow>
         <H2>One call where you approve videos today.</H2>
         <Lead>The decision comes back by signed webhook or by polling, with every reason and measurement.</Lead>
         <div className="mt-14">
@@ -123,7 +112,6 @@ export function HomePage() {
       </Section>
 
       <Section id="privacy">
-        <Eyebrow icon={Lock}>Privacy</Eyebrow>
         <H2>Videos are checked, not kept.</H2>
         <Lead>Ormes analyses each video, returns its decision and deletes it. Nothing is used to train models unless you opt in.</Lead>
         <div className="mt-12">
@@ -159,7 +147,6 @@ export function HomePage() {
           <div className="grid lg:grid-cols-[1fr_1.1fr]">
             <div className="flex flex-col justify-between gap-8 p-6 sm:p-10">
               <div>
-                <Eyebrow>Pricing</Eyebrow>
                 <H2>Pay per hour of video checked.</H2>
                 <Lead>Start with a free pilot on videos your reviewers have already judged. You see the hours saved before you pay anything.</Lead>
               </div>

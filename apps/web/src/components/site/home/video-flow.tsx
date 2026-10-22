@@ -54,7 +54,7 @@ const REST: { x: number; y: number; lane?: Lane }[] = [
   { x: 220, y: 180 },
   { x: 470, y: 112, lane: "accept" },
   { x: 610, y: 60, lane: "accept" },
-  { x: 700, y: 60, lane: "accept" },
+  { x: 672, y: 60, lane: "accept" },
   { x: 640, y: 180, lane: "review" },
   { x: 560, y: 300, lane: "reject" },
 ];
@@ -180,10 +180,10 @@ export function VideoFlow() {
     <div ref={rootRef}>
       <figure className="rounded-[22px] border border-hairline bg-panel p-4 sm:p-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-muted-foreground">
+          <p className="text-[14px] text-muted-foreground">
             Videos received <span ref={(el) => void (counters.current.total = el)} className="tabular ml-2 text-foreground">{fmt(TOTAL)}</span>
           </p>
-          <Example>example month</Example>
+          <Example>Example month</Example>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_200px]">
           <svg ref={svgRef} viewBox="0 0 720 360" className="block h-auto w-full overflow-hidden" aria-hidden="true">

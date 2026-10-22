@@ -68,7 +68,7 @@ export function RubricEditor() {
       <div className="overflow-hidden rounded-[22px] bg-white text-[#0b0c0e]">
         <div className="flex items-center justify-between border-b border-[#e6e8eb] px-5 py-3.5">
           <p className="font-mono text-[12.5px] text-[#5c626b]">rubric · load the dishwasher · v3</p>
-          <span className="rounded-full bg-[#f4f5f7] px-2 py-0.5 font-mono text-[11px] text-[#5c626b]">example</span>
+          <span className="rounded-full bg-[#f4f5f7] px-2 py-0.5 text-[12px] text-[#5c626b]">Example</span>
         </div>
         <div className="px-5">
           <Row label={<label htmlFor={`${id}-hands`}>Hands, while handling objects</label>} hint="Both hands, share of handling time">

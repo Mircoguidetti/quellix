@@ -203,7 +203,7 @@ export function DecisionDiagram() {
               <span className={cn("block h-1.5 rounded-full transition-all", !interacting && i === example ? "w-6 bg-foreground" : "w-1.5 bg-white/25")} />
             </button>
           ))}
-          <Example className="ml-2">examples</Example>
+          <Example className="ml-2">Examples</Example>
         </div>
       </div>
 

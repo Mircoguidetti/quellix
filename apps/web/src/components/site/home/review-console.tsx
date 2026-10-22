@@ -159,7 +159,7 @@ export function ReviewConsole() {
             </span>
           ))}
           <span className="mt-auto rounded-lg border border-white/10 px-2.5 py-2 text-[12px]">
-            <b className="block font-medium text-white">Northwind Capture</b>example data
+            <b className="block font-medium text-white">Northwind Capture</b>Example data
           </span>
         </aside>
         <div className="min-w-0" aria-hidden="true">

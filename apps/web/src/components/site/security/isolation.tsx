@@ -33,7 +33,7 @@ export function Isolation() {
               <p className="flex items-center gap-2 text-[15px] font-medium">
                 <Building2 {...ICON} className={cn("size-4", org.you ? "text-brand" : "text-muted-foreground")} />
                 {org.name}
-                {org.you ? <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.1em] text-brand">you</span> : null}
+                {org.you ? <span className="ml-auto rounded-full bg-brand/12 px-2 py-px text-[12px] text-brand">You</span> : null}
               </p>
               <dl className="mt-5 flex flex-col gap-3 text-[13.5px]">
                 <div className="flex items-center justify-between">
@@ -57,7 +57,7 @@ export function Isolation() {
           </div>
         ))}
       </div>
-      <p className="mt-4 font-mono text-[12px] text-muted-foreground">example organisations</p>
+      <p className="mt-4 text-[13px] text-muted-foreground">Example organisations</p>
       <ul className="mt-8 grid gap-6 md:grid-cols-3">
         <li className="flex gap-3">
           <Fingerprint {...ICON} className="mt-0.5 size-5 shrink-0 text-brand" />

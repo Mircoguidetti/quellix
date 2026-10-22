@@ -72,7 +72,7 @@ export function Callout({ kind = "note", title, children }: { kind?: keyof typeo
 /** Marks something that is not built yet. */
 export function Soon({ className }: { className?: string }) {
   return (
-    <span className={cn("ml-1.5 inline-flex translate-y-[-1px] items-center gap-1 rounded-full border border-border bg-subtle px-1.5 py-px align-middle font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground", className)}>
+    <span className={cn("ml-1.5 inline-flex translate-y-[-1px] items-center gap-1 rounded-full border border-border bg-subtle px-1.5 py-px align-middle text-[11.5px] font-medium text-muted-foreground", className)}>
       <Clock3 className="size-3" strokeWidth={1.5} aria-hidden />
       Soon
     </span>

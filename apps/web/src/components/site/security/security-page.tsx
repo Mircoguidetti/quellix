@@ -20,7 +20,7 @@ import {
   UserX,
   Waypoints,
 } from "lucide-react";
-import { ButtonLink, Eyebrow, H2, ICON, Lead, MoreLink, PageIntro, Section } from "../primitives";
+import { ButtonLink, H2, ICON, Lead, MoreLink, PageIntro, Section } from "../primitives";
 import { Isolation } from "./isolation";
 import { Lifecycle } from "./lifecycle";
 import { TrainingToggle } from "./training-toggle";
@@ -60,7 +60,6 @@ export function SecurityPage() {
   return (
     <main>
       <PageIntro
-        eyebrow="Security"
         title="How your videos are handled"
         intro="What happens to a video from upload to deletion, what we keep, who can see it and who processes it."
         nav={NAV}
@@ -75,7 +74,6 @@ export function SecurityPage() {
       </Section>
 
       <Section id="kept">
-        <Eyebrow icon={Database}>What we keep</Eyebrow>
         <H2>We keep what surrounds the video, not the video.</H2>
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           <div className="rounded-[22px] border border-hairline bg-panel p-6">
@@ -120,7 +118,6 @@ export function SecurityPage() {
       </Section>
 
       <Section id="isolation">
-        <Eyebrow icon={Waypoints}>Isolation</Eyebrow>
         <H2>Your data stays inside your organisation.</H2>
         <Lead>Decisions, measurements and fingerprints never cross to another customer. There is no matching across customers.</Lead>
         <div className="mt-10">
@@ -129,7 +126,6 @@ export function SecurityPage() {
       </Section>
 
       <Section id="training">
-        <Eyebrow icon={BrainCircuit}>Models and training</Eyebrow>
         <H2>No training without opt-in.</H2>
         <Lead>Your videos train nothing unless you turn it on, and they are never resold. If you do opt in, they train Ormes’s own models only, and you pay less.</Lead>
         <div className="mt-10">
@@ -138,7 +134,6 @@ export function SecurityPage() {
       </Section>
 
       <Section id="providers">
-        <Eyebrow icon={ServerCog}>Providers</Eyebrow>
         <H2>Who processes your data.</H2>
         <div className="mt-10 overflow-x-auto rounded-[20px] border border-hairline">
           <table className="w-full min-w-[640px] text-left text-[14.5px]">
@@ -154,7 +149,7 @@ export function SecurityPage() {
                 <tr key={p.name} className="border-t border-hairline align-top">
                   <th scope="row" className="px-5 py-4 font-medium">
                     {p.name}
-                    {p.optional ? <span className="ml-2 rounded border border-hairline px-1.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">off by default</span> : null}
+                    {p.optional ? <span className="ml-2 rounded border border-hairline px-1.5 text-[12px] text-muted-foreground">Off by default</span> : null}
                   </th>
                   <td className="px-5 py-4 text-muted-foreground">{p.purpose}</td>
                   <td className="px-5 py-4 text-muted-foreground">

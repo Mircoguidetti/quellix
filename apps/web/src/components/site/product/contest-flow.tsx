@@ -6,7 +6,7 @@ export function ContestFlow() {
   return (
     <div className="grid items-center gap-6 lg:grid-cols-[1fr_auto_1.15fr]">
       <figure className="mx-auto w-full max-w-[340px]">
-        <figcaption className="mb-3 font-mono text-[12px] uppercase tracking-[0.12em] text-muted-foreground">1 · Contributor, from a link</figcaption>
+        <figcaption className="mb-3 text-[14px] text-muted-foreground">1 · The contributor, from a link</figcaption>
         <div className="overflow-hidden rounded-[22px] border border-white/15 bg-[#f4f5f7] text-[#0b0c0e]">
           <div className="flex items-center gap-2 bg-[#e9ebee] px-3 py-2.5">
             <span className="flex flex-1 items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 font-mono text-[11.5px] text-[#5c626b]">
@@ -33,7 +33,7 @@ export function ContestFlow() {
       <ArrowRight aria-hidden strokeWidth={1.5} className="mx-auto size-6 rotate-90 text-muted-foreground lg:rotate-0" />
 
       <figure className="w-full">
-        <figcaption className="mb-3 font-mono text-[12px] uppercase tracking-[0.12em] text-muted-foreground">2 · A person on your team</figcaption>
+        <figcaption className="mb-3 text-[14px] text-muted-foreground">2 · A person on your team</figcaption>
         <div className="rounded-[22px] border border-hairline bg-panel p-5">
           <div className="flex items-center justify-between">
             <p className="inline-flex items-center gap-2 text-[15px] font-medium">

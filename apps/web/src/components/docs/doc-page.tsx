@@ -1,27 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { docNeighbours, docPage } from "./nav";
 import { OnThisPage, type TocItem } from "./on-this-page";
 
-/** One docs page: breadcrumb, title, lead, body, Previous / Next, and "On this page" when long. */
+/** One docs page: title, lead, body, Previous / Next, and "On this page" when long. */
 export function DocPage({ href, title, lead, toc, children }: { href: string; title?: string; lead: ReactNode; toc?: TocItem[]; children: ReactNode }) {
   const page = docPage(href);
-  const GroupIcon = page.group.icon;
   return (
     <div className="flex gap-12 px-0 pb-20 pt-8 lg:pl-12 lg:pt-12 xl:gap-16">
       <article className="min-w-0 max-w-[720px] flex-1">
-        <p className="flex items-center gap-1.5 font-mono text-[12px] text-muted-foreground">
-          <GroupIcon className="size-3.5" strokeWidth={1.5} aria-hidden />
-          {page.group.label}
-          {href !== "/docs" ? (
-            <>
-              <ChevronRight className="size-3" strokeWidth={1.5} aria-hidden />
-              <span className="text-foreground/70">{page.title}</span>
-            </>
-          ) : null}
-        </p>
-        <h1 className="mt-3 text-[32px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[38px]">{title ?? page.title}</h1>
+        <h1 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[38px]">{title ?? page.title}</h1>
         <div className="mt-4 max-w-[62ch] text-[17px] leading-[1.65] text-muted-foreground">{lead}</div>
         <div className="mt-10">{children}</div>
         <PrevNext href={href} />
