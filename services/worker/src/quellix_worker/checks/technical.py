@@ -7,6 +7,7 @@ import numpy as np
 
 from ..media import DecodedVideo
 from ..rubric import CheckOutput
+from .segments import flagged_runs
 
 MODEL = "technical@0.1.0"
 
@@ -41,6 +42,10 @@ def run(video: DecodedVideo) -> CheckOutput:
         return CheckOutput(measurements={"decodable": False}, model=MODEL)
     grays = [cv2.cvtColor(f.rgb, cv2.COLOR_RGB2GRAY) for f in video.frames]
     n = len(grays)
+    times = [f.t_s for f in video.frames]
+    step = 1.0 / video.sample_fps
+    blurry = [is_blurry(g) for g in grays]
+    bad_exposure = [is_badly_exposed(g) for g in grays]
     return CheckOutput(
         measurements={
             "decodable": True,
@@ -48,8 +53,11 @@ def run(video: DecodedVideo) -> CheckOutput:
             "width": info.width,
             "height": info.height,
             "fps": info.fps,
-            "blur_ratio": sum(is_blurry(g) for g in grays) / n,
-            "bad_exposure_ratio": sum(is_badly_exposed(g) for g in grays) / n,
+            "blur_ratio": sum(blurry) / n,
+            "bad_exposure_ratio": sum(bad_exposure) / n,
+            # where it happens, for the contributor-facing segments
+            "blur_segments": flagged_runs(times, blurry, step),
+            "bad_exposure_segments": flagged_runs(times, bad_exposure, step),
         },
         model=MODEL,
     )

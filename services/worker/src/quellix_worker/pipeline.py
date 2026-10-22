@@ -11,6 +11,7 @@ from typing import Any
 from . import media
 from .checks import framing, hands, originality, privacy, task_baseline, task_local, technical
 from .contracts import validate_decision, validate_rubric
+from .feedback import annotate
 from .jsonable import to_py
 from .rubric import CheckOutput, evaluate
 
@@ -116,7 +117,7 @@ def run_pipeline(
                 rubric, video.path, video.info.duration_s, deps.task_judge))
 
     outputs = {n: _plain(o) for n, o in outputs.items()}  # numpy scalars never reach JSON
-    decision = evaluate(video_id, rubric, outputs)
+    decision = annotate(evaluate(video_id, rubric, outputs), rubric, video.info.duration_s)
     validate_decision(decision)
     compute_cost = (time.monotonic() - started) * config.compute_usd_per_second
     cost = {"compute_usd": round(compute_cost, 6), "api_usd": round(api_cost, 6),

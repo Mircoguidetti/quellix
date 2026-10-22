@@ -11,6 +11,7 @@ from typing import Any, Protocol
 
 from ..media import DecodedVideo
 from ..rubric import CheckOutput
+from .segments import flagged_runs
 
 
 class HandsModel(Protocol):
@@ -57,6 +58,23 @@ def for_rubric(m: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def not_full_segments(per_frame: list[Any], manipulation: Any, step: float) -> dict[str, Any]:
+    """Intervals where both hands / at least one hand are not fully visible, inside the
+    manipulation segments and over the whole video (the rubric's scope picks one)."""
+    times = [f.t_s for f in per_frame]
+    both = [f.left.full and f.right.full for f in per_frame]
+    any_ = [f.left.full or f.right.full for f in per_frame]
+    inside = [any(a <= f.t_s <= b for a, b in manipulation) for f in per_frame]
+    return {
+        "not_both_full_manipulation_segments": flagged_runs(
+            times, [i and not b for i, b in zip(inside, both, strict=True)], step),
+        "not_any_full_manipulation_segments": flagged_runs(
+            times, [i and not a for i, a in zip(inside, any_, strict=True)], step),
+        "not_both_full_whole_segments": flagged_runs(times, [not b for b in both], step),
+        "not_any_full_whole_segments": flagged_runs(times, [not a for a in any_], step),
+    }
+
+
 class QuellixHandsAdapter:
     """Wraps ``quellix_hands.HandsModel`` as the worker's ``HandsModel``."""
 
@@ -65,8 +83,30 @@ class QuellixHandsAdapter:
         self.name = str(model.model_id)
 
     def predict(self, video: DecodedVideo) -> CheckOutput:
-        return CheckOutput(measurements=for_rubric(self._model.measure_video(video)),
-                           model=self.name)
+        frames = list(video.frames)
+        if hasattr(self._model, "frames"):
+            m, per_frame, segments = self._measure_with_frames(frames)
+            m.update(not_full_segments(per_frame, segments, 1.0 / video.sample_fps))
+        else:  # a model that only offers measure_video(): ratios without exact intervals
+            m = self._model.measure_video(video)
+        return CheckOutput(measurements=for_rubric(m), model=self.name)
+
+    def _measure_with_frames(self, frames: list[Any]) -> tuple[dict[str, Any], list[Any], Any]:
+        """What ``HandsModel.measure`` does, but keeping the per-frame states: the exact
+        intervals where a hand is not fully visible are what the contributor needs."""
+        from quellix_hands.aggregate import aggregate
+        from quellix_hands.contact import segments_from_contact
+
+        m_ = self._model
+        per_frame = m_.frames([f.rgb for f in frames], [f.t_s for f in frames])
+        segments = segments_from_contact([f.t_s for f in per_frame],
+                                         [f.contact for f in per_frame],
+                                         m_.max_gap_s, m_.min_segment_s)
+        m = aggregate(per_frame, segments)
+        m["detector"] = m_.detector.name
+        m["contact_model"] = m_.contact.name
+        m["margin"] = m_.config.margin
+        return m, per_frame, segments
 
 
 @lru_cache(maxsize=1)

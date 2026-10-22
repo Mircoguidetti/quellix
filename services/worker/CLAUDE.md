@@ -11,6 +11,7 @@ video -> decode + sample frames -> checks (measurements only) -> rubric.evaluate
 - `src/quellix_worker/rubric.py` - **the only place** that turns measurements into pass / fail / uncertain and into accept / reject / review. Pure, no I/O, fully tested. Do not put thresholds anywhere else.
 - `src/quellix_worker/checks/` - one module per check. A check returns `CheckOutput(measurements=..., model="name@version")` or `CheckOutput(error=...)`. Checks never decide.
 - `src/quellix_worker/pipeline.py` - orchestration: run cheap checks first (technical, originality); if a critical one already fails, skip the expensive ones (task completion).
+- `src/quellix_worker/feedback.py` - annotates the finished decision for the contributor (contract v2): `hint`, `segments`, `contributor_visible` on every reason, from one hint table. `originality.*`, `*.error` and `pipeline.*` are never visible. A new reason code in `rubric.py` needs a table entry (a test enforces it). Checks emit the intervals it needs as extra measurements (`*_segments`).
 - `src/quellix_worker/contracts.py` - loads and validates the shared schemas.
 
 ## Measurement contract (what each check must return)
