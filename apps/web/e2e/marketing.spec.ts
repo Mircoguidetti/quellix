@@ -18,6 +18,8 @@ test.describe("marketing site", () => {
       await page.goto(p.route);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(p.h1);
       await expect(page).toHaveTitle(p.title);
+      // No footage is shown yet, so no footage credit (issue #25 add-on).
+      await expect(page.getByText("Demo footage")).toHaveCount(0);
       await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /opengraph-image/);
       await page.waitForLoadState("networkidle");
       await page.evaluate(() => document.fonts.ready);
