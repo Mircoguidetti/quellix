@@ -105,7 +105,7 @@ def overlay(img: np.ndarray, per: Any, lenient: Sequence[Any], margin: float,
 
 
 def gap_flags(seen: Sequence[bool], ts: Sequence[float], gap_s: float = GAP_S) -> list[bool]:
-    """True for frames inside a miss of at most `gap_s` between two frames where the hand is seen."""
+    """True for frames in a miss of at most `gap_s` between two frames where the hand is seen."""
     flags = [False] * len(seen)
     i = 0
     while i < len(seen):
@@ -187,7 +187,8 @@ def diagnose(
                       pf0[i] if pf0 is not None else None)
         path = out_dir / f"{video.stem}-t{ts[i]:05.2f}s.jpg"
         small = cv2.resize(img, (640, int(img.shape[0] * 640 / img.shape[1])))
-        cv2.imwrite(str(path), cv2.cvtColor(small, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 72])
+        cv2.imwrite(str(path), cv2.cvtColor(small, cv2.COLOR_RGB2BGR),
+                    [cv2.IMWRITE_JPEG_QUALITY, 72])
     return summary
 
 
