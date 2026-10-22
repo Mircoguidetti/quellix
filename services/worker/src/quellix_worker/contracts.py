@@ -10,10 +10,22 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-CONTRACTS_DIR = Path(
-    os.environ.get("QUELLIX_CONTRACTS_DIR")
-    or Path(__file__).resolve().parents[4] / "packages" / "contracts"
-)
+
+def _find_contracts_dir() -> Path:
+    """$QUELLIX_CONTRACTS_DIR (set in the Modal image), else packages/contracts found by walking
+    up from this file. Never index a fixed parent: in the container there is no repo around
+    this module and importing it must not fail before the first schema is needed."""
+    explicit = os.environ.get("QUELLIX_CONTRACTS_DIR")
+    if explicit:
+        return Path(explicit)
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "packages" / "contracts"
+        if candidate.is_dir():
+            return candidate
+    return Path("packages/contracts")  # fails with a clear FileNotFoundError on first use
+
+
+CONTRACTS_DIR = _find_contracts_dir()
 
 
 @cache
