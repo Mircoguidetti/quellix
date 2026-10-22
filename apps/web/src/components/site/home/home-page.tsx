@@ -71,7 +71,7 @@ export function HomePage() {
         </MoreLink>
       </Section>
 
-      <Section id="why">
+      <Section id="why" className="surface-dark">
         <H2>A decision in seconds, with a reason they can fix.</H2>
         <Lead>Same video, same spec. Today it waits for a person and the contributor hears “rejected”. With Ormes they hear why, and when, while they can still record again.</Lead>
         <div className="mt-12">
@@ -122,7 +122,7 @@ export function HomePage() {
         </div>
       </Section>
 
-      <section id="start" className="relative overflow-hidden border-t border-hairline py-24 sm:py-32">
+      <section id="start" className="surface-dark relative overflow-hidden py-24 sm:py-32">
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-[-60%] left-1/2 aspect-square w-[min(1000px,150vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(143,180,255,0.16),rgba(143,180,255,0))]"

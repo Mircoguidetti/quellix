@@ -15,9 +15,9 @@ export function Integration() {
         <span aria-hidden className="absolute left-[22px] top-6 hidden h-px w-[calc(100%-44px)] bg-[linear-gradient(90deg,var(--color-hairline),rgba(143,180,255,0.5),var(--color-hairline))] md:block" />
         {STEPS.map(({ icon: Icon, title, text }, i) => (
           <li key={title} className="relative flex gap-4 md:flex-col">
-            <span className="relative inline-flex size-12 shrink-0 items-center justify-center rounded-2xl border border-hairline bg-black text-brand">
+            <span className="relative inline-flex size-12 shrink-0 items-center justify-center rounded-2xl border border-hairline bg-background text-brand">
               <Icon {...ICON} className="size-[22px]" />
-              <span className="absolute -right-1.5 -top-1.5 inline-flex size-5 items-center justify-center rounded-full bg-brand font-mono text-[11px] font-medium text-black">{i + 1}</span>
+              <span className="absolute -right-1.5 -top-1.5 inline-flex size-5 items-center justify-center rounded-full bg-brand font-mono text-[11px] font-medium text-on-brand">{i + 1}</span>
             </span>
             <div>
               <h3 className="text-[18px] font-medium tracking-[-0.01em]">{title}</h3>

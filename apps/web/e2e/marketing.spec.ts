@@ -99,6 +99,8 @@ test.describe("marketing site", () => {
 
   test("Home: nine sections, one buyer question each, in order (issue #69)", async ({ page }) => {
     await page.goto("/");
+    // Section shots: the sticky header would cover the top of each section.
+    await page.addStyleTag({ content: "header { position: static !important; }" });
     const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
     expect(ids).toEqual(["top", "problem", "flow", "checks", "why", "privacy", "api", "pilot", "faq", "start"]);
     // The review console and the old phone moved off Home; "What Ormes doesn't do" and pricing are gone.
@@ -162,6 +164,53 @@ test.describe("marketing site", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(PAGES[0].h1);
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/app$/);
+  });
+
+  test("axe: docs has no serious violations (light content, dark footer)", async ({ page, isMobile }) => {
+    test.skip(isMobile, "Runs on desktop");
+    await page.goto("/docs/quickstart");
+    await page.waitForLoadState("networkidle");
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(", ")}`)).toEqual([]);
+  });
+
+  test("surfaces: dark accents on Home, light everywhere else (issue #69)", async ({ page }) => {
+    const surface = (sel: string) => page.locator(sel).first().evaluate((el) => el.closest(".surface-dark, .surface-light")?.className.match(/surface-(dark|light)/)?.[1]);
+    await page.goto("/");
+    expect(await surface("#top")).toBe("dark");
+    for (const id of ["problem", "flow", "checks", "privacy", "api", "pilot", "faq"]) expect(await surface(`#${id}`), id).toBe("light");
+    expect(await surface("#why")).toBe("dark");
+    expect(await surface("#start")).toBe("dark");
+    expect(await surface("footer")).toBe("dark");
+    for (const route of ["/product", "/security"]) {
+      await page.goto(route);
+      expect(await surface("main section"), route).toBe("light");
+      expect(await surface("footer"), route).toBe("dark");
+    }
+    // The hero has no trust row any more, and the clip sits in a contained card.
+    await page.goto("/");
+    await expect(page.getByText("Videos deleted after analysis")).toHaveCount(0);
+  });
+
+  test("screenshots: every Home section, and the other pages above the fold", async ({ page }, info) => {
+    const dir = path.join(OUT, info.project.name, "sections");
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: path.join(dir, "home-00-above-the-fold.jpg"), type: "jpeg", quality: 72 });
+    // Section shots: the sticky header would cover the top of each section.
+    await page.addStyleTag({ content: "header { position: static !important; }" });
+    const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
+    for (const [i, id] of ids.entries()) {
+      await page.locator(`#${id}`).screenshot({ path: path.join(dir, `home-${String(i + 1).padStart(2, "0")}-${id}.jpg`), type: "jpeg", quality: 72 });
+    }
+    for (const [name, route] of [["product", "/product"], ["security", "/security"], ["docs", "/docs"]]) {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({ path: path.join(dir, `${name}-above-the-fold.jpg`), type: "jpeg", quality: 72 });
+    }
   });
 
   for (const p of PAGES) {

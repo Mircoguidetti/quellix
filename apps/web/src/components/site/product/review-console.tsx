@@ -162,7 +162,7 @@ export function ReviewConsole() {
       className="overflow-hidden rounded-[22px] border border-hairline bg-white text-[#0b0c0e] shadow-[0_40px_120px_-40px_rgba(143,180,255,0.25)]"
     >
       <div className="grid md:grid-cols-[196px_minmax(0,1fr)]">
-        <aside className="hidden flex-col gap-1 bg-[#0b0c0e] p-4 text-[13.5px] text-white/60 md:flex" aria-hidden="true">
+        <aside className="surface-dark hidden flex-col gap-1 bg-[#0b0c0e] p-4 text-[13.5px] text-white/60 md:flex" aria-hidden="true">
           <Logo className="mb-5 px-2 pt-1 text-[13px] text-white" />
           {NAV.map(({ icon: Icon, label, count, on }) => (
             <span key={label} className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5", on && "bg-white/10 text-white")}>

@@ -128,10 +128,10 @@ export function ProductPage() {
               <div
                 role="row"
                 key={name}
-                className="grid gap-2 border-t border-hairline px-5 py-5 transition-colors first:border-t-0 hover:bg-white/[0.02] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-6 md:first:border-t"
+                className="grid gap-2 border-t border-hairline px-5 py-5 transition-colors first:border-t-0 hover:bg-foreground/[0.02] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-6 md:first:border-t"
               >
                 <span role="rowheader" className="flex items-center gap-2.5 font-medium">
-                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-white/[0.06]">
+                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-foreground/[0.06]">
                     <Icon {...ICON} className="size-4" />
                   </span>
                   {name}
@@ -172,7 +172,7 @@ export function ProductPage() {
               <div key={label} className="flex items-start gap-3">
                 <dt className="flex shrink-0 gap-1">
                   {keys.map((k) => (
-                    <kbd key={k} className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-white/15 bg-white/[0.06] px-1.5 font-mono text-[12.5px] text-foreground">
+                    <kbd key={k} className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-foreground/15 bg-foreground/[0.06] px-1.5 font-mono text-[12.5px] text-foreground">
                       {k}
                     </kbd>
                   ))}

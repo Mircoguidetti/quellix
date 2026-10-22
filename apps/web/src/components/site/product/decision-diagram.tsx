@@ -200,7 +200,7 @@ export function DecisionDiagram() {
               }}
               className="flex h-7 items-center rounded-full px-1.5"
             >
-              <span className={cn("block h-1.5 rounded-full transition-all", !interacting && i === example ? "w-6 bg-foreground" : "w-1.5 bg-white/25")} />
+              <span className={cn("block h-1.5 rounded-full transition-all", !interacting && i === example ? "w-6 bg-foreground" : "w-1.5 bg-foreground/25")} />
             </button>
           ))}
           <Example className="ml-2">Examples</Example>
@@ -244,7 +244,7 @@ export function DecisionDiagram() {
                   onClick={() => setPinned((p) => (p === c.key ? null : c.key))}
                   className={cn(
                     "flex w-full items-center justify-center gap-2 rounded-xl border px-2 py-2 text-left text-[13px] transition-colors duration-300 sm:justify-start sm:gap-2.5 sm:px-3 sm:text-[14.5px]",
-                    on ? "border-white/40 bg-white/[0.07] text-foreground" : ok ? "border-ok/30 text-foreground" : "border-hairline text-muted-foreground hover:text-foreground",
+                    on ? "border-foreground/40 bg-foreground/[0.07] text-foreground" : ok ? "border-ok/30 text-foreground" : "border-hairline text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <c.icon {...ICON} className={cn("size-4 shrink-0", ok && "text-ok")} />
@@ -278,7 +278,7 @@ export function DecisionDiagram() {
               ref={register("reason-none")}
               className={cn(
                 "inline-block rounded-md border border-dashed px-2 py-1 text-[11.5px] transition-colors duration-300 sm:text-[13px]",
-                nodes.has("reason-none") ? "border-ok text-ok" : "border-white/15 text-muted-foreground/70",
+                nodes.has("reason-none") ? "border-ok text-ok" : "border-foreground/15 text-muted-foreground/70",
               )}
             >
               No reasons

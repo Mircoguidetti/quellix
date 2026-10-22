@@ -80,7 +80,7 @@ function Backlog() {
     <div ref={ref} className="rounded-[22px] border border-hairline bg-panel p-5 sm:p-6" role="img" aria-label="Example working day: 480 videos uploaded, 160 watched by one reviewer, 320 still waiting at 17:00">
       <div aria-hidden className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="relative inline-block size-11 rounded-full border border-white/25">
+          <span className="relative inline-block size-11 rounded-full border border-foreground/25">
             <span className="absolute left-1/2 top-1/2 h-[15px] w-px origin-bottom -translate-x-1/2 -translate-y-full bg-no" style={{ transform: `translate(-50%, -100%) rotate(${angle}deg)` }} />
             <span className="absolute left-1/2 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
           </span>
@@ -103,8 +103,8 @@ function Backlog() {
               className={cn(
                 "relative aspect-video rounded-[3px] transition-colors duration-300",
                 state === "watched" && "bg-ok/25",
-                state === "waiting" && "bg-white/[0.16]",
-                state === "empty" && "border border-dashed border-white/[0.07]",
+                state === "waiting" && "bg-foreground/[0.16]",
+                state === "empty" && "border border-dashed border-foreground/[0.07]",
               )}
             >
               {state === "waiting" ? <i className="absolute left-1/2 top-1/2 -ml-[2px] -mt-[3px] border-y-[3px] border-l-[5px] border-y-transparent border-l-white/40" /> : null}
@@ -126,7 +126,7 @@ function Backlog() {
         </div>
         <div>
           <dt className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-            <i className="size-2 rounded-[2px] bg-white/30" /> Waiting
+            <i className="size-2 rounded-[2px] bg-foreground/30" /> Waiting
           </dt>
           <dd className="tabular font-mono text-[20px] text-no">{uploaded - watched}</dd>
         </div>

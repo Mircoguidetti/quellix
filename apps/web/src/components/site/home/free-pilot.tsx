@@ -15,10 +15,10 @@ export function FreePilot() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <ol className="relative flex flex-col gap-6 rounded-[22px] border border-hairline bg-panel p-5 sm:p-7">
-        <span aria-hidden className="absolute bottom-10 left-[39px] top-10 w-px bg-[linear-gradient(180deg,rgba(143,180,255,0.6),var(--color-hairline))] sm:left-[47px]" />
+        <span aria-hidden className="absolute bottom-10 left-[39px] top-10 w-px bg-[linear-gradient(180deg,var(--color-brand),var(--color-hairline))] sm:left-[47px]" />
         {DAYS.map(({ day, icon: Icon, title, text }) => (
           <li key={title} className="relative flex gap-4">
-            <span className="relative z-10 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-brand/40 bg-black text-brand">
+            <span className="relative z-10 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-brand/40 bg-background text-brand">
               <Icon {...ICON} className="size-[18px]" />
             </span>
             <div className="pt-0.5">
@@ -31,7 +31,7 @@ export function FreePilot() {
           </li>
         ))}
       </ol>
-      <div className="flex flex-col rounded-[22px] border border-hairline bg-[linear-gradient(160deg,#0f141d,#0b0c0e_60%)] p-5 sm:p-7">
+      <div className="flex flex-col rounded-[22px] border border-hairline bg-panel p-5 sm:p-7">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[16px] font-medium">Success criteria</p>
           <Example />

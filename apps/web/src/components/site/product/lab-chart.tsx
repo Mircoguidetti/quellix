@@ -6,8 +6,8 @@ import { Example } from "../primitives";
 
 /**
  * Product §6: reject precision and recall per rubric version, against the lab's reject rate
- * (what a random reject would score as precision). Example data. Colours validated for the dark
- * panel with the dataviz palette validator.
+ * (what a random reject would score as precision). Example data. Colours validated for the light
+ * panel (#f6f7f9) with the dataviz palette validator.
  */
 const DATA = [
   { v: "v1", precision: 0.82, recall: 0.64, review: 0.19 },
@@ -16,8 +16,8 @@ const DATA = [
 ];
 const LAB_REJECT_RATE = 0.09;
 const SERIES = [
-  { key: "precision" as const, label: "Reject precision", color: "#4f82e6" },
-  { key: "recall" as const, label: "Reject recall", color: "#b07d24" },
+  { key: "precision" as const, label: "Reject precision", color: "#2a5bc9" },
+  { key: "recall" as const, label: "Reject recall", color: "#a46a14" },
 ];
 
 const W = 560;
@@ -46,7 +46,7 @@ export function LabChart() {
           </li>
         ))}
         <li className="inline-flex items-center gap-2">
-          <span className="w-4 border-t border-dashed border-white/50" />
+          <span className="w-4 border-t border-dashed border-foreground/50" />
           Lab reject rate
         </li>
       </ul>
@@ -54,7 +54,7 @@ export function LabChart() {
         <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label="Reject precision rises from 82% to 94% and recall from 64% to 81% between rubric versions 1 and 3, against a lab reject rate of 9%.">
           {[0, 0.25, 0.5, 0.75, 1].map((t) => (
             <g key={t}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.07)" />
+              <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} style={{ stroke: "var(--hairline)" }} />
               <text x={PAD.l - 10} y={y(t) + 4} textAnchor="end" className="fill-muted-foreground font-mono text-[11px]">
                 {pct(t)}
               </text>
@@ -65,16 +65,16 @@ export function LabChart() {
               {d.v}
             </text>
           ))}
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(LAB_REJECT_RATE)} y2={y(LAB_REJECT_RATE)} stroke="rgba(255,255,255,0.5)" strokeDasharray="4 4" />
+          <line x1={PAD.l} x2={W - PAD.r} y1={y(LAB_REJECT_RATE)} y2={y(LAB_REJECT_RATE)} style={{ stroke: "var(--muted-foreground)" }} strokeDasharray="4 4" />
           <text x={W - PAD.r + 8} y={y(LAB_REJECT_RATE) + 4} className="fill-muted-foreground text-[12px]">
             lab 9%
           </text>
-          {hover !== null ? <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={H - PAD.b} stroke="rgba(255,255,255,0.18)" /> : null}
+          {hover !== null ? <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={H - PAD.b} style={{ stroke: "var(--muted-foreground)", opacity: 0.4 }} /> : null}
           {SERIES.map((s) => (
             <g key={s.key}>
               <polyline points={DATA.map((d, i) => `${x(i)},${y(d[s.key])}`).join(" ")} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" />
               {DATA.map((d, i) => (
-                <circle key={d.v} cx={x(i)} cy={y(d[s.key])} r={i === h ? 5 : 4} fill={s.color} stroke="#0b0c0e" strokeWidth="2" />
+                <circle key={d.v} cx={x(i)} cy={y(d[s.key])} r={i === h ? 5 : 4} fill={s.color} style={{ stroke: "var(--panel)" }} strokeWidth="2" />
               ))}
               <text x={W - PAD.r + 8} y={y(DATA[last][s.key]) + 4} className="fill-foreground text-[12px]">
                 {s.label.replace("Reject ", "")} {DATA[last][s.key].toFixed(2)}

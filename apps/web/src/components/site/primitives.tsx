@@ -90,7 +90,7 @@ export function ButtonLink({
       href={href}
       className={cn(
         "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium transition-colors",
-        variant === "solid" ? "bg-white text-black hover:bg-white/85" : "border border-white/20 text-foreground hover:border-white/45 hover:bg-white/5",
+        variant === "solid" ? "bg-foreground text-background hover:bg-foreground/85" : "border border-foreground/20 text-foreground hover:border-foreground/45 hover:bg-foreground/5",
         className,
       )}
     >
@@ -118,14 +118,14 @@ export function PageIntro({
         <h1 className="text-balance text-[clamp(36px,5.4vw,60px)] font-medium leading-[1.02] tracking-[-0.035em]">{title}</h1>
         <p className="mt-4 max-w-[62ch] text-pretty text-[17px] leading-relaxed text-muted-foreground">{intro}</p>
       </Wrap>
-      <nav aria-label="On this page" className="sticky top-16 z-40 border-y border-hairline bg-black/80 backdrop-blur-md">
+      <nav aria-label="On this page" className="sticky top-16 z-40 border-y border-hairline bg-background/80 backdrop-blur-md">
         <Wrap>
           <ul className="-mx-1 flex gap-1 overflow-x-auto py-2 [scrollbar-width:none]">
             {nav.map(({ href, label, icon: Icon }) => (
               <li key={href} className="shrink-0">
                 <a
                   href={href}
-                  className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-[14px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-[14px] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
                 >
                   <Icon {...ICON} className="size-4" />
                   {label}
