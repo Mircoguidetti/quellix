@@ -64,3 +64,19 @@ def test_modal_app_imports_inside_a_container_layout():
         assert proc.returncode == 0, proc.stderr[-800:]
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_contracts_search_survives_unreadable_parents(monkeypatch):
+    """Python 3.12 raises PermissionError from Path.is_dir() under an unreadable /root (3.13
+    returns False); CI runs 3.12 as a different user."""
+    from pathlib import Path
+
+    real = Path.is_dir
+
+    def deny(self):
+        if "packages" in self.parts and "quellix_worker" in self.parts:
+            raise PermissionError(13, "Permission denied", str(self))
+        return real(self)
+
+    monkeypatch.setattr(Path, "is_dir", deny)
+    assert modal_app.contracts_dir("/root/quellix_worker/modal_app.py") is None

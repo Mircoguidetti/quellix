@@ -20,8 +20,11 @@ def _find_contracts_dir() -> Path:
         return Path(explicit)
     for parent in Path(__file__).resolve().parents:
         candidate = parent / "packages" / "contracts"
-        if candidate.is_dir():
-            return candidate
+        try:
+            if candidate.is_dir():
+                return candidate
+        except OSError:  # e.g. PermissionError under /root on Python 3.12
+            continue
     return Path("packages/contracts")  # fails with a clear FileNotFoundError on first use
 
 

@@ -109,8 +109,11 @@ def contracts_dir(module_file: str | Path = __file__) -> Path | None:
     which has no repo around it (and only two parents): never index a fixed parent."""
     for parent in Path(module_file).resolve().parents:
         candidate = parent / "packages" / "contracts"
-        if candidate.is_dir():
-            return candidate
+        try:
+            if candidate.is_dir():
+                return candidate
+        except OSError:  # e.g. PermissionError under /root on Python 3.12
+            continue
     return None
 
 
