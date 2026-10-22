@@ -92,8 +92,11 @@ def iter_tar_videos(stream: BinaryIO, limit: int) -> Iterator[tuple[str, bytes]]
             count += 1
 
 
-def transcode(src: Path, dst: Path, seconds: float, width: int, fps: float) -> float:
-    """Write the first `seconds` of src, resized to `width` and resampled to `fps`.
+def transcode(
+    src: Path, dst: Path, seconds: float, width: int, fps: float,
+    codec: str = "mpeg4", options: dict[str, str] | None = None, start_s: float = 0.0,
+) -> float:
+    """Write `seconds` of src from `start_s`, resized to `width` and resampled to `fps`.
 
     Returns the written duration in seconds.
     """
@@ -106,9 +109,12 @@ def transcode(src: Path, dst: Path, seconds: float, width: int, fps: float) -> f
         step = max(1, round(src_fps / fps))
         ostream = None
         for i, frame in enumerate(inp.decode(stream)):
-            if i / src_fps >= seconds:
+            t = i / src_fps
+            if t < start_s:
+                continue
+            if t >= start_s + seconds:
                 break
-            if i % step:
+            if (i - round(start_s * src_fps)) % step:
                 continue
             img = frame.to_ndarray(format="rgb24")
             h, w = img.shape[:2]
@@ -117,9 +123,9 @@ def transcode(src: Path, dst: Path, seconds: float, width: int, fps: float) -> f
             img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
             if ostream is None:
                 rate = Fraction(src_fps / step).limit_denominator(1000)
-                ostream = out.add_stream("mpeg4", rate=rate)
+                ostream = out.add_stream(codec, rate=rate)
                 ostream.width, ostream.height, ostream.pix_fmt = new_w, new_h, "yuv420p"
-                ostream.options = {"qscale": "3"}
+                ostream.options = options or {"qscale": "3"}
             vf = av.VideoFrame.from_ndarray(np.ascontiguousarray(img), format="rgb24")
             for p in ostream.encode(vf):
                 out.mux(p)
@@ -142,6 +148,8 @@ def build(
     fps: float = 15.0,
     token: str | None = None,
     min_factories: int = 1,
+    codec: str = "mpeg4",
+    options: dict[str, str] | None = None,
     lister: ShardLister = _hf_list_shards,
     opener: ShardOpener = _hf_open_shard,
 ) -> int:
@@ -177,7 +185,7 @@ def build(
                     raw.write_bytes(data)
                     dst = data_dir / f"{key}.mp4"
                     try:
-                        duration = transcode(raw, dst, seconds, width, fps)
+                        duration = transcode(raw, dst, seconds, width, fps, codec, options)
                     except Exception as e:  # noqa: BLE001 - undecodable clip: try the next one
                         print(f"skip clip {key}: {e}", file=sys.stderr)
                         continue

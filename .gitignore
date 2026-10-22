@@ -30,6 +30,8 @@ models/**/checkpoints/
 models/**/*.onnx
 models/**/*.pt
 *.mp4
+# ...except the small site clips committed by the site-clips workflow (under 12 MB in total)
+!apps/web/public/media/clips/*.mp4
 *.mov
 
 # os / editors
