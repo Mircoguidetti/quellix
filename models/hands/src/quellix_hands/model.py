@@ -46,7 +46,12 @@ class HandsModel:
 
     @classmethod
     def v0(cls, detector: Detector | None = None) -> HandsModel:
-        """The first version (hands@0.1.0), for before/after scoring on the same code."""
+        """The first version (hands@0.1.0), for before/after scoring on the same code. Without a
+        detector it gets MediaPipe at the thresholds it had then (0.5)."""
+        if detector is None:
+            from .detectors import MediaPipeDetector
+
+            detector = MediaPipeDetector(min_detection_confidence=0.5, min_presence_confidence=0.5)
         return cls(detector, config=InferConfig.v0(), smooth_gap_s=0.0, version=V0_VERSION)
 
     def frames(self, frames: Sequence[np.ndarray], timestamps: Sequence[float]) -> list[FrameHands]:

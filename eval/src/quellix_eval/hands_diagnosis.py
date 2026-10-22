@@ -202,8 +202,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - models
     ap.add_argument("--fps", type=float, default=4.0)
     ap.add_argument("--overlays", type=int, default=6)
     a = ap.parse_args(argv)
-    detector = MediaPipeDetector()
-    hands, baseline = HandsModel(detector), HandsModel.v0(detector)
+    hands, baseline = HandsModel(MediaPipeDetector()), HandsModel.v0()
     lenient = MediaPipeDetector(min_detection_confidence=0.1, min_presence_confidence=0.1)
     for v in a.videos:
         s = diagnose(v, hands, lenient, a.out, a.fps, a.overlays, baseline=baseline)
