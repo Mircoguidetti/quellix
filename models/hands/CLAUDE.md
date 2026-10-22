@@ -23,3 +23,20 @@ Aggregated into the worker's `hands_visible` measurements: `ratio_both_manipulat
 - Checkpoints and data never go in git (see root `.gitignore`); document where they live.
 - Every model version gets an eval report from `eval` before the worker uses it.
 - Licenses of every pretrained weight and dataset listed in this file.
+
+## Package `quellix_hands` (v0)
+
+- `infer.py` per-frame states, `truncation.py` edge margin (default 0.02 of the frame side),
+  `contact.py` pluggable contact + `manipulation_segments`, `aggregate.py` the worker measurements,
+  `model.py` `HandsModel.measure(frames, timestamps)` / `model_id = "hands@<version>"`,
+  `evaluate.py` per-frame truncation accuracy and ratio error on labelled clips.
+- Detector: MediaPipe Hand Landmarker (`[mediapipe]` extra, needs `libegl1`). The core package only
+  needs numpy.
+- Weights: `python -m quellix_hands.weights download`, sha256-pinned, stored in
+  `QUELLIX_HANDS_MODEL_PATH` or `~/.cache/quellix/hands/`. Never in git.
+- Licenses: `LICENSES.md` (every weight and dataset, with verdicts). Plan for v1: `PLAN.md`.
+
+```bash
+uv sync && uv run ruff check . && uv run pytest
+uv sync --extra mediapipe && uv run python -m quellix_hands.weights download   # real detector
+```

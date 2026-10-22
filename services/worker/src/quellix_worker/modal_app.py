@@ -89,6 +89,15 @@ def poll_once(spawn) -> int:
     return n
 
 
+def sweep() -> dict[str, int]:
+    """Daily: delete review videos whose 14 days have passed, and kept videos that already
+    have a review decision."""
+    from .store import SupabaseStore
+
+    store = SupabaseStore()
+    return {"expired": len(store.purge_expired()), "reviewed": len(store.purge_reviewed())}
+
+
 try:
     import modal
 except ImportError:  # modal is an optional extra; keep the module importable
@@ -143,5 +152,9 @@ if modal is not None:
     @app.function(schedule=modal.Period(minutes=1), timeout=120, max_containers=1)
     def poller() -> int:
         return poll_once(lambda *a: process.spawn(*a))
+
+    @app.function(schedule=modal.Cron("17 3 * * *"), timeout=900, max_containers=1)
+    def retention_sweep() -> dict[str, int]:
+        return sweep()
 else:
     app = None

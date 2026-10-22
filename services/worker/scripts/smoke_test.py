@@ -182,15 +182,20 @@ class Smoke:
             "rubric": {"id": str(row["rubric_id"]), "version": row["rubric_version"]},
             "engine_version": row["engine_version"]})
         assert str(row["rubric_id"]) == self.rubric_id, "decision carries the wrong rubric id"
-        # The file must be gone once the decision exists (allow a moment for the last steps).
+        # Data rule: accept / reject -> the file is deleted once the decision exists (allow a
+        # moment for the last steps); review -> kept for a person, with a deadline <= 14 days.
+        select = "status,storage_path,file_deleted_at,delete_after"
         for _ in range(12):
             video = self.rest("GET", "videos", params={
-                "id": f"eq.{self.video_id}", "select": "status,storage_path,file_deleted_at"})[0]
-            if video["file_deleted_at"]:
+                "id": f"eq.{self.video_id}", "select": select})[0]
+            if video["file_deleted_at"] or (row["decision"] == "review" and video["delete_after"]):
                 break
             time.sleep(5)
         assert video["status"] == "decided", f"video status is {video['status']}"
-        assert video["storage_path"] is None and video["file_deleted_at"], "file not deleted"
+        if row["decision"] == "review":
+            assert video["storage_path"] and video["delete_after"], "review file not kept"
+        else:
+            assert video["storage_path"] is None and video["file_deleted_at"], "file not deleted"
 
     def cleanup(self) -> None:
         """Best effort. Deleting the video cascades to jobs, decisions and fingerprints."""

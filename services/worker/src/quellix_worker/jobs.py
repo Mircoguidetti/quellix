@@ -49,10 +49,11 @@ def _fail_or_retry(store: SupabaseStore, job: Job, attempts_used: int, error: st
     store.finish_job(job.job_id, error=message)
     if mark_video:
         store.set_video(job.video_id, status="failed")
-    # Customer videos are deleted after analysis, also when the analysis failed for good.
+    # Customer videos are deleted after analysis, also when the analysis failed for good
+    # (unless the decision was already written as `review` and the file is kept for a person).
     try:
-        path = store.video_storage_path(job.video_id)
-        if path:
+        path, delete_after = store.video_retention(job.video_id)
+        if path and not delete_after:
             store.delete_video_file(job.video_id, path)
     except Exception:
         log.exception("could not delete the file of failed video %s", job.video_id)
@@ -70,9 +71,13 @@ def process_job(store: SupabaseStore, job: Job, fingerprints: FingerprintStore,
         attempts_used = ctx.attempts + 1
         store.start_job(job.job_id, ctx.attempts)  # counts the attempt even if it fails early
         if ctx.video_status in ("decided", "deleted"):
-            # Duplicate delivery or a retry after the decision was written: finish cleanup.
-            if ctx.storage_path:
-                store.delete_video_file(job.video_id, ctx.storage_path)
+            # Duplicate delivery or a retry after the decision was written: finish cleanup,
+            # keeping the file only for a `review` decision.
+            if ctx.storage_path and not ctx.delete_after:
+                if store.latest_decision(job.video_id) == "review":
+                    store.keep_for_review(job.video_id)
+                else:
+                    store.delete_video_file(job.video_id, ctx.storage_path)
             store.finish_job(job.job_id)
             store.archive_job(job)
             return "skipped"
@@ -85,12 +90,16 @@ def process_job(store: SupabaseStore, job: Job, fingerprints: FingerprintStore,
                                     and config.allow_external_models})
             deps.fingerprints = fingerprints
             result = run_pipeline(path, ctx.rubric, job.video_id, cfg, deps)
-        # Order matters: decision first, then fingerprints, status, file deletion, webhook.
+        # Order matters: decision first, then fingerprints, status, file deletion (accept/reject)
+        # or retention (review), webhook.
         store.write_decision(ctx.org_id, result.decision)
         decided = True
         fingerprints.add(ctx.org_id, job.video_id, result.fingerprints)
         store.set_video(job.video_id, status="decided", duration_s=result.duration_s)
-        store.delete_video_file(job.video_id, ctx.storage_path)
+        if result.decision["decision"] == "review":
+            store.keep_for_review(job.video_id)  # a person has to watch it; deleted <= 14 days
+        else:
+            store.delete_video_file(job.video_id, ctx.storage_path)
         store.finish_job(job.job_id, cost_usd=result.cost["total_usd"])
         try:
             store.send_webhooks(ctx.org_id, _video_payload(ctx, result.decision))
