@@ -2,12 +2,12 @@ import { FileCode2, Upload, Webhook } from "lucide-react";
 import { ICON, MoreLink } from "../primitives";
 
 const STEPS = [
-  { icon: FileCode2, title: "Write the rubric", text: "Once per task, from your lab’s spec. Every decision records the version it used." },
-  { icon: Upload, title: "Send each upload", text: "One SDK call in TypeScript or Python, or three REST calls. Recruiting, tasks and payouts stay in your app." },
-  { icon: Webhook, title: "Act on the decision", text: "Pay, reject with the reason, or route to your reviewers. Signed webhook or polling." },
+  { icon: FileCode2, title: "Write the rubric", text: "Once per task, from your lab’s spec." },
+  { icon: Upload, title: "Send each upload", text: "One SDK call in TypeScript or Python." },
+  { icon: Webhook, title: "Act on the decision", text: "Signed webhook or polling, with every reason." },
 ];
 
-/** Home §6: three steps and one line of code. The full examples live in the docs. */
+/** Home §7: three steps and one line of code. The full examples live in the docs. */
 export function Integration() {
   return (
     <div>

@@ -126,49 +126,6 @@
   60%, 100% { width: var(--v); }
 }
 
-/* ---------- Review console ---------- */
-.keyLit {
-  background: var(--color-brand);
-  color: #000;
-  border-color: var(--color-brand);
-  transform: translateY(1px);
-  box-shadow: 0 0 0 4px rgba(143, 180, 255, 0.25);
-}
-
-/* ---------- Contributor phone ---------- */
-.upload {
-  width: 100%;
-}
-.message {
-  opacity: 1;
-  transform: none;
-}
-.checking {
-  opacity: 0;
-}
-[data-play] .upload {
-  animation: upload 7s ease-in-out infinite;
-}
-[data-play] .message {
-  animation: message 7s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-}
-[data-play] .checking {
-  animation: checking 7s linear infinite;
-}
-@keyframes upload {
-  0% { width: 4%; }
-  22%, 100% { width: 100%; }
-}
-@keyframes checking {
-  0%, 22% { opacity: 0; }
-  25%, 38% { opacity: 1; }
-  41%, 100% { opacity: 0; }
-}
-@keyframes message {
-  0%, 40% { opacity: 0; transform: translateY(28px) scale(0.97); }
-  48%, 100% { opacity: 1; transform: none; }
-}
-
 /* ---------- Privacy pipeline ---------- */
 .scan {
   opacity: 0;

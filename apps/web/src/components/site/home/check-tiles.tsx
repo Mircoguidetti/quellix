@@ -31,10 +31,10 @@ function Tile({
         className,
       )}
     >
-      <div className={cn("relative border-b border-hairline", primary ? "h-[168px]" : "h-[132px]")} aria-hidden="true">
+      <div className={cn("relative border-b border-hairline", primary ? "h-[148px]" : "h-[112px]")} aria-hidden="true">
         {children}
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-5">
+      <div className="flex flex-1 flex-col gap-1.5 p-4">
         <h3 className="flex items-center gap-2.5 text-[17px] font-medium tracking-[-0.01em]">
           <span className={cn("inline-flex size-8 items-center justify-center rounded-lg", primary ? "bg-brand/15 text-brand" : "bg-white/[0.06] text-foreground")}>
             <Icon {...ICON} className="size-[18px]" />
@@ -42,7 +42,7 @@ function Tile({
           {title}
           {primary ? <span className="ml-auto rounded-full bg-brand/12 px-2 py-px text-[12px] text-brand">Core</span> : null}
         </h3>
-        <p className="text-[14.5px] leading-relaxed text-muted-foreground">{text}</p>
+        <p className="text-[14px] leading-relaxed text-muted-foreground">{text}</p>
       </div>
     </li>
   );
@@ -117,7 +117,7 @@ function PrivacyVisual() {
       <div className="absolute bottom-0 left-[12%] h-[54%] w-[40%] rounded-t-[40%] bg-white/[0.05]" />
       <div className="absolute bottom-[42%] left-[22%] size-11 rounded-full bg-white/[0.08]" />
       <div className={cn(s.faceBox, "absolute bottom-[38%] left-[18%] size-16 rounded-md border-[1.5px] border-brand")} />
-      <span className={cn(s.faceTag, mono, "absolute bottom-[calc(38%+68px)] left-[18%] rounded bg-brand px-1.5 py-0.5 text-black")}>
+      <span className={cn(s.faceTag, mono, "absolute bottom-[calc(38%+36px)] left-[calc(18%+72px)] whitespace-nowrap rounded bg-brand px-1.5 py-0.5 text-black")}>
         face 00:12 · review
       </span>
       <div className="absolute right-[10%] top-[22%] h-[46%] w-[24%] rotate-3 rounded bg-white/[0.07]" />
@@ -156,7 +156,7 @@ function FramingVisual() {
           <span className="absolute right-[-6px] top-1/2 h-px w-3 bg-brand" />
         </div>
       </div>
-      <span className={cn(mono, "absolute right-4 top-3 text-muted-foreground")}>off target 4%</span>
+      <span className={cn(mono, "absolute bottom-3 right-4 text-muted-foreground")}>off target 4%</span>
     </div>
   );
 }
@@ -190,13 +190,13 @@ export function CheckTiles() {
   const ref = useRef<HTMLUListElement>(null);
   const playing = usePlayback(ref);
   return (
-    <ul ref={ref} data-play={playing ? "" : undefined} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12">
+    <ul ref={ref} data-play={playing ? "" : undefined} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
       <Tile
         icon={Hand}
         title="Hands on the work"
         primary
         className="lg:col-span-6"
-        text="Both hands visible while they handle objects, measured only during the work. Hands cut by the edge are found to the second."
+        text="Both hands visible while they handle objects. Hands cut by the edge are found to the second."
       >
         <HandsVisual />
       </Tile>
@@ -205,20 +205,20 @@ export function CheckTiles() {
         title="Task completed"
         primary
         className="lg:col-span-6"
-        text="Every step of the task found in order, with the final state checked. When the model is not sure, the video goes to review, never to accept."
+        text="Every step found in order, final state checked. Not sure means review, never accept."
       >
         <TaskVisual />
       </Tile>
-      <Tile icon={ScanFace} title="Privacy" className="lg:col-span-3" text="Faces, readable documents and screens, with the time and size of each one.">
+      <Tile icon={ScanFace} title="Privacy" className="lg:col-span-3" text="Faces, readable documents and screens, with their times.">
         <PrivacyVisual />
       </Tile>
-      <Tile icon={Copy} title="Already delivered" className="lg:col-span-3" text="Re-uploads and edited copies from your own contributors: re-encoded, cropped, mirrored or trimmed.">
+      <Tile icon={Copy} title="Already delivered" className="lg:col-span-3" text="Re-uploads and edited copies of your own earlier videos.">
         <DuplicateVisual />
       </Tile>
-      <Tile icon={Crosshair} title="Framing" className="lg:col-span-3" text="Camera pointed at the work and steady. Time off target and unstable time, against your limits.">
+      <Tile icon={Crosshair} title="Framing" className="lg:col-span-3" text="Camera on the work and steady, against your limits.">
         <FramingVisual />
       </Tile>
-      <Tile icon={Gauge} title="Technical" className="lg:col-span-3" text="Duration, resolution, frame rate, blur and exposure, so one call covers the whole spec.">
+      <Tile icon={Gauge} title="Technical" className="lg:col-span-3" text="Duration, resolution, frame rate, blur and exposure.">
         <TechnicalVisual />
       </Tile>
     </ul>

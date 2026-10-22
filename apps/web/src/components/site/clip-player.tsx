@@ -19,9 +19,12 @@ type Box = [number, number, number, number];
 type HandRow = { state: "full" | "truncated" | "absent"; box: Box | null };
 export type ClipSidecar = {
   id: string;
-  video: { mp4: string; webm: string; poster: string; width: number; height: number };
+  video: { mp4: string; webm: string; poster: string; width: number; height: number; duration_s?: number };
   hands: { frames: { t: number; left: HandRow; right: HandRow }[] };
-  decision: { decision: "accept" | "reject" | "review"; reasons: { check: string; code: string; message: string }[] } | null;
+  decision: {
+    decision: "accept" | "reject" | "review";
+    reasons: { check: string; code: string; message: string; hint?: string; segments?: { start_s: number; end_s: number }[] }[];
+  } | null;
 };
 
 const COLOR = { full: "#7ed6a8", truncated: "#ff8a7a", absent: "transparent" } as const;
@@ -51,7 +54,7 @@ function frameAt(frames: ClipSidecar["hands"]["frames"], t: number) {
 }
 
 /** A muted, looping clip with live hand boxes. Shows the poster still with reduced motion. */
-export function ClipPlayer({ side, className }: { side: ClipSidecar; className?: string }) {
+export function ClipPlayer({ side, className, overlay = true }: { side: ClipSidecar; className?: string; overlay?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const reduced = useReducedMotion();
@@ -60,7 +63,7 @@ export function ClipPlayer({ side, className }: { side: ClipSidecar; className?:
     const v = video.current;
     const c = canvas.current;
     const cx = c?.getContext("2d");
-    if (!v || !c || !cx || side.hands.frames.length === 0) return;
+    if (!overlay || !v || !c || !cx || side.hands.frames.length === 0) return;
     let raf = 0;
     const draw = () => {
       const r = c.getBoundingClientRect();
@@ -89,7 +92,7 @@ export function ClipPlayer({ side, className }: { side: ClipSidecar; className?:
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [side]);
+  }, [side, overlay]);
 
   const src = (p: string) => (p.startsWith("/") ? p : `${CLIP_BASE}/${p}`);
   return (

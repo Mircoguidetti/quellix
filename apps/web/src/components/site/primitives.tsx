@@ -59,7 +59,7 @@ export function Soon({ className }: { className?: string }) {
 /** Marks numbers that are illustrative, not measured. */
 export function Example({ className, children = "Example" }: { className?: string; children?: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center rounded border border-hairline px-1.5 text-[12px] text-muted-foreground", className)}>
+    <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded border border-hairline px-1.5 text-[12px] text-muted-foreground", className)}>
       {children}
     </span>
   );

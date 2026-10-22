@@ -4,9 +4,12 @@
  */
 export const SITE_CLIPS: {
   hero: string | null;
+  /** The "Why Ormes" split scene on Home: a clip whose real decision is a reject with a hint. */
+  why: string | null;
   /** One clip per example video in the Product decision diagram. */
   decision: { reject: string | null; review: string | null; accept: string | null };
 } = {
   hero: null,
+  why: null,
   decision: { reject: null, review: null, accept: null },
 };

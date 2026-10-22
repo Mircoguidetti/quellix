@@ -1,15 +1,14 @@
 "use client";
 
 import { useRef } from "react";
-import { ArrowRight, Clock, Cpu, FileVideo, Trash2 } from "lucide-react";
+import { ArrowRight, Cpu, FileVideo, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ICON } from "../primitives";
 import { usePlayback } from "../use-playback";
 import s from "./home.module.css";
 
 /**
- * Home §7: a video goes in, is analysed, and dissolves; the decision card stays. A side branch
- * shows the one exception: videos waiting for a reviewer, kept 14 days at most.
+ * Home §6: a video goes in, is analysed, and dissolves; the decision card stays.
  */
 export function PrivacyPipeline() {
   const ref = useRef<HTMLDivElement>(null);
@@ -63,17 +62,6 @@ export function PrivacyPipeline() {
           </ul>
           <p className="mt-3 border-t border-[#e6e8eb] pt-2 text-[12px] text-[#5c626b]">Kept: decision, reasons, measurements</p>
         </div>
-      </div>
-      <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-dashed border-brand/30 p-5 sm:flex-row sm:items-center sm:gap-6">
-        <p className="inline-flex shrink-0 items-center gap-2 font-mono text-[12.5px] text-brand">
-          <Clock {...ICON} className="size-4" /> review: kept up to 14 days
-        </p>
-        <div aria-hidden className="flex flex-1 gap-1">
-          {Array.from({ length: 14 }, (_, i) => (
-            <i key={i} className={cn("h-2 flex-1 rounded-sm", i < 3 ? "bg-brand/70" : "bg-brand/15")} />
-          ))}
-        </div>
-        <p className="text-[14px] text-muted-foreground sm:max-w-[34ch]">Kept until a person decides, then deleted. Never longer than 14 days.</p>
       </div>
     </div>
   );
