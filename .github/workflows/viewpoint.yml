@@ -74,7 +74,11 @@ jobs:
           git rm -q --cached eval/reports/viewpoint/comment.md 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -q -m "eval: viewpoint ${{ steps.req.outputs.mode }} (run ${{ github.run_id }})"
-            git push origin "HEAD:${{ github.ref_name }}"
+            # the branch may have moved while the job ran: put the report on top of it
+            for i in 1 2 3; do
+              git pull -q --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && break
+              sleep 5
+            done
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Post on issue #79
