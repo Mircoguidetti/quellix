@@ -258,6 +258,7 @@ class PhaseLimits:
                  clock: Callable[[], float] = time.monotonic) -> None:
         self.budget_s, self.cap_usd, self._clock = budget_s, cap_usd, clock
         self.started: float | None = None
+        self.last_active: float | None = None   # end of the last clip: the phase's real length
         self.spent_usd = 0.0
         self.stopped_by: str | None = None      # "time budget" | "spend cap"
 
@@ -272,7 +273,7 @@ class PhaseLimits:
 
     def describe(self, name: str) -> str:
         cap = "" if self.cap_usd is None else f" of the ${self.cap_usd:.2f} cap"
-        elapsed = 0.0 if self.started is None else self._clock() - self.started
+        elapsed = 0.0 if self.started is None else (self.last_active or self.started) - self.started
         stop = f" The phase STOPPED early: {self.stopped_by} reached." if self.stopped_by else ""
         return (f"{name} phase: ${self.spent_usd:.4f} spent{cap}, "
                 f"{elapsed / 60:.1f} of {self.budget_s / 60:.0f} minutes used.{stop}")
@@ -285,6 +286,7 @@ def _limited(engine: Engine, limits: PhaseLimits) -> Engine:
             return EngineResult(None, error=f"{why} reached", not_run=True)
         res = engine(clip, rubric)
         limits.spent_usd += res.cost_usd
+        limits.last_active = limits._clock()
         return res
 
     return run
