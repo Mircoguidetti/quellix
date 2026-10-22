@@ -154,3 +154,40 @@ def test_the_pipeline_leaves_the_check_out_until_the_contract_knows_it(monkeypat
     assert ("viewpoint" in pipeline.active_checks()) == ("viewpoint" in known)
     monkeypatch.setattr(pipeline, "known_checks", lambda: frozenset(ALL))
     assert "viewpoint" in pipeline.active_checks()
+
+
+def test_pipeline_runs_the_check_once_the_contract_knows_it(monkeypatch, tmp_path):
+    from quellix_hands.types import FrameHands, HandObservation
+
+    from quellix_worker.pipeline import Dependencies, PipelineConfig, run_pipeline
+
+    from .clips import scene, write_clip
+
+    kp = np.zeros((21, 2))
+    kp[vp.WRIST], kp[vp.MIDDLE_MCP] = (0.5, 0.9), (0.5, 0.7)
+
+    class Hands:
+        name = "hands@fake"
+
+        def predict_with_frames(self, video):
+            states = [FrameHands(f.t_s, HandObservation("left", "full", 0.9, kp),
+                                 HandObservation("right", "absent")) for f in video.frames]
+            return CheckOutput({"ratio_both_manipulation": 0.9, "ratio_any_manipulation": 0.9,
+                                "ratio_both_whole": 0.9, "ratio_any_whole": 0.9},
+                               model=self.name), states
+
+        def predict(self, video):
+            return self.predict_with_frames(video)[0]
+
+    class NoFaces:
+        def detect(self, rgb):
+            return []
+
+    monkeypatch.setattr(pipeline, "known_checks", lambda: frozenset(ALL))
+    monkeypatch.setattr(pipeline, "validate_decision", contract_patch.validate_decision)
+    clip = write_clip(tmp_path / "c.mp4", scene(1, 60), fps=15)
+    r = run_pipeline(clip, RUBRIC, "v1", PipelineConfig(),
+                     Dependencies(hands_model=Hands(), face_detector=NoFaces()))
+    v = r.decision["checks"]["viewpoint"]
+    assert v["status"] == "pass" and v["measurements"]["viewpoint"] == "first_person"
+    assert r.models["viewpoint"] == vp.MODEL and "viewpoint" in r.timings_ms
