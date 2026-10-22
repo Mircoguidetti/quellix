@@ -1,6 +1,8 @@
-# Quellix
+# Ormes
 
-Quellix decides which first-person (egocentric) videos a data collector should pay for. A collector uploads a video with its task and the lab's spec (the **rubric**); Quellix returns `accept`, `reject` or `review` with human-readable reasons. Reviewers only see `review` cases.
+> Product name: **Ormes** (renamed from Quellix on 2026-10-22; the repository, Python packages and env vars keep the `quellix` name until a planned internal rename). All user-facing text says Ormes.
+
+Ormes decides which first-person (egocentric) videos a data collector should pay for. A collector uploads a video with its task and the lab's spec (the **rubric**); Ormes returns `accept`, `reject` or `review` with human-readable reasons. Reviewers only see `review` cases.
 
 - **Customer:** data collectors for whom review is a cost (they pay contributors and bill labs per accepted hour). Not labs.
 - **Promise:** fewer review hours and the lab's spec applied the same way to every video. We do NOT promise what the lab will accept.
