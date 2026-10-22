@@ -24,6 +24,7 @@ embed = [
 [dependency-groups]
 dev = [
   "pytest>=8",
+  "quellix-hands",
   "ruff>=0.7",
 ]
 
@@ -43,3 +44,6 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+quellix-hands = { path = "../../models/hands", editable = true }

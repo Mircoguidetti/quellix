@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from . import media
-from .checks import framing, hands, originality, privacy, task_baseline, technical
+from .checks import framing, hands, originality, privacy, task_baseline, task_local, technical
 from .contracts import validate_decision, validate_rubric
 from .jsonable import to_py
 from .rubric import CheckOutput, evaluate
@@ -34,6 +34,7 @@ class Dependencies:
     hands_model: hands.HandsModel | None = None
     face_detector: Any | None = None
     task_judge: task_baseline.TaskJudge | None = None
+    task_model: task_local.TaskModel | None = None  # default: configured_model() if any
 
 
 @dataclass
@@ -103,6 +104,10 @@ def run_pipeline(
         if _critical_reject(rubric, outputs):
             outputs["task_completed"] = CheckOutput(
                 skipped="a critical check already failed")
+        elif (task_model := deps.task_model or task_local.configured_model()) is not None:
+            # Our own model: no video leaves the worker, so no consent is needed.
+            outputs["task_completed"] = timed("task_completed", lambda: task_local.run(
+                task_model, rubric, video))
         elif deps.task_judge is None or not config.allow_external_models:
             outputs["task_completed"] = CheckOutput(
                 error="no task model available for this organisation")

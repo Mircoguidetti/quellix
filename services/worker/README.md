@@ -77,3 +77,16 @@ Founder rule (root `CLAUDE.md`): we keep what surrounds the video, not the video
 - **kept per customer, never deleted by the worker:** decisions, reasons, every measurement,
   rubric versions, reviewer overrides with their note, lab outcomes, fingerprints. The worker only
   ever deletes Storage objects and queue messages (asserted by a test).
+
+## Models in the pipeline
+
+- **Hands** (`models/hands`, package `quellix_hands`, MediaPipe Hand Landmarker, Apache-2.0): used
+  when the package and its weights are present (the Modal image bakes in
+  `/models/hand_landmarker.task`, sha256-checked; `QUELLIX_HANDS_MODEL_PATH`). `QUELLIX_HANDS=off`
+  forces the placeholder, which sends every video to review. When no manipulation was detected
+  (or too few frames), the four ratios are withheld, so the rubric reports "could not be measured"
+  and the video goes to review: never a pass or a fail.
+- **Tasks** (`models/tasks`, package `quellix_tasks`): used only when `QUELLIX_TASKS_HEAD` points
+  to a trained head file and the package plus SigLIP weights are installed. Not in the Modal image
+  yet (SigLIP needs torch + transformers, ~2 GB, and there is no trained head). Otherwise: external
+  judge only if the organisation allows it, else the check errors and the video goes to review.

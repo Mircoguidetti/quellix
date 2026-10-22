@@ -80,3 +80,11 @@ def test_contracts_search_survives_unreadable_parents(monkeypatch):
 
     monkeypatch.setattr(Path, "is_dir", deny)
     assert modal_app.contracts_dir("/root/quellix_worker/modal_app.py") is None
+
+
+def test_hands_weights_pin_matches_the_hands_package():
+    from quellix_hands import weights
+
+    assert modal_app.HANDS_URL == weights.MEDIAPIPE_URL
+    assert modal_app.HANDS_SHA256 == weights.MEDIAPIPE_SHA256
+    assert len(weights.MEDIAPIPE_SHA256) == 64
