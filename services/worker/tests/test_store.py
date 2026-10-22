@@ -34,7 +34,8 @@ class Fake:
         self.video = video
         self.webhook_bodies: list[tuple[bytes, str]] = []
         self.video_fields = video_fields or {}
-        self.source_gets: list[str] = []
+        self.source_gets: list[tuple[str, str]] = []
+        self.requests_to_source: list[httpx.Request] = []
 
     def __call__(self, req: httpx.Request) -> httpx.Response:
         self.log.append(req)
@@ -51,8 +52,9 @@ class Fake:
             return httpx.Response(200, json=[{"attempts": self.attempts}])
         if p.endswith("/rest/v1/videos") and req.method == "GET" and "select" in req.url.params \
                 and req.url.params["select"] == "storage_path,delete_after":
-            return httpx.Response(200, json=[{"storage_path": "org/o1/v1/a.mp4",
-                                              "delete_after": self.delete_after}])
+            return httpx.Response(200, json=[{
+                "storage_path": self.video_fields.get("storage_path", "org/o1/v1/a.mp4"),
+                "delete_after": self.delete_after}])
         if p.endswith("/rest/v1/videos") and req.method == "GET":
             return httpx.Response(200, json=[{
                 "org_id": "o1", "status": self.status, "created_at": "2026-10-21T00:00:00Z",
@@ -75,8 +77,10 @@ class Fake:
         if p.endswith("/webhooks"):
             return httpx.Response(200, json=[{"id": "w", "url": "https://hook.test/x",
                                               "signing_secret": "s3"}])
-        if req.url.host == "cdn.collector.test":
-            self.source_gets.append(str(req.url))
+        if req.headers.get("host", "").startswith("cdn.collector.test"):
+            # the worker connects to the vetted IP and keeps the name in Host / SNI
+            self.requests_to_source.append(req)
+            self.source_gets.append((req.headers["host"], req.url.raw_path.decode()))
             if req.url.path.endswith("/moved.mp4"):
                 return httpx.Response(302, headers={"location": "http://169.254.169.254/"})
             return httpx.Response(200, content=self.video)
@@ -496,7 +500,7 @@ def test_source_url_is_fetched_to_temp_and_never_stored(tmp_path, monkeypatch):
     f = Fake(clip.read_bytes(), video_fields={"shadow": True, "storage_path": None,
                                               "source_url": url})
     assert _run(f) in {"accept", "reject", "review"}
-    assert f.source_gets == [url]
+    assert f.source_gets == [("cdn.collector.test", "/batch/a.mp4?sig=abc")]
     paths = [(r.method, r.url.path) for r in f.log]
     # Nothing read from or written to our bucket.
     assert not any(p.startswith("/storage/") for _, p in paths)
@@ -526,3 +530,42 @@ def test_fetch_source_refuses_redirects_and_oversized_files(tmp_path, monkeypatc
         s.fetch_source("https://cdn.collector.test/moved.mp4", tmp_path / "a.mp4")
     with pytest.raises(UnsafeSourceError, match="larger"):
         s.fetch_source("https://cdn.collector.test/big.mp4", tmp_path / "b.mp4", max_bytes=1000)
+
+
+def test_fetch_connects_to_the_vetted_ip_with_the_original_name(tmp_path, monkeypatch):
+    """DNS rebinding: the name is resolved once, vetted, and the download connects to that
+    address (the name stays in Host and TLS SNI), so a second, different answer is never used."""
+    answers = iter([PUBLIC, [(2, 1, 6, "", ("169.254.169.254", 443))]])
+    monkeypatch.setattr(store_module.socket, "getaddrinfo", lambda *a, **k: next(answers))
+    f = Fake(b"video-bytes")
+    out = make(f).fetch_source("https://cdn.collector.test/batch/a.mp4?sig=abc", tmp_path / "a")
+    assert out.read_bytes() == b"video-bytes"
+    (req,) = f.requests_to_source
+    assert req.url.host == "93.184.216.34"  # the vetted address, not the name
+    assert req.headers["host"] == "cdn.collector.test"
+    assert req.extensions["sni_hostname"] == "cdn.collector.test"
+    assert "apikey" not in req.headers and "authorization" not in req.headers  # no service key
+    assert next(answers)  # the second (malicious) answer was never consumed
+
+
+def test_a_host_that_resolves_to_nothing_is_refused():
+    with pytest.raises(UnsafeSourceError, match="does not resolve"):
+        check_source_url("https://nowhere.test/a", resolve=lambda *a, **k: [])
+
+
+def test_final_failure_forgets_the_source_url():
+    f = Fake(b"", attempts=2, video_fields={"shadow": True, "storage_path": None,
+                                             "source_url": "https://cdn.collector.test/a.mp4"})
+    s = make(f)
+
+    def boom(*a, **k):
+        raise RuntimeError("fetch failed")
+
+    s.fetch_source = boom
+    deps = Dependencies(face_detector=type("F", (), {"detect": lambda self, rgb: []})())
+    assert process_job(s, s.read_job(), _fp(f), PipelineConfig(), deps) == "failed"
+    cleared = [r for r in f.log if r.method == "PATCH" and r.url.path.endswith("/videos")
+               and r.url.params.get("source_url") == "not.is.null"]
+    assert cleared and json.loads(cleared[0].content) == {"source_url": None}
+    assert not any(r.method == "DELETE" and r.url.path == "/storage/v1/object/videos"
+                   for r in f.log)  # nothing of theirs was ever in our bucket

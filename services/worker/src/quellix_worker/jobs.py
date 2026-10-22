@@ -7,6 +7,7 @@ error. Nothing is ever turned into a silent reject.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import tempfile
 from pathlib import Path
@@ -49,6 +50,9 @@ def _fail_or_retry(store: SupabaseStore, job: Job, attempts_used: int, error: st
     store.finish_job(job.job_id, error=message)
     if mark_video:
         store.set_video(job.video_id, status="failed")
+    # A pilot's signed source_url is the collector's credential: forgotten once we give up.
+    with contextlib.suppress(Exception):
+        store.forget_source_url(job.video_id)
     # Customer videos are deleted after analysis, also when the analysis failed for good
     # (unless the decision was already written as `review` and the file is kept for a person).
     try:

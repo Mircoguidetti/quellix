@@ -38,17 +38,24 @@ class UnsafeSourceError(ValueError):
     """A pilot ``source_url`` the worker refuses to fetch (not https, or not a public host)."""
 
 
-def check_source_url(url: str, resolve: Any = None) -> None:
+def check_source_url(url: str, resolve: Any = None) -> list[str]:
     """Shadow pilots may point at the collector's own signed URLs (issue #65). Only https to a
-    public address: never the metadata service, localhost or a private network (SSRF)."""
+    public address: never the metadata service, localhost or a private network (SSRF).
+    -> the vetted IP addresses of the host; the download connects to one of them, so a DNS
+    answer that changes after this check (rebinding) cannot redirect it."""
     parsed = httpx.URL(url)
     if parsed.scheme != "https" or not parsed.host:
         raise UnsafeSourceError("source_url must be an https URL")
     resolve = resolve or socket.getaddrinfo
+    ips: list[str] = []
     for info in resolve(parsed.host, parsed.port or 443, proto=socket.IPPROTO_TCP):
         ip = ipaddress.ip_address(info[4][0])
         if not ip.is_global:
             raise UnsafeSourceError(f"source_url resolves to a non-public address ({ip})")
+        ips.append(str(ip))
+    if not ips:
+        raise UnsafeSourceError("source_url host does not resolve")
+    return ips
 
 
 def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
@@ -232,12 +239,25 @@ class SupabaseStore:
                     fh.write(chunk)
         return dest
 
+    def forget_source_url(self, video_id: str) -> None:
+        """Clear a pilot video's ``source_url`` (a signed URL is a credential)."""
+        self._rest("PATCH", "videos", params={"id": f"eq.{video_id}",
+                                              "source_url": "not.is.null"},
+                   json_body={"source_url": None})
+
     def fetch_source(self, url: str, dest: Path, max_bytes: int = MAX_SOURCE_BYTES) -> Path:
         """Download a pilot video from the collector's signed URL into ``dest`` (a temporary
         directory, deleted with it). Never stored in our bucket; no redirects followed."""
-        check_source_url(url)
+        ip = check_source_url(url)[0]
+        target = httpx.URL(url)
+        # Connect to the vetted address, but keep the original name for the Host header and for
+        # TLS (SNI + certificate check), so the collector's CDN still works.
+        pinned = target.copy_with(host=ip)
+        host_header = target.host if target.port is None else f"{target.host}:{target.port}"
         written = 0
-        with self._client.stream("GET", url, follow_redirects=False, timeout=600) as resp:
+        with self._client.stream("GET", pinned, headers={"Host": host_header},
+                                 extensions={"sni_hostname": target.host},
+                                 follow_redirects=False, timeout=600) as resp:
             if resp.is_redirect:
                 raise UnsafeSourceError("source_url redirects; give the final URL")
             resp.raise_for_status()
