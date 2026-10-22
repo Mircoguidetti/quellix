@@ -32,6 +32,9 @@ CHECK_NAMES: tuple[CheckName, ...] = (
     "originality",
     "viewpoint",
 )
+# What `evaluate` covers unless told otherwise: the checks of the decision contract before #79.
+# The pipeline passes `active_checks()` (every check the loaded contract knows) instead.
+DEFAULT_CHECKS: tuple[CheckName, ...] = CHECK_NAMES[:6]
 Status = Literal["pass", "fail", "uncertain", "skipped", "error"]
 Effect = Literal["reject", "review"]
 
@@ -312,7 +315,7 @@ def evaluate(
     video_id: str,
     rubric: Mapping[str, Any],
     outputs: Mapping[str, CheckOutput],
-    check_names: tuple[CheckName, ...] = CHECK_NAMES,
+    check_names: tuple[CheckName, ...] = DEFAULT_CHECKS,
 ) -> dict[str, Any]:
     """Apply the rubric to the check outputs and return a decision (decision.schema.json).
 

@@ -1,6 +1,6 @@
 # Viewpoint check (#79)
 
-run 39857573586 on `agent/viewpoint` (commit `e3c3d17`) · worker `viewpoint@0.1.0` applied to the stored features. Labels come from the sources (head-mounted datasets, the founder's picks, Pexels clips labelled by eye with their contact sheets on #79), never from Ormes. Constants fitted on `dev` only.
+run 39857573586 on `agent/viewpoint` (commit `e3c3d17`) · worker `viewpoint@0.1.0` applied to the stored features. Labels come from the sources (Egocentric-10K and HoloAssist are head-mounted; the Pexels clips are the founder's picks), never from Ormes. Constants fitted on `dev` only; `held_out` was not looked at while fitting. For now both a wrong viewpoint and `uncertain` send the video to review (the check cannot reject yet).
 
 **Before:** Ormes had no viewpoint check: every third-person video went through as if first-person (third-person caught: 0%).
 
@@ -124,16 +124,16 @@ Every labelled clip:
 
 ## Overlays
 
-Green arrow: a hand pointing up the frame (wrist -> middle knuckle); red: not. Faces the privacy check keeps are boxed.
+Green arrow: a hand pointing up the frame (wrist -> middle knuckle); red: not. Confident faces (as the privacy check counts them) are boxed.
 
-![pexels_7204592](overlays/pexels_7204592.jpg)
-![pexels_7418650](overlays/pexels_7418650.jpg)
-![pexels_37443407](overlays/pexels_37443407.jpg)
-![pexels_7658012](overlays/pexels_7658012.jpg)
-![pexels_7308220](overlays/pexels_7308220.jpg)
-![pexels_4520150](overlays/pexels_4520150.jpg)
 ![pexels_11102752](overlays/pexels_11102752.jpg)
-![pexels_5592524](overlays/pexels_5592524.jpg)
+![pexels_37443407](overlays/pexels_37443407.jpg)
 ![pexels_4440711](overlays/pexels_4440711.jpg)
+![pexels_4520150](overlays/pexels_4520150.jpg)
+![pexels_5592524](overlays/pexels_5592524.jpg)
+![pexels_7204592](overlays/pexels_7204592.jpg)
+![pexels_7308220](overlays/pexels_7308220.jpg)
+![pexels_7418650](overlays/pexels_7418650.jpg)
 ![pexels_7641501](overlays/pexels_7641501.jpg)
+![pexels_7658012](overlays/pexels_7658012.jpg)
 ![pexels_9141844](overlays/pexels_9141844.jpg)

@@ -2,7 +2,7 @@ from quellix_eval.viewpoint import data, report
 
 
 def clip(cid, label, split, up: bool, faces=None, still=False):
-    wrist, knuckle = ((0.5, 0.9), (0.5, 0.75)) if up else ((0.5, 0.3), (0.5, 0.45))
+    wrist, knuckle = ((0.5, 0.9), (0.5, 0.75)) if up else ((0.2, 0.5), (0.3, 0.5))  # up / across
     kp = [[0.0, 0.0]] * len(data.KEEP)
     kp[data.KEEP.index(0)], kp[data.KEEP.index(9)] = list(wrist), list(knuckle)
     frames = [data.FrameFeat(i * 0.25, [data.HandFeat("left", "full", 0.9, kp)],

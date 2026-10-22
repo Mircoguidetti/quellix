@@ -89,8 +89,10 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
     labelled = [(c, m) for c, m in rows if c.label]
     L = ["# Viewpoint check (#79)", "",
          f"{run} · worker `{vp.MODEL}` applied to the stored features. Labels come from the "
-         "sources (head-mounted datasets, the founder's picks, Pexels clips labelled by eye "
-         "with their contact sheets on #79), never from Ormes. Constants fitted on `dev` only.",
+         "sources (Egocentric-10K and HoloAssist are head-mounted; the Pexels clips are the "
+         "founder's picks), never from Ormes. Constants fitted on `dev` only; `held_out` was "
+         "not looked at while fitting. For now both a wrong viewpoint and `uncertain` send the "
+         "video to review (the check cannot reject yet).",
          "", "**Before:** Ormes had no viewpoint check: every third-person video went through "
          "as if first-person (third-person caught: 0%).", "",
          "| split | first-person clips | called third-person (costly error) | uncertain "
@@ -116,7 +118,7 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
     if overlays:
         L += ["", "## Overlays", "",
               "Green arrow: a hand pointing up the frame (wrist -> middle knuckle); red: not. "
-              "Faces the privacy check keeps are boxed.", ""]
+              "Confident faces (as the privacy check counts them) are boxed.", ""]
         L += [f"![{cid}]({{IMAGE_BASE}}{name})" for cid, name in overlays.items()]
     return "\n".join(L) + "\n"
 
@@ -153,6 +155,8 @@ def draw_overlays(clips: Sequence[ClipFeatures], work: Path, out: Path) -> dict[
                                 (0, 200, 0) if up >= vp.UP_MIN else (0, 0, 220), 3,
                                 tipLength=0.3)
             for b in c.frames[i].faces:
+                if not privacy._is_confident("faces", {"box": b[:4], "score": b[4]}):
+                    continue
                 cv2.rectangle(img, (int(b[0] * w), int(b[1] * h)),
                               (int((b[0] + b[2]) * w), int((b[1] + b[3]) * h)), (255, 0, 255), 2)
             img = cv2.resize(img, (360, round(h * 360 / w)), interpolation=cv2.INTER_AREA)
