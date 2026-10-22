@@ -6,6 +6,7 @@ import { DEMO_SESSION_COOKIE, isDemoMode } from "@/lib/demo/mode";
 import { demoStore } from "@/lib/demo/store";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/safe-redirect";
+import { configuredSiteUrl } from "@/lib/site-url";
 import { friendlyAuthError, withTimeout } from "./errors";
 
 export type AuthUser = { id: string; email: string | undefined; name: string | undefined };
@@ -24,7 +25,8 @@ const NOT_CONFIGURED: AuthResult = { ok: false, error: "Sign-in is not configure
 
 /** Where links in emails should land. */
 async function origin(): Promise<string> {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  const configured = configuredSiteUrl();
+  if (configured) return configured;
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
