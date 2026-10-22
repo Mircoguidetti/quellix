@@ -133,3 +133,17 @@ def test_phase_limits_unit():
     lim.spent_usd = 0.5
     assert lim.check() == "spend cap"
     assert lim.describe("Gemini").startswith("Gemini phase: $0.5000 spent of the $0.50 cap")
+
+
+def test_describe_reports_the_phase_length_not_the_time_since():
+    clock = Clock()
+    lim = PhaseLimits(720, 1.0, clock=clock)
+    from quellix_eval.ci import _limited
+
+    engine = _limited(lambda clip, rub: EngineResult(decision(), 0.01), lim)
+    clock.t = 100
+    engine(object(), {})          # first clip starts the clock at t=100
+    clock.t = 400
+    engine(object(), {})          # a clip ends at t=400: the phase lasted 300 s
+    clock.t = 5000                # the report is rendered much later (the worker ran meanwhile)
+    assert "5.0 of 12 minutes used" in lim.describe("Gemini")
