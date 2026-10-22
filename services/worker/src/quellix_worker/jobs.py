@@ -83,7 +83,11 @@ def process_job(store: SupabaseStore, job: Job, fingerprints: FingerprintStore,
             return "skipped"
         store.set_video(job.video_id, status="processing")
         with tempfile.TemporaryDirectory() as tmp:
-            path = store.download(ctx.storage_path, Path(tmp) / (ctx.filename or "video.mp4"))
+            dest = Path(tmp) / (ctx.filename or "video.mp4")
+            if ctx.storage_path:
+                path = store.download(ctx.storage_path, dest)
+            else:  # shadow pilot row pointing at the collector's own URL (issue #65)
+                path = store.fetch_source(ctx.source_url or "", dest)
             # Both the org setting and the global kill switch (config) must allow external models.
             cfg = PipelineConfig(**{**config.__dict__, "org_id": ctx.org_id,
                                     "allow_external_models": ctx.allow_external_models
@@ -95,14 +99,19 @@ def process_job(store: SupabaseStore, job: Job, fingerprints: FingerprintStore,
         store.write_decision(ctx.org_id, result.decision)
         decided = True
         fingerprints.add(ctx.org_id, job.video_id, result.fingerprints)
-        store.set_video(job.video_id, status="decided", duration_s=result.duration_s)
-        if result.decision["decision"] == "review":
+        store.set_video(job.video_id, status="decided", duration_s=result.duration_s,
+                        **({"source_url": None} if ctx.source_url else {}))
+        if not ctx.storage_path:
+            pass  # fetched from a URL into the temp dir, already gone: nothing stored to delete
+        elif result.decision["decision"] == "review":
             store.keep_for_review(job.video_id)  # a person has to watch it; deleted <= 14 days
         else:
             store.delete_video_file(job.video_id, ctx.storage_path)
         store.finish_job(job.job_id, cost_usd=result.cost["total_usd"])
         try:
-            store.send_webhooks(ctx.org_id, _video_payload(ctx, result.decision))
+            # Shadow pilot videos (issue #65) never reach the customer's pipeline.
+            if not ctx.shadow:
+                store.send_webhooks(ctx.org_id, _video_payload(ctx, result.decision))
         except Exception:  # the decision is final; a webhook problem never fails the job
             log.exception("webhook delivery failed for video %s", job.video_id)
         store.archive_job(job)
