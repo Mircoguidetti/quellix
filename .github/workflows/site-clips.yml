@@ -3,7 +3,7 @@ name: Site clips
 # Clips for the website, analysed by Ormes itself (issue #60).
 # "pexels" (default): (1) the landing page's one Pexels clip: runs the worker, cuts the best
 # window and writes MP4, WebM, poster and a JSON sidecar (the hands model's per-frame boxes and
-# the worker's decision) to apps/web/public/media/clips/, plus its 9:16 mobile crop and two
+# the worker's decision) to apps/web/public/media/clips/, plus its 4:5 mobile crop and two
 # defective copies; (2) the third-person Pexels test set: only a manifest under
 # eval/test_sets/ (no media, never shown on the site).
 # "eval-datasets": the earlier Build AI Egocentric-10K / HoloAssist selection (eval only).
@@ -110,7 +110,7 @@ jobs:
               b = c["bytes"]
               kind = c["task"]
               if c.get("variant_kind") == "mobile_crop":
-                  kind = f"9:16 mobile crop of {c['variant_of']} (hands whole {c['crop']['both_hands_whole_share']:.0%}, moved: {c['crop']['moved']})"
+                  kind = f"4:5 mobile crop of {c['variant_of']} (hands whole {c['crop']['both_hands_whole_share']:.0%}, moved: {c['crop']['moved']})"
               elif c.get("variant_of"):
                   kind = f"defective copy of {c['variant_of']} ({c['defect']['recipe']})"
               page = c.get("page_url") or ""

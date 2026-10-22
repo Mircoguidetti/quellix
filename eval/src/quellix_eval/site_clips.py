@@ -475,33 +475,39 @@ def render_clip(
     return encode_set(frames, poster, name, out_dir, fps, budgets or Budgets())
 
 
-# --- 9:16 crop for the mobile hero ------------------------------------------------------------
+# --- 4:5 crop for the mobile hero ------------------------------------------------------------
 
-MOBILE_WIDTH = 540         # the mobile hero shows it at 390 px: 540 x 960 is enough for 2x screens
+MOBILE_ASPECT = (4, 5)     # the home hero is a 4:5 box on mobile (founder decision, PR #75)
+MOBILE_WIDTH = 720         # 720 x 900: the box is ~390 CSS px wide, so this covers 2x screens
 
 
-def crop_plan(src_w: int, src_h: int, extent: tuple[float, float] | None) -> dict[str, Any]:
-    """Where to cut a 9:16 portrait out of a landscape frame.
+def crop_plan(
+    src_w: int, src_h: int, extent: tuple[float, float] | None,
+    aspect: tuple[int, int] = MOBILE_ASPECT,
+) -> dict[str, Any]:
+    """Where to cut a portrait (4:5 by default) out of a landscape frame.
 
-    The centre crop, as asked. If the hands' horizontal range does not fit inside it but does
-    fit in a 9:16 window, the window moves to the hands (and `moved` says so).
+    The centre crop, unless it cuts the hands' horizontal range (`extent`): then the window moves
+    to the middle of that range (`moved`), which keeps as much of both hands as the window can
+    hold. `keeps_hands` says whether the whole range fits in the window that was chosen.
     """
-    frac = min(1.0, (9 / 16) * src_h / src_w)            # crop width as a share of the frame
-    x0 = (1 - frac) / 2
-    fits_centre = extent is None or (extent[0] >= x0 and extent[1] <= x0 + frac)
-    moved = False
-    if not fits_centre and extent is not None and extent[1] - extent[0] <= frac:
+    frac = min(1.0, (aspect[0] / aspect[1]) * src_h / src_w)   # crop width as a share of the frame
+    centre = (1 - frac) / 2
+    fits_centre = extent is None or (extent[0] >= centre and extent[1] <= centre + frac)
+    x0 = centre
+    if not fits_centre and extent is not None:
         x0 = min(max((extent[0] + extent[1]) / 2 - frac / 2, 0.0), 1 - frac)
-        moved = True
-    return {"x0": round(x0, 4), "width_frac": round(frac, 4), "moved": moved,
-            "centre_crop_keeps_hands": fits_centre}
+    keeps = extent is None or (extent[0] >= x0 - 1e-9 and extent[1] <= x0 + frac + 1e-9)
+    return {"aspect": f"{aspect[0]}:{aspect[1]}", "x0": round(x0, 4),
+            "width_frac": round(frac, 4), "moved": abs(x0 - centre) > 1e-6,
+            "centre_crop_keeps_hands": fits_centre, "keeps_hands": keeps}
 
 
 def render_crop(
     cand: Candidate, name: str, out_dir: Path, plan: dict[str, Any], width: int = MOBILE_WIDTH,
     budgets: Budgets | None = None,
 ) -> dict[str, Any]:
-    """The candidate's window cut to the 9:16 `plan`, as <name>.mp4 / .webm / .jpg."""
+    """The candidate's window cut to the portrait `plan`, as <name>.mp4 / .webm / .jpg."""
     assert cand.window is not None
     w = cand.window
     _, src_w, src_h, src_fps = video_info(cand.path)
@@ -716,7 +722,7 @@ def produce(
     mobile_crop: bool = False, hero: str | None = None,
 ) -> dict[str, Any]:
     """Render the picks. For the hero (the source clip id `hero`, else the `variants_of`-th
-    published clip) also its 9:16 mobile crop (`mobile_crop`) and two defective copies: one hand
+    published clip) also its 4:5 mobile crop (`mobile_crop`) and two defective copies: one hand
     leaves for ~3 s, and a too dark stretch."""
     picks = select_picks(candidates, picks_wanted, quota=quota)
     final_dir.mkdir(parents=True, exist_ok=True)
@@ -777,7 +783,7 @@ def produce(
                 write_sidecar(mname, mside, mfiles)
                 clips.append(entry(mname, cand, mfiles, mside, mdecision, variant_of=name,
                                    variant_kind="mobile_crop", crop=plan))
-                log(f"{mname}: 9:16 crop {plan} -> {(mdecision or {}).get('decision')}")
+                log(f"{mname}: 4:5 crop {plan} -> {(mdecision or {}).get('decision')}")
             for kind in ("hand", "dark"):
                 vname = f"{name}-{kind}"
                 vfiles, vdecision, info = make_variant(mp4, kind, vname, final_dir, worker, rubric)
@@ -926,7 +932,7 @@ def download_pexels(a: argparse.Namespace, picks: Sequence[Any]) -> tuple[list[F
 def run_landing(  # pragma: no cover - network, models
     a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
 ) -> int:
-    """The landing page's clips; the hero also gets a 9:16 mobile crop and two defective copies."""
+    """The landing page's clips; the hero also gets a 4:5 mobile crop and two defective copies."""
     from .datasets import pexels
 
     got, _ = download_pexels(a, pexels.LANDING_CLIPS)
@@ -995,7 +1001,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--candidates", type=int, default=30)
     ap.add_argument("--holoassist", type=int, default=16, help="HoloAssist candidates (0 = skip)")
     ap.add_argument("--pexels", action="store_true",
-                    help="the landing page's Pexels clips (hero: 9:16 crop, defective copies)")
+                    help="the landing page's Pexels clips (hero: 4:5 crop, defective copies)")
     ap.add_argument("--third-person", action="store_true",
                     help="the third-person Pexels test set: write its manifest, keep no media")
     ap.add_argument("--third-person-out", type=Path,

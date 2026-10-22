@@ -48,8 +48,15 @@ export type ClipVariant = {
   recipe?: string;
   interval_s?: [number, number];
   tried?: { recipe: string; decision: string | null }[];
-  /** The 9:16 mobile crop only: where the window was cut. */
-  crop?: { x0: number; width_frac: number; moved: boolean; both_hands_whole_share?: number };
+  /** The 4:5 mobile crop only: where the window was cut. */
+  crop?: {
+    aspect?: string;
+    x0: number;
+    width_frac: number;
+    moved: boolean;
+    keeps_hands?: boolean;
+    both_hands_whole_share?: number;
+  };
 };
 
 export type ClipStep = { name: string; t_s: number; end_s?: number; source?: string };
@@ -139,7 +146,7 @@ export function groupClips(clips: readonly ManifestClip[]): { clip: ManifestClip
 export const DEFECT_LABEL: Record<ClipVariant["kind"], string> = {
   hand: "One hand leaves the frame for about 3 s",
   dark: "About 3 s too dark",
-  mobile_crop: "Mobile hero: 9:16 crop of the same clip",
+  mobile_crop: "Mobile hero: 4:5 crop of the same clip",
 };
 
 /** A group's variants split into the mobile crop and the synthetic defective copies. */

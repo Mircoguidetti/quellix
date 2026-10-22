@@ -246,18 +246,22 @@ def test_author_from_the_other_formats_pexels_pages_use():
     assert none.author.startswith("unknown") and "creator" in none.debug
 
 
-def test_crop_plan_centres_the_9_16_window_and_moves_it_only_to_keep_the_hands():
+def test_crop_plan_is_4_by_5_centred_and_moves_only_to_keep_the_hands():
     plan = sc.crop_plan(1920, 1080, None)
-    assert plan["width_frac"] == pytest.approx(0.3164, abs=1e-3)
-    assert plan["x0"] == pytest.approx((1 - 0.3164) / 2, abs=1e-3) and not plan["moved"]
+    assert plan["aspect"] == "4:5" and plan["width_frac"] == pytest.approx(0.45, abs=1e-3)
+    assert plan["x0"] == pytest.approx(0.275, abs=1e-3) and not plan["moved"]
     inside = sc.crop_plan(1920, 1080, (0.4, 0.6))
-    assert inside["centre_crop_keeps_hands"] and not inside["moved"]
+    assert inside["centre_crop_keeps_hands"] and not inside["moved"] and inside["keeps_hands"]
     right = sc.crop_plan(1920, 1080, (0.6, 0.85))             # the hands sit right of the centre
-    assert right["moved"] and not right["centre_crop_keeps_hands"]
+    assert right["moved"] and not right["centre_crop_keeps_hands"] and right["keeps_hands"]
     assert right["x0"] <= 0.6 and right["x0"] + right["width_frac"] >= 0.85
-    wide = sc.crop_plan(1920, 1080, (0.1, 0.9))               # cannot hold them: stays centred
-    assert not wide["moved"] and not wide["centre_crop_keeps_hands"]
+    # the hero's hands span 53% of the width: no 4:5 window holds them, the window centres on them
+    hero = sc.crop_plan(1920, 1080, (0.14, 0.67))
+    assert hero["moved"] and not hero["keeps_hands"]
+    assert hero["x0"] == pytest.approx(0.405 - 0.225, abs=1e-3)
     assert sc.crop_plan(1080, 1920, None)["width_frac"] == 1.0   # already portrait: no crop
+    assert sc.crop_plan(1920, 1080, None, aspect=(9, 16))["width_frac"] == pytest.approx(
+        0.3164, abs=1e-3)
 
 
 def test_variant_rank_prefers_the_defect_that_shows_as_intended():

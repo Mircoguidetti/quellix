@@ -179,7 +179,7 @@ function ClipCard({ id }: { id: string }) {
             )}{" "}
             <span className="text-muted-foreground">({src.license})</span>
           </span>
-          {src.author ? (
+          {src.author && !src.author.startsWith("unknown") ? (
             <span>
               <span className="text-muted-foreground">Author:</span>{" "}
               {src.author_url ? (
@@ -199,7 +199,11 @@ function ClipCard({ id }: { id: string }) {
         {variant && variant.kind === "mobile_crop" ? (
           <p>
             <strong>{DEFECT_LABEL.mobile_crop}.</strong>{" "}
-            {variant.crop?.moved ? "The window was moved to keep the hands in frame." : "Centre crop."}
+            {variant.crop?.moved
+              ? variant.crop.keeps_hands
+                ? "The window was moved to keep the hands in frame."
+                : "The window is centred on the hands; the hands are wider than a 4:5 window, so part of one is cut."
+              : "Centre crop."}
             {variant.crop?.both_hands_whole_share !== undefined
               ? ` Both hands whole in ${Math.round(variant.crop.both_hands_whole_share * 100)}% of the sampled frames.`
               : null}
