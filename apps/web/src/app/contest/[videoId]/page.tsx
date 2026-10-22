@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { CircleX, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
+import { FeedbackList } from "@/components/feedback-list";
 import { PublicShell } from "@/components/public-page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getContestInfo } from "@/lib/domain/contests";
@@ -54,17 +55,10 @@ async function Content({ params }: { params: PageProps<"/contest/[videoId]">["pa
       </div>
       <section aria-labelledby="why" className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h2 id="why" className="mb-3 font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground">
-          Why it was rejected
+          Why it was rejected, and how to fix it
         </h2>
-        {info.reasons.length ? (
-          <ul className="grid gap-2.5">
-            {info.reasons.map((r) => (
-              <li key={r} className="flex items-start gap-3 text-[15.5px] leading-snug">
-                <CircleX className="mt-0.5 size-[18px] shrink-0 text-reject-fg" aria-hidden />
-                {r}
-              </li>
-            ))}
-          </ul>
+        {info.feedback.length ? (
+          <FeedbackList items={info.feedback} />
         ) : (
           <p className="text-[15px] text-muted-foreground">No detailed reason is available for this video.</p>
         )}

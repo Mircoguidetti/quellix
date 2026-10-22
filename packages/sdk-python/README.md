@@ -32,6 +32,7 @@ print(decided.decision.decision, [r.message for r in decided.decision.reasons])
 | `review.submit(id, decision=, note=)` | |
 | `lab_outcome.submit(id, outcome=, reason=)` | |
 | `rubrics.create / get / list / new_version` | Inputs are plain mappings; `new_version` is `PUT /rubrics/{id}`. |
+| `decision.contributor_feedback()` | What to fix and where, ready to show the person who filmed the video: a list of `FeedbackItem(check, code, effect, message, hint, segments)`. Only reasons the contributor may see, ordered by time; duplicates and other hidden rejections become one generic message. Also `ormes.contributor_feedback(decision_or_json)`. |
 | `verify_signature(payload, header, secret)` | Constant-time, returns a bool. `construct_event` raises `WebhookSignatureError` or returns a `VideoDecidedEvent`. Also on `client.webhooks`. |
 
 Errors (all subclass `OrmesError`): `AuthenticationError`, `NotFoundError`, `ValidationError` (`.fields`), `RateLimitError` (`.retry_after` seconds), `APIError` (base: `.status`, `.code`, `.request_id`), `ConnectionError`, `TimeoutError`. 429 and 5xx responses are retried with jitter (`max_retries`, default 2); a `POST` without an idempotency key is only retried on 429.

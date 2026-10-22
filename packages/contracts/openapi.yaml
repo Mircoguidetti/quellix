@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Ormes API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Automated acceptance for first-person training video.
     Flow: create a video -> upload the file to the signed URL -> call /complete -> receive the decision by webhook or poll GET /videos/{id}.
