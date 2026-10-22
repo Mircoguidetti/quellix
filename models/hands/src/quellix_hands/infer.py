@@ -7,7 +7,7 @@ from typing import Protocol
 
 import numpy as np
 
-from .truncation import DEFAULT_MARGIN, state_from_box, state_from_keypoints
+from .truncation import DEFAULT_MARGIN, DEFAULT_WRIST_SLACK, state_from_box, state_from_keypoints
 from .types import FrameHands, HandObservation, RawHand, Side, absent
 
 
@@ -30,7 +30,9 @@ class InferConfig:
     # left/right classification confidence, not "is this a hand", so the default is off (0.0):
     # whether something is a hand is decided by the detector's own thresholds.
     min_confidence: float = 0.0
-    check_wrist: bool = False  # v0 counted a wrist at the frame edge as a cut hand
+    # How far past the frame edge the wrist may be (the arm enters there); None = the v0 rule,
+    # which counted a wrist at the frame edge as a cut hand. See truncation.py.
+    wrist_slack: float | None = DEFAULT_WRIST_SLACK
     # With two detections, the one further left in the image is the left hand. MediaPipe's
     # handedness labels are unreliable on top-down and crossed hands (both get the same label).
     assign_by_position: bool = True
@@ -38,7 +40,7 @@ class InferConfig:
     @classmethod
     def v0(cls) -> InferConfig:
         """The first version's behaviour, kept so before/after can be scored on the same code."""
-        return cls(min_confidence=0.5, check_wrist=True, assign_by_position=False)
+        return cls(min_confidence=0.5, wrist_slack=None, assign_by_position=False)
 
 
 def _bbox(keypoints: np.ndarray) -> tuple[float, float, float, float]:
@@ -94,7 +96,7 @@ def observe(raw: RawHand | None, side: Side, cfg: InferConfig) -> HandObservatio
     if raw is None or raw.score < cfg.min_confidence:
         return absent(side)
     if raw.keypoints is not None:
-        state = state_from_keypoints(raw.keypoints, cfg.margin, cfg.check_wrist)
+        state = state_from_keypoints(raw.keypoints, cfg.margin, cfg.wrist_slack)
         box = raw.box or _bbox(raw.keypoints)
     elif raw.box is not None:
         state = state_from_box(raw.box, cfg.margin)

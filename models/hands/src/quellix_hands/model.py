@@ -72,7 +72,7 @@ class HandsModel:
         m["detector"] = self.detector.name
         m["contact_model"] = self.contact.name
         m["margin"] = self.config.margin
-        m["check_wrist"] = self.config.check_wrist
+        m["wrist_slack"] = self.config.wrist_slack
         m["smooth_gap_s"] = self.smooth_gap_s
         return m
 

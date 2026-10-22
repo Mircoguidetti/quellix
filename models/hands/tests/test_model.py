@@ -85,5 +85,5 @@ def test_v0_is_the_first_version_for_before_after_scoring():
     model = HandsModel.v0(detector=ColorBlobDetector())
     assert model.model_id == "hands@0.1.0" == model.name
     assert model.smooth_gap_s == 0.0
-    assert model.config.check_wrist and not model.config.assign_by_position
+    assert model.config.wrist_slack is None and not model.config.assign_by_position
     assert model.config.min_confidence == 0.5

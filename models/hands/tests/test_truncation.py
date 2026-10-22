@@ -38,12 +38,15 @@ def test_bad_keypoints_shape():
         state_from_keypoints(np.zeros((0, 2)))
 
 
-def test_wrist_is_exempt_unless_asked():
-    import numpy as np
-
+def test_the_wrist_may_sit_on_the_edge_but_not_far_past_it():
     kp = np.full((21, 2), 0.5)
     kp[0] = (0.5, 1.0)                                       # wrist on the bottom edge
-    assert state_from_keypoints(kp, check_wrist=False) == "full"
+    assert state_from_keypoints(kp, wrist_slack=0.05) == "full"
     assert state_from_keypoints(kp) == "truncated"           # the v0 rule
+    kp[0] = (0.5, 1.04)                                      # just past it (extrapolated)
+    assert state_from_keypoints(kp, wrist_slack=0.05) == "full"
+    kp[0] = (0.5, 1.12)                                      # well out of the frame: cut
+    assert state_from_keypoints(kp, wrist_slack=0.05) == "truncated"
+    kp[0] = (0.5, 0.9)
     kp[12] = (0.5, 0.995)                                    # a fingertip in the margin
-    assert state_from_keypoints(kp, check_wrist=False) == "truncated"
+    assert state_from_keypoints(kp, wrist_slack=0.05) == "truncated"

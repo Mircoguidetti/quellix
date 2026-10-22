@@ -64,6 +64,7 @@ class Scored:
     ratio: dict[str, float | None] = field(default_factory=dict)
     detected: dict[str, float | None] = field(default_factory=dict)
     source: str = ""
+    label_ratio: float | None = None    # HoloAssist: share of manipulation frames, both visible
 
 
 def hands_status(model: Any, video: Any, rubric: Mapping[str, Any]) -> tuple[str, float | None,
@@ -135,6 +136,18 @@ def report(
                           ("Synthetic hands slice (Egocentric-10K + hand defects)", synth)):
         lines += [f"## {title}", "", table([("before (v0)", metrics_for(scored, "v0")),
                                             (f"after ({after})", metrics_for(scored, after))])]
+    good = [s for s in val if s.expected == "pass"]
+    if good:
+        lines += ["### Validation windows labelled pass, one by one", "",
+                  "Label ratio = share of manipulation frames with both hands fully visible in "
+                  "HoloAssist's own hand tracking; the others are the model's measurements.", "",
+                  "| window | label ratio | before | status | after | status |",
+                  "|---|---|---|---|---|---|"]
+        for s in good:
+            b, a = s.ratio.get("v0"), s.ratio.get(after)
+            lines.append(f"| {s.clip_id} | {s.label_ratio} | {b} | {s.status.get('v0')} | {a} "
+                         f"| {s.status.get(after)} |")
+        lines.append("")
     lines += ["## Dev slice (HoloAssist train windows): how the threshold was chosen", "",
               table([("before (v0)", metrics_for(dev, "v0"))]
                     + [(f"v1, detector {t}", metrics_for(dev, f"v1@{t}")) for t in THRESHOLDS]),
@@ -207,6 +220,7 @@ def run_holo(split: str, n: int, work: Path, seed: int, models: Mapping[str, Any
     for c in clips:
         scored.append(score_clip(c.clip_id, Path(c.path), c.checks["hands_visible"], models,
                                  detectors, rubric, f"holoassist-{split}"))
+        scored[-1].label_ratio = json.loads(c.notes or "{}").get("both_visible_ratio")
         print(f"{split} {c.clip_id}: expected {scored[-1].expected} -> {scored[-1].status}",
               flush=True)
     return scored, clips, stats
