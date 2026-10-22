@@ -94,9 +94,9 @@ def iter_tar_videos(stream: BinaryIO, limit: int) -> Iterator[tuple[str, bytes]]
 
 def transcode(
     src: Path, dst: Path, seconds: float, width: int, fps: float,
-    codec: str = "mpeg4", options: dict[str, str] | None = None,
+    codec: str = "mpeg4", options: dict[str, str] | None = None, start_s: float = 0.0,
 ) -> float:
-    """Write the first `seconds` of src, resized to `width` and resampled to `fps`.
+    """Write `seconds` of src from `start_s`, resized to `width` and resampled to `fps`.
 
     Returns the written duration in seconds.
     """
@@ -109,9 +109,12 @@ def transcode(
         step = max(1, round(src_fps / fps))
         ostream = None
         for i, frame in enumerate(inp.decode(stream)):
-            if i / src_fps >= seconds:
+            t = i / src_fps
+            if t < start_s:
+                continue
+            if t >= start_s + seconds:
                 break
-            if i % step:
+            if (i - round(start_s * src_fps)) % step:
                 continue
             img = frame.to_ndarray(format="rgb24")
             h, w = img.shape[:2]

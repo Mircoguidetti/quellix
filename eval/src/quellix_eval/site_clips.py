@@ -39,8 +39,8 @@ SIDECAR_FPS = 8.0          # per-frame boxes stored with the final clip
 ANALYSIS_WIDTH = 640       # frames are downscaled for the hands model (boxes are normalized)
 WINDOW_S = 9.0
 OUT_WIDTH = 1280
-MP4_BUDGET = 1_000_000     # bytes: total for 6 clips must stay under 12 MB with WebM and posters
-WEBM_BUDGET = 700_000
+MP4_BUDGET = 950_000       # bytes: the total for 6 clips (mp4 + webm + poster + json) stays < 12 MB
+WEBM_BUDGET = 650_000
 POSTER_BUDGET = 110_000
 TOTAL_BUDGET = 11_500_000
 
@@ -80,7 +80,7 @@ def iter_frames(
         stream.thread_type = "AUTO"
         for frame in c.decode(stream):
             t = float(frame.pts * stream.time_base) if frame.pts is not None else 0.0
-            if t < next_t - 1e-6:
+            if t < next_t - 0.25 / fps:
                 continue
             if end_s is not None and t > end_s + 1e-6:
                 break
@@ -195,6 +195,26 @@ def technical_ok(decision: dict[str, Any]) -> bool:
 # --- candidates and picks ----------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class SourceInfo:
+    """Where a candidate comes from, for quotas, labels and credits."""
+
+    key: str                     # "ego10k" | "holoassist"
+    dataset: str
+    license: str
+    group: str                   # factory / task: picks prefer different groups
+    task: str                    # shown to people next to the clip
+    offset_s: float = 0.0        # where the candidate file starts inside the original recording
+    annotated_steps: tuple[dict[str, Any], ...] = ()    # human annotations, on the recording clock
+
+
+EGO10K = "Build AI Egocentric-10K"
+
+
+def ego10k_source(clip_id: str) -> SourceInfo:
+    return SourceInfo("ego10k", EGO10K, "Apache-2.0", factory_of(clip_id), "Factory work")
+
+
 @dataclass
 class Candidate:
     clip_id: str
@@ -206,6 +226,7 @@ class Candidate:
     contrast: float = 0.0
     hist: np.ndarray | None = field(default=None, repr=False)
     rejected: str | None = None       # why it is not eligible
+    source: SourceInfo | None = None
 
     @property
     def score(self) -> float:
@@ -227,10 +248,19 @@ def eligibility(c: Candidate) -> str | None:
     return None
 
 
+def source_key(c: Candidate) -> str:
+    return c.source.key if c.source else "ego10k"
+
+
 def select_picks(
-    candidates: Sequence[Candidate], n: int = 6, min_distance: float = MIN_SCENE_DISTANCE
+    candidates: Sequence[Candidate], n: int = 6, min_distance: float = MIN_SCENE_DISTANCE,
+    quota: dict[str, int] | None = None,
 ) -> list[Candidate]:
-    """Best `n` eligible candidates: distinct factories first, and visibly different scenes."""
+    """Best `n` eligible candidates: distinct factories first, and visibly different scenes.
+
+    `quota` ({"ego10k": 3, "holoassist": 3}) reserves places per source, so that every source
+    that has eligible clips shows up; whatever a source cannot fill goes to the best of the rest.
+    """
     eligible = []
     for c in candidates:
         c.rejected = eligibility(c)
@@ -245,15 +275,25 @@ def select_picks(
         )
 
     picks: list[Candidate] = []
-    for distinct_factories in (True, False):     # second pass fills up if factories ran out
-        for c in eligible:
-            if len(picks) >= n:
-                break
-            if c in picks or not different(c, picks):
-                continue
-            if distinct_factories and any(p.factory == c.factory for p in picks):
-                continue
-            picks.append(c)
+
+    def fill(pool: Sequence[Candidate], limit: int) -> None:
+        for distinct_factories in (True, False):     # second pass fills up if factories ran out
+            for c in pool:
+                if len(picks) >= limit:
+                    return
+                if c in picks or not different(c, picks):
+                    continue
+                if distinct_factories and any(
+                    p.factory == c.factory and source_key(p) == source_key(c) for p in picks
+                ):
+                    continue
+                picks.append(c)
+
+    for key, wanted in (quota or {}).items():
+        fill([c for c in eligible if source_key(c) == key], len(picks) + wanted)
+    fill(eligible, n)
+    order = {k: i for i, k in enumerate(quota or {})}
+    picks.sort(key=lambda c: (order.get(source_key(c), len(order)), -c.score))
     for c in eligible:
         if c not in picks:
             c.rejected = "eligible, but not among the best picks (same factory or similar scene)"
@@ -267,9 +307,10 @@ def factory_of(clip_id: str) -> str:
 
 def analyse(
     clip_id: str, path: Path, hands: HandsLike, worker: WorkerCheck, rubric: Path,
-    window_s: float = WINDOW_S,
+    window_s: float = WINDOW_S, source: SourceInfo | None = None,
 ) -> Candidate:
-    cand = Candidate(clip_id, path, factory_of(clip_id))
+    source = source or ego10k_source(clip_id)
+    cand = Candidate(clip_id, path, source.group, source=source)
     cand.decision = worker(path, rubric)
     if cand.decision is None or not privacy_clean(cand.decision):
         return cand            # no need to run the hands model on a clip that is out already
@@ -293,7 +334,7 @@ def analyse(
 def _scaled(frames: Iterator[tuple[float, np.ndarray]], width: int) -> Iterator[np.ndarray]:
     for _, img in frames:
         h, w = img.shape[:2]
-        new_w = width - width % 2
+        new_w = min(width, w) // 2 * 2          # never upscale
         new_h = int(round(h * new_w / w)) // 2 * 2
         yield cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
 
@@ -352,7 +393,7 @@ def render_clip(
     assert cand.window is not None
     w = cand.window
     _, _, _, src_fps = video_info(cand.path)
-    fps = fps_out or min(src_fps, 24.0)
+    fps = fps_out or min(src_fps, 30.0)      # the source rate: no resampling, no speed change
 
     def frames() -> Iterator[np.ndarray]:
         return _scaled(iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None), width)
@@ -362,7 +403,7 @@ def render_clip(
         frames, mp4, "libx264", fps, MP4_BUDGET, (24, 26, 28, 30, 32, 35),
         lambda crf: {"crf": str(crf), "preset": "slow", "movflags": "+faststart"})
     crf_webm, size_webm = fit(
-        frames, webm, "libvpx-vp9", fps, WEBM_BUDGET, (34, 36, 38, 40, 43, 46),
+        frames, webm, "libvpx-vp9", fps, WEBM_BUDGET, (36, 40, 44, 48, 52, 56),
         lambda crf: {"crf": str(crf), "b:v": "0", "row-mt": "1", "cpu-used": "2"})
     # Poster: the sharpest of a few frames around the middle of the window.
     mid = (w.start_s + w.end_s) / 2
@@ -413,24 +454,40 @@ def steps_from(decision: dict[str, Any] | None) -> list[dict[str, Any]]:
     return list(measurements(decision, "task_completed").get("steps") or [])
 
 
+def sidecar_steps(cand: Candidate, decision: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Steps shown with the clip: the worker's own if it returns any, else the dataset's human
+    annotations for this stretch (labelled as such), on the clip's own clock."""
+    own = steps_from(decision)
+    if own or cand.window is None or cand.source is None or not cand.source.annotated_steps:
+        return own
+    from .datasets.holoassist_stream import steps_in_window
+
+    start = cand.source.offset_s + cand.window.start_s
+    end = cand.source.offset_s + cand.window.end_s
+    return steps_in_window(cand.source.annotated_steps, start, end)
+
+
 def build_sidecar(
     cand: Candidate, name: str, files: dict[str, Any], hands: HandsLike,
-    decision: dict[str, Any] | None, mp4: Path, dataset: str, license_: str,
+    decision: dict[str, Any] | None, mp4: Path,
 ) -> dict[str, Any]:
     samples = list(iter_frames(mp4, SIDECAR_FPS))
     per_frame = hands.frames([f for _, f in samples], [t for t, _ in samples])
     assert cand.window is not None
+    src = cand.source or ego10k_source(cand.clip_id)
+    start = src.offset_s + cand.window.start_s
     return {
         "schema": SCHEMA,
         "id": name,
-        "source": {"dataset": dataset, "license": license_, "clip_id": cand.clip_id,
-                   "factory": cand.factory,
-                   "segment_in_source_s": [round(cand.window.start_s, 2),
-                                           round(cand.window.end_s, 2)]},
+        "source": {"dataset": src.dataset, "license": src.license, "task": src.task,
+                   "clip_id": cand.clip_id, "group": src.group,
+                   "segment_in_source_s": [round(start, 2),
+                                           round(start + cand.window.end_s - cand.window.start_s,
+                                                 2)]},
         "video": files,
         "hands": {"model": hands.model_id, "sample_fps": SIDECAR_FPS,
                   "frames": frames_json(per_frame)},
-        "steps": steps_from(decision),
+        "steps": sidecar_steps(cand, decision),
         "decision": decision,
         "selection": {"both_hands_full": round(cand.window.both_full, 3),
                       "both_hands_working": round(cand.window.working, 3),
@@ -443,10 +500,10 @@ def build_sidecar(
 
 def produce(
     candidates: Sequence[Candidate], hands: HandsLike, worker: WorkerCheck, rubric: Path,
-    final_dir: Path, picks_wanted: int = 6, dataset: str = "Build AI Egocentric-10K",
-    license_: str = "Apache-2.0", log: Callable[[str], None] = print, width: int = OUT_WIDTH,
+    final_dir: Path, picks_wanted: int = 6, quota: dict[str, int] | None = None,
+    log: Callable[[str], None] = print, width: int = OUT_WIDTH,
 ) -> dict[str, Any]:
-    picks = select_picks(candidates, picks_wanted)
+    picks = select_picks(candidates, picks_wanted, quota=quota)
     final_dir.mkdir(parents=True, exist_ok=True)
     for old in [*final_dir.glob("clip-*"), final_dir / "manifest.json"]:
         old.unlink(missing_ok=True)       # a run with fewer picks must not leave stale clips
@@ -456,16 +513,20 @@ def produce(
         files = render_clip(cand, name, final_dir, width=width)
         mp4 = final_dir / files["mp4"]
         decision = worker(mp4, rubric)        # the worker's verdict on the delivered file itself
-        sidecar = build_sidecar(cand, name, files, hands, decision, mp4, dataset, license_)
+        sidecar = build_sidecar(cand, name, files, hands, decision, mp4)
         side = final_dir / f"{name}.json"
         side.write_text(json.dumps(sidecar, separators=(",", ":")))
         files["bytes"]["json"] = side.stat().st_size
+        src = sidecar["source"]
         clips.append({"id": name, "source_clip": cand.clip_id, "factory": cand.factory,
+                      "dataset": src["dataset"], "license": src["license"], "task": src["task"],
                       "decision": (decision or {}).get("decision"), **files})
         log(f"{name}: {cand.clip_id} {cand.window.start_s:.1f}-{cand.window.end_s:.1f}s "  # type: ignore[union-attr]
             f"bytes={files['bytes']}")
     total = sum(sum(c["bytes"].values()) for c in clips)
-    manifest = {"schema": "ormes.site-clips/1", "dataset": dataset, "license": license_,
+    sources = sorted({(c["dataset"], c["license"]) for c in clips})
+    manifest = {"schema": "ormes.site-clips/2",
+                "sources": [{"dataset": d, "license": lic} for d, lic in sources],
                 "total_bytes": total, "clips": clips}
     (final_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     if total > TOTAL_BUDGET:
@@ -489,6 +550,59 @@ def candidate_report(candidates: Sequence[Candidate], picks: Sequence[Candidate]
     return "\n".join(lines) + "\n"
 
 
+@dataclass(frozen=True)
+class Fetched:
+    clip_id: str
+    path: Path
+    source: SourceInfo
+
+
+def fetch_holoassist(
+    http: Any, out_dir: Path, n: int, seconds: float = 60.0, start_s: float = 15.0,
+    width: int = OUT_WIDTH, log: Callable[[str], None] = print,
+    tar_url: str | None = None, annotations_url: str | None = None,
+    transcode_options: dict[str, str] | None = None,
+) -> list[Fetched]:
+    """Stream `n` single HoloAssist recordings (spread over tasks) and keep `seconds` of each.
+
+    Raises with the exact network error when the host cannot be reached.
+    """
+    from .datasets import holoassist_stream as ha
+    from .datasets.egocentric10k import transcode
+
+    tar_url, annotations_url = tar_url or ha.VIDEO_TAR, annotations_url or ha.ANNOTATIONS
+    entries = ha.list_tar(http, tar_url)
+    log(f"HoloAssist: listed {len(entries)} files at the start of the video tar")
+    picks = ha.pick_recordings(entries, n)
+    if not picks:
+        raise RuntimeError("no .mp4 recordings found in the HoloAssist video tar")
+    try:
+        annotations = ha.load_annotations(http, annotations_url, out_dir / "holoassist-labels.json")
+    except Exception as e:  # noqa: BLE001 - labels only add steps and task names
+        log(f"HoloAssist: annotations not loaded ({type(e).__name__}: {e}); no step labels")
+        annotations = []
+    out: list[Fetched] = []
+    for entry in picks:
+        raw = out_dir / "holoassist-raw" / f"{entry.recording}.mp4"
+        try:
+            http.download(tar_url, entry.offset, entry.size, raw)
+            dst = out_dir / "holoassist" / f"{entry.recording}.mp4"
+            transcode(raw, dst, seconds, width, 24.0, "libx264",
+                      transcode_options or {"crf": "17", "preset": "veryfast"}, start_s)
+        except Exception as e:  # noqa: BLE001 - one broken recording must not end the run
+            log(f"HoloAssist: skipped {entry.recording}: {type(e).__name__}: {e}")
+            continue
+        finally:
+            raw.unlink(missing_ok=True)
+        session = ha.session_for(annotations, entry.recording)
+        task = str((session or {}).get("taskType") or entry.task)
+        out.append(Fetched(f"holoassist_{entry.recording}", dst, SourceInfo(
+            "holoassist", ha.DATASET, ha.LICENSE, entry.task, task, start_s,
+            tuple(ha.action_steps(session)))))
+        log(f"HoloAssist: {entry.recording} ({entry.size / 1e6:.0f} MB) -> {task}")
+    return out
+
+
 def worker_check_via_cli(cmd: Sequence[str] | None = None) -> WorkerCheck:  # pragma: no cover
     from .run import worker_engine
 
@@ -507,10 +621,12 @@ def worker_check_via_cli(cmd: Sequence[str] | None = None) -> WorkerCheck:  # pr
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
     from .datasets import egocentric10k
+    from .datasets.holoassist_stream import UrllibHttp
     from .datasets.manifest import load_manifest
 
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--candidates", type=int, default=30)
+    ap.add_argument("--holoassist", type=int, default=16, help="HoloAssist candidates (0 = skip)")
     ap.add_argument("--picks", type=int, default=6)
     ap.add_argument("--min-picks", type=int, default=1)
     ap.add_argument("--out-dir", type=Path, default=Path("out/site-clips"))
@@ -527,14 +643,30 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
         manifest_path, a.out_dir / "candidates", clips=a.candidates, per_shard=2,
         seconds=a.seconds, width=OUT_WIDTH, fps=24.0, min_factories=min(15, a.candidates),
         codec="libx264", options={"crf": "17", "preset": "veryfast"})
-    print(f"downloaded {n} candidates")
+    print(f"downloaded {n} Build AI candidates", flush=True)
+    todo = [Fetched(r.clip_id, Path(r.path), ego10k_source(r.clip_id))
+            for r in load_manifest(manifest_path)]
+
+    status = "HoloAssist: not requested (--holoassist 0)."
+    if a.holoassist > 0:
+        try:
+            got = fetch_holoassist(UrllibHttp(), a.out_dir, a.holoassist)
+            todo += got
+            status = f"HoloAssist: {len(got)} recordings streamed (CDLA-Permissive-2.0)."
+        except Exception as e:  # noqa: BLE001 - report the exact error, keep going with Build AI
+            status = f"HoloAssist NOT used. Exact error: {type(e).__name__}: {e}"
+    print(status, flush=True)
+    (a.out_dir / "holoassist-status.txt").write_text(status + "\n")
+
     hands, worker = HandsModel(), worker_check_via_cli()
     cands = []
-    for rec in load_manifest(manifest_path):
-        cand = analyse(rec.clip_id, Path(rec.path), hands, worker, a.rubric)
-        print(f"{rec.clip_id}: " + (eligibility(cand) or "eligible"), flush=True)
+    for item in todo:
+        cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
+        print(f"{item.clip_id}: " + (eligibility(cand) or "eligible"), flush=True)
         cands.append(cand)
-    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, a.picks)
+    has_both = {source_key(c) for c in cands if eligibility(c) is None} >= {"ego10k", "holoassist"}
+    quota = {"ego10k": a.picks // 2, "holoassist": a.picks - a.picks // 2} if has_both else None
+    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, a.picks, quota)
     picks = [c for c in cands if c.clip_id in {x["source_clip"] for x in manifest["clips"]}]
     (a.out_dir / "candidates.md").write_text(candidate_report(cands, picks))
     print(f"{len(manifest['clips'])} clips, {manifest['total_bytes']} bytes")

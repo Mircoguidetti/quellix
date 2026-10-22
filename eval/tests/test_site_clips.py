@@ -215,12 +215,13 @@ def test_analyse_and_produce_end_to_end(tmp_path):
                           log=lambda s: None)
     assert [c["id"] for c in manifest["clips"]] == ["clip-01", "clip-02"]
     assert len({c["factory"] for c in manifest["clips"]}) == 2
-    assert manifest["total_bytes"] < sc.TOTAL_BUDGET and manifest["license"] == "Apache-2.0"
+    assert manifest["total_bytes"] < sc.TOTAL_BUDGET
+    assert manifest["sources"] == [{"dataset": "Build AI Egocentric-10K", "license": "Apache-2.0"}]
     for c in manifest["clips"]:
         for ext in ("mp4", "webm", "jpg", "json"):
             assert (final / f"{c['id']}.{ext}").stat().st_size > 0
         with av.open(str(final / c["mp4"])) as f:                    # decodable, no audio
-            assert f.streams.video[0].codec_context.width == 320 and not f.streams.audio
+            assert f.streams.video[0].codec_context.width == 128 and not f.streams.audio
         with av.open(str(final / c["webm"])) as f:
             assert f.streams.video[0].codec_context.name in ("vp9", "libvpx-vp9")
         side = json.loads((final / f"{c['id']}.json").read_text())
@@ -229,6 +230,11 @@ def test_analyse_and_produce_end_to_end(tmp_path):
         frames = side["hands"]["frames"]
         assert len(frames) >= 15 and frames[0]["left"]["box"] and frames[0]["right"]["state"]
         assert side["source"]["license"] == "Apache-2.0"
+        assert side["source"]["task"] == "Factory work"
+        assert side["source"]["dataset"] == "Build AI Egocentric-10K"
+        # no speed change: the clip lasts as long as the stretch it was cut from
+        seg = side["source"]["segment_in_source_s"]
+        assert abs(side["video"]["duration_s"] - (seg[1] - seg[0])) < 0.5
         assert len(side["source"]["segment_in_source_s"]) == 2
     assert not (final / "clip-09.mp4").exists()                        # stale files are removed
     # the worker judged the delivered files themselves
@@ -267,3 +273,53 @@ def test_site_rubric_is_valid_and_measures_what_we_filter_on():
     c = r["checks"]
     assert c["privacy"]["faces"] == c["privacy"]["documents"] == c["privacy"]["screens"] == "reject"
     assert c["hands_visible"]["enabled"] and c["technical"]["enabled"]
+
+
+def test_a_30fps_source_keeps_its_speed(tmp_path):
+    c = make_clean_clip(n_frames=90, size=(72, 128), fps=30.0, seed=1)
+    p = tmp_path / "s30.mp4"
+    write_video(p, c.frames, c.fps)
+    cand = sc.analyse("ego10k_factory001_worker001_00000", p, FakeHands(), fake_worker([]),
+                      sc.DEFAULT_RUBRIC, window_s=2.0)
+    assert cand.window is not None
+    files = sc.render_clip(cand, "clip-01", tmp_path / "out", width=320)
+    assert files["fps"] == 30.0 and files["width"] == 128        # not upscaled
+    assert abs(files["duration_s"] - (cand.window.end_s - cand.window.start_s)) < 0.2
+
+
+def test_source_quota_reserves_places_for_each_dataset():
+    def c(name, key, score, seed):
+        k = cand(name, f"g-{name}", score, seed)
+        k.source = sc.SourceInfo(key, key, "x", f"g-{name}", "task")
+        return k
+
+    cands = [c(f"e{i}", "ego10k", 0.99 - i * 0.01, i) for i in range(5)] + [
+        c(f"h{i}", "holoassist", 0.5 - i * 0.01, 20 + i) for i in range(4)]
+    picks = sc.select_picks(cands, n=6, min_distance=0.0, quota={"ego10k": 3, "holoassist": 3})
+    keys = [sc.source_key(p) for p in picks]
+    assert keys == ["ego10k"] * 3 + ["holoassist"] * 3
+    # without a quota the better-scoring source takes everything
+    plain = sc.select_picks(cands, n=6, min_distance=0.0)
+    assert [sc.source_key(p) for p in plain].count("ego10k") == 5
+    # a source that cannot fill its quota leaves the places to the other
+    only_e = sc.select_picks(cands[:5], n=6, min_distance=0.0, quota={"ego10k": 3, "holoassist": 3})
+    assert len(only_e) == 5
+
+
+def test_annotated_steps_are_mapped_onto_the_clip_clock():
+    src = sc.SourceInfo("holoassist", "HoloAssist", "CDLA-Permissive-2.0", "DSLR", "DSLR", 15.0, (
+        {"name": "grab lens", "start": 22.0, "end": 27.0},
+        {"name": "turn dial", "start": 30.0, "end": 35.0},
+        {"name": "late", "start": 99.0, "end": 100.0},
+    ))
+    c = cand("holoassist_R1-DSLR", "DSLR")
+    c.source = src
+    c.window = sc.Window(10.0, 19.0, 1.0, 1.0, 1.0)          # 25-34 s of the recording
+    steps = sc.sidecar_steps(c, decision())
+    assert [s["name"] for s in steps] == ["grab lens", "turn dial"]
+    assert steps[0]["t_s"] == 0.0 and steps[0]["end_s"] == 2.0
+    assert steps[1]["t_s"] == 5.0 and steps[1]["end_s"] == 9.0
+    assert steps[0]["source"] == "HoloAssist annotation"
+    # the worker's own steps win when it has some
+    own = sc.sidecar_steps(c, decision(steps=[{"name": "w", "t_s": 1.0}]))
+    assert own == [{"name": "w", "t_s": 1.0}]
