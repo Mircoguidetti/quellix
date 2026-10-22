@@ -85,9 +85,12 @@ def test_truncated_hand_fails_only_when_both_are_required(clip):
         return [FULL_L, CUT_R if n % 2 else FULL_R]
 
     r = run(clip, model(half_cut))
-    assert status(r) == "fail" and r.decision["decision"] == "reject"  # ~0.5 < 0.8
+    # ~0.5 < 0.8: a failure, but the unvalidated hands check can only send it to review (#53)
+    assert status(r) == "fail" and r.decision["decision"] == "review"
     reason = next(x for x in r.decision["reasons"] if x["check"] == "hands_visible")
     assert reason["code"] == "hands_visible.below_min" and "Both hands" in reason["message"]
+    assert reason["effect"] == "review"
+    assert r.decision["checks"]["hands_visible"]["measurements"]["reject_capped_to_review"]
     assert status(run(clip, model(half_cut), require_both=False)) == "pass"  # any hand: 1.0
 
 
