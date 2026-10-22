@@ -1,4 +1,4 @@
-import { ogImage, ogSize } from "@/components/marketing/og-image";
+import { ogImage, ogSize } from "@/components/site/og-image";
 
 export const alt = "Ormes";
 export const size = ogSize;
