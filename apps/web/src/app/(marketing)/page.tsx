@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { HomePage } from "@/components/marketing/index-page";
+import { HomePage } from "@/components/site/home/home-page";
 
 export const metadata: Metadata = {
   title: { absolute: "Ormes" },

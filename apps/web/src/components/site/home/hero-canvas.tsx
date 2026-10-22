@@ -139,5 +139,5 @@ export function HeroCanvas() {
     };
   }, []);
 
-  return <canvas id="hc" ref={ref} aria-hidden="true" />;
+  return <canvas ref={ref} aria-hidden="true" className="absolute inset-0 size-full" />;
 }
