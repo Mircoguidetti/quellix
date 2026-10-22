@@ -79,6 +79,12 @@ jobs:
           get() { [ -f requests/hands-fix.json ] && python3 -c "import json,sys; print(json.load(open('requests/hands-fix.json')).get(sys.argv[1], ''))" "$1" || true; }
           dev="${IN_DEV:-$(get dev_sessions)}"; val="${IN_VAL:-$(get val_sessions)}"; syn="${IN_SYN:-$(get synthetic_sources)}"
           dev="${dev:-60}"; val="${val:-130}"; syn="${syn:-40}"
+          thr="$(get threshold)"; bands="$(get bands)"
+          [ -z "$thr" ] || python3 -c "import sys; assert 0 < float(sys.argv[1]) <= 1" "$thr"
+          extra=""
+          [ -n "$thr" ] && extra="$extra --threshold $thr"
+          [ "$bands" = "True" ] && extra="$extra --bands"
+          echo "extra=$extra" >> "$GITHUB_OUTPUT"
           case "$dev$val$syn" in ''|*[!0-9]*) echo "sizes must be integers" >&2; exit 1;; esac
           echo "dev=$dev" >> "$GITHUB_OUTPUT"; echo "val=$val" >> "$GITHUB_OUTPUT"; echo "syn=$syn" >> "$GITHUB_OUTPUT"
       - name: Score
@@ -87,7 +93,7 @@ jobs:
           set -o pipefail
           uv run python -m quellix_eval.hands_score --out out/hands --pexels \
             --dev-sessions "${{ steps.n.outputs.dev }}" --val-sessions "${{ steps.n.outputs.val }}" \
-            --synthetic-sources "${{ steps.n.outputs.syn }}" 2>&1 | tee out/hands/run.log
+            --synthetic-sources "${{ steps.n.outputs.syn }}" ${{ steps.n.outputs.extra }} 2>&1 | tee out/hands/run.log
       - name: Post the report on issue #4
         if: always()
         env:

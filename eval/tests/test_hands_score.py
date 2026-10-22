@@ -154,3 +154,35 @@ def test_outputs_are_written_after_every_stage(tmp_path):
     hs.write_outputs(tmp_path, 0.2, rows, rows, [], [], {"pexels_error": "boom"})
     assert "pexels_error" in (tmp_path / "report.md").read_text()
     assert json.loads((tmp_path / "scored.json").read_text())["chosen"] == 0.2
+
+
+def banded(expected, status, ratio):
+    return hs.Scored("c", expected, {"v1@0.2": status}, {"v1@0.2": ratio})
+
+
+def test_banded_status_turns_near_misses_into_uncertain_only():
+    assert hs.banded_status(banded("pass", "fail", 0.72), "v1@0.2", 0.1) == "uncertain"
+    assert hs.banded_status(banded("pass", "fail", 0.65), "v1@0.2", 0.1) == "fail"
+    assert hs.banded_status(banded("pass", "fail", 0.72), "v1@0.2", 0.0) == "fail"
+    assert hs.banded_status(banded("pass", "pass", 0.9), "v1@0.2", 0.3) == "pass"
+    assert hs.banded_status(banded("pass", "error", None), "v1@0.2", 0.3) == "error"
+
+
+def test_pick_band_takes_the_smallest_band_that_brings_dev_frr_down():
+    dev = [banded("pass", "fail", 0.75), banded("pass", "fail", 0.66), banded("pass", "pass", 0.9),
+           banded("fail", "fail", 0.2)]
+    # band 0.1 rescues 0.75 (FRR 1/3), 0.2 rescues both (FRR 0/3)
+    assert hs.pick_band(dev, "v1@0.2") == 0.2
+    unreachable = [banded("pass", "fail", 0.05), banded("pass", "fail", 0.75)]
+    assert hs.pick_band(unreachable, "v1@0.2") == 0.1          # lowest FRR, smaller on ties
+    m = hs.metrics_banded(dev, "v1@0.2", 0.2)
+    assert m.false_reject_rate.k == 0 and m.review_rate.k == 2 and m.false_accept_rate.k == 0
+
+
+def test_report_with_a_band_shows_the_rule_and_both_tables():
+    rows = [banded("pass", "fail", 0.75), banded("fail", "fail", 0.1)]
+    for r in rows:
+        r.status["v0"] = "fail"
+        r.ratio["v0"] = 0.2
+    text = hs.report(0.2, rows, rows, [], [], {}, band=0.1, thresholds=(0.2,))
+    assert "uncertain" in text and "picked **0.1**" in text and "after + band 0.1" in text

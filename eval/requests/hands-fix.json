@@ -1,1 +1,1 @@
-{"dev_sessions": 60, "val_sessions": 130, "synthetic_sources": 40, "note": "run 4: wrist must be in frame (5% slack), per-window table for the good HoloAssist windows"}
+{"dev_sessions": 300, "val_sessions": 130, "synthetic_sources": 0, "threshold": 0.2, "bands": true, "note": "run 5: uncertain band chosen on 300 train sessions, val scored once"}
