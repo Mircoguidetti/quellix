@@ -8,6 +8,7 @@ from test_ci import FAKE, fake_source
 from quellix_eval import ci
 from quellix_eval.baselines import ModelResponse
 from quellix_eval.baselines.retry import RetryingClient, is_rate_limit, retry_delay_s
+from quellix_eval.datasets.manifest import ClipRecord, TaskSpec
 from quellix_eval.prices import cheapest_gemini_flash_lite
 
 OK = {
@@ -287,3 +288,30 @@ def test_billing_error_is_not_retried_inside_the_retrying_client():
     with pytest.raises(RuntimeError):
         retrying(inner, clock, min_interval_s=0).generate(Path("x"), "p")
     assert inner.calls == 1 and clock.sleeps == []
+
+
+def test_phase_deadline_stops_a_clip_stuck_in_backoff():
+    from quellix_eval.ci import PhaseLimits
+
+    clock = Clock()
+    lim = PhaseLimits(60, 1.0, clock=clock.now)
+    lim.check()                                   # the phase starts now
+    inner = Flaky(["429 RESOURCE_EXHAUSTED. Please retry in 45s"] * 5)
+    c = retrying(inner, clock, min_interval_s=0, deadline_fn=lim.deadline)
+    with pytest.raises(TimeoutError):
+        c.generate(Path("x"), "p")
+    assert inner.calls == 2 and clock.sleeps == [45.0]   # the second 45 s wait would overrun
+    assert lim.deadline() == 60 + lim.started
+
+
+def test_build_engines_hands_the_gemini_phase_deadline_to_the_client():
+    from quellix_eval.ci import PhaseLimits
+
+    lim = PhaseLimits(0, 1.0)
+    engines, _ = ci.build_engines({"GEMINI_API_KEY": "k"}, gemini_factory=lambda m: Flaky([]),
+                                  gemini_limits=lim, sleep=lambda s: None)
+    lim.check()                                   # started, budget 0: already out of time
+    clip = ClipRecord(clip_id="c", source="synthetic", license="synthetic", path="c.mp4",
+                      task=TaskSpec(description="d"), truth="accept")
+    res = engines["gemini"](clip, {"task": {"description": "d"}})
+    assert res.decision is None and "time budget" in (res.error or "")

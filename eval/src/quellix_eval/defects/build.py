@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from ..datasets.manifest import ClipRecord
-from .generate import VARIANTS, apply_variant, read_video, write_video
+from .generate import HAND_VARIANTS, VARIANTS, apply_variant, read_video, write_video
 
 
 def build_variants(
@@ -21,7 +21,7 @@ def build_variants(
         for name in variants or list(VARIANTS):
             # A hands defect is only a trustworthy label if the source clip is known to show
             # both hands fully visible.
-            if name == "hands_out" and rec.checks.get("hands_visible") != "pass":
+            if name in HAND_VARIANTS and rec.checks.get("hands_visible") != "pass":
                 continue
             vclip, v = apply_variant(name, clip)
             dst = out_dir / f"{rec.clip_id}__{name}.mp4"

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SecurityPage } from "@/components/marketing/security-page";
+import { SecurityPage } from "@/components/site/security/security-page";
 
 export const metadata: Metadata = {
   title: { absolute: "Ormes Security" },

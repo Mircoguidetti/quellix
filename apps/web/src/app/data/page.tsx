@@ -26,6 +26,11 @@ export default function DataPage() {
         &ldquo;Allow third-party models to analyse our videos&rdquo; in settings. The switch is off by default and you can turn it
         off again at any time.
       </p>
+      <p>
+        The same switch covers lab specs you import to draft a rubric: with it off, the text is read only by our own rules
+        and never leaves Ormes. With it on, Gemini reads the text only when you ask for it on the import page. PDFs are read
+        in your browser and are never uploaded.
+      </p>
 
       <h2>Your data stays yours</h2>
       <p>Duplicate detection compares a video only with your own organization&apos;s earlier videos. We do not match across customers.</p>

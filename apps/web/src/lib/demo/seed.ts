@@ -176,6 +176,8 @@ const CONTEST_MESSAGES = [
 
 export function seedDemo(): DemoStore {
   const rand = prng(20261021);
+  // Separate stream for QA spot checks, so adding them leaves every other seeded row unchanged.
+  const qa = prng(25);
   const now = Date.now();
   const iso = (t: number) => new Date(t).toISOString();
   const users: DemoUser[] = [
@@ -241,7 +243,8 @@ export function seedDemo(): DemoStore {
         const externalId = `v_${externalSeq}`;
         const contributor = `c_${4000 + Math.floor(rand() * 900)}`;
         const recent = now - created < 25 * 60 * 1000 && day === 0;
-        const status = recent && rand() < 0.5 ? (rand() < 0.5 ? "processing" : "queued") : day === 0 && i === 3 ? "failed" : "decided";
+        // One failed video today, whatever the time of day (the E2E checks how a failure is shown).
+        const status = day === 0 && i === 3 ? "failed" : recent && rand() < 0.5 ? (rand() < 0.5 ? "processing" : "queued") : "decided";
         const scenario = pickScenario(rand);
         const { outputs, duration } = makeOutputs(rand, scenario, delivered.length ? delivered[Math.floor(rand() * delivered.length)] : undefined);
         delivered.push(externalId);
@@ -298,6 +301,25 @@ export function seedDemo(): DemoStore {
             decision: accept ? "accept" : "reject",
             note: accept ? null : "Hands leave the frame while loading the top rack.",
             created_at: iso(decisionAt + (1 + rand() * 5) * 3600 * 1000),
+          });
+        }
+        // A person spot-checks a few automatic decisions (the audit export's sampling rate and overrides).
+        const checkedAt = decisionAt + (2 + qa() * 20) * 3600 * 1000;
+        if (evaluation.decision !== "review" && qa() < 0.06 && checkedAt < now) {
+          const override = qa() < 0.2;
+          const final = override ? (evaluation.decision === "accept" ? "reject" : "accept") : evaluation.decision;
+          tables.reviews.push({
+            id: randomUuid(qa),
+            video_id: id,
+            org_id: orgId,
+            reviewer_id: qa() < 0.5 ? PRIYA_ID : TOMAS_ID,
+            decision: final,
+            note: override
+              ? final === "reject"
+                ? "Spot check: the last step happens off camera."
+                : "Spot check: the hands stay in frame; the detector missed them against a dark surface."
+              : null,
+            created_at: iso(checkedAt),
           });
         }
         if (day >= 3 && rand() < 0.3) {

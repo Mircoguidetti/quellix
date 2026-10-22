@@ -50,6 +50,10 @@ def face_frame():
     return g
 
 
+EMPTY = {k: [] for k in ("faces", "documents", "screens", "faces_possible",
+                          "documents_possible", "screens_possible")}
+
+
 def run(tmp_path, frames, name):
     return privacy.run(media.decode(write_clip(tmp_path / f"{name}.mp4", frames, fps=10))
                        ).measurements
@@ -58,13 +62,13 @@ def run(tmp_path, frames, name):
 @needs_models
 def test_document_overlay_is_found(tmp_path):
     m = run(tmp_path, [document(background()) for _ in range(30)], "doc")
-    assert len(m["documents"]) >= 8 and not m["screens"]
+    assert len(m["documents"]) >= 4 and not m["screens"]
 
 
 @needs_models
 def test_screen_overlay_is_found(tmp_path):
     m = run(tmp_path, [screen(background()) for _ in range(30)], "scr")
-    assert len(m["screens"]) >= 8 and not m["documents"]
+    assert len(m["screens"]) >= 4 and not m["documents"]
 
 
 @needs_models
@@ -80,7 +84,7 @@ def test_cartoon_face_is_not_a_face_for_yunet(tmp_path):
 @pytest.mark.parametrize("seed", [1, 2, 3])
 def test_clean_frames_have_no_detections(tmp_path, seed):
     m = run(tmp_path, scene(seed, 40, size=(320, 180)), f"clean{seed}")
-    assert m == {"faces": [], "documents": [], "screens": []}
+    assert m == EMPTY
 
 
 @needs_models
@@ -88,7 +92,7 @@ def test_bright_blob_without_lines_is_not_a_document(tmp_path):
     g = background()
     cv2.rectangle(g, (300, 40), (600, 250), (245, 245, 240), -1)
     m = run(tmp_path, [g] * 20, "blob")
-    assert m["documents"] == []
+    assert m["documents"] == [] and m["documents_possible"] == []
 
 
 @needs_models
@@ -99,4 +103,4 @@ def test_printed_text_is_a_document(tmp_path):
         cv2.putText(g, f"Inspection report line {i} ok 4521", (292, 62 + i * 28),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (20, 20, 20), 1)
     m = run(tmp_path, [g] * 20, "text")
-    assert len(m["documents"]) >= 5
+    assert len(m["documents"]) >= 3

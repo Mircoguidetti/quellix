@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  async redirects() {
+    // The old "Developers" page became the docs (issue #56).
+    return [{ source: "/developers", destination: "/docs", permanent: true }];
+  },
   turbopack: {
     rules: {
       // Tailwind for global stylesheets. CSS Modules keep Next's own module handling (scoped class

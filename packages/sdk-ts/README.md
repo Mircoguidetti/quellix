@@ -30,6 +30,7 @@ console.log(decided.decision?.decision, decided.decision?.reasons);
 | `review.submit(id, { decision, note })` | |
 | `labOutcome.submit(id, { outcome, reason })` | |
 | `rubrics.create / get / list / newVersion` | `newVersion` is `PUT /rubrics/{id}`. |
+| `contributorFeedback(decision)` | What to fix and where, ready to show the person who filmed the video: `FeedbackItem[]` (`check`, `code`, `effect`, `message`, `hint`, `segments`). Only reasons the contributor may see, ordered by time; duplicates and other hidden rejections become one generic message. |
 | `webhooks.verifySignature(payload, header, secret)` | Constant-time. Returns a boolean. `webhooks.constructEvent` throws `WebhookSignatureError` or returns the typed event. |
 
 Errors: `AuthenticationError`, `NotFoundError`, `ValidationError` (`fields`), `RateLimitError` (`retryAfter` seconds), `APIError` (base, with `status`, `code`, `requestId`), plus `ConnectionError` and `TimeoutError`. 429 and 5xx responses are retried with jitter (`maxRetries`, default 2); a `POST` without an idempotency key is only retried on 429.

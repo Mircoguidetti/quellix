@@ -62,6 +62,8 @@ class RetryingClient:
         deadline_s: float | None = None,   # total wall-clock budget for this client
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        # A deadline owned by someone else (the eval phase), read on every check; None = none.
+        deadline_fn: Callable[[], float | None] | None = None,
     ) -> None:
         self.inner = inner
         self.name = inner.name
@@ -71,12 +73,14 @@ class RetryingClient:
         self._sleep = sleep
         self._clock = clock
         self._deadline = None if deadline_s is None else clock() + deadline_s
+        self._deadline_fn = deadline_fn
         self._last_call = float("-inf")
         self.retries = 0
         self.first_rate_limit_body: str | None = None
 
     def _out_of_time(self, extra: float = 0.0) -> bool:
-        return self._deadline is not None and self._clock() + extra > self._deadline
+        deadlines = [self._deadline, self._deadline_fn() if self._deadline_fn else None]
+        return any(d is not None and self._clock() + extra > d for d in deadlines)
 
     def generate(self, video_path: Path, prompt: str) -> ModelResponse:
         for attempt in range(self.max_retries + 1):

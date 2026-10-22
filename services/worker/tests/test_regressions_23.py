@@ -82,7 +82,8 @@ def test_real_privacy_models_output_is_serialisable(tmp_path):
 
 def test_clean_clip_is_accepted_when_hands_and_task_are_disabled(tmp_path):
     clip = write_clip(tmp_path / "c.mp4", scene(4, 100), fps=15)
-    rubric = {**EVAL_RUBRIC, "checks": {**EVAL_RUBRIC["checks"], "privacy": {"enabled": False}}}
+    rubric = {**EVAL_RUBRIC, "checks": {**EVAL_RUBRIC["checks"], "privacy": {"enabled": False},
+                                        "hands_visible": {"enabled": False}}}
     result = run_pipeline(clip, rubric, "v1", PipelineConfig(), Dependencies())
     assert result.decision["decision"] == "accept", result.decision["reasons"]
     for name in ("hands_visible", "task_completed"):
