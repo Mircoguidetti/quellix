@@ -3,9 +3,20 @@
 
 from __future__ import annotations
 from enum import Enum
-from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel, conint, constr
+from pydantic import (
+    AnyUrl,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    confloat,
+    conint,
+    constr,
+)
 from typing import Any
 from . import rubric as rubric_1
+from ormes._decision_base import DecisionBase
 
 
 class VideoStatus(Enum):
@@ -86,6 +97,14 @@ class CheckResult(BaseModel):
         None,
         description="Which model or method produced the measurements, e.g. 'hands@0.1.0' or 'baseline:gemini'.",
     )
+
+
+class Segment(BaseModel):
+    model_config = ConfigDict(
+        extra="allow",
+    )
+    start_s: confloat(ge=0.0)
+    end_s: confloat(ge=0.0)
 
 
 class RubricInput(BaseModel):
@@ -170,11 +189,27 @@ class Reason(BaseModel):
     code: str = Field(..., description="Stable machine code, e.g. 'hands_visible.below_min'.")
     message: str = Field(..., description="Human-readable reason shown to reviewers and contributors.")
     effect: Effect
+    hint: constr(max_length=200) | None = Field(
+        None,
+        description="One short, actionable sentence for the person who filmed the video, e.g. 'Keep both hands in frame: hold the camera lower.'",
+    )
+    segments: list[Segment] | None = Field(
+        None,
+        description="Where in the video the problem happens, in seconds from the start. Empty or absent for reasons about the whole video.",
+    )
+    contributor_visible: bool | None = Field(
+        None,
+        description="Whether the contributor may see this reason (message, hint, segments). Absent means true, except originality.*, *.error and pipeline.* reasons, which are always treated as hidden. Originality reasons are never visible: a contributor must not learn how duplicates are detected.",
+    )
 
 
-class Schema(BaseModel):
+class Schema(DecisionBase):
     model_config = ConfigDict(
         extra="allow",
+    )
+    schema_version: conint(ge=1) | None = Field(
+        None,
+        description="Version of this schema the decision was written with. Absent means 1. Version 2 added hint, segments and contributor_visible on reasons.",
     )
     video_id: str
     decision: Decision_1
