@@ -41,16 +41,30 @@ curl -X POST "$ORMES_BASE_URL/videos/$VIDEO_ID/review" \\
 `;
 
 const LAB_TS = `
-await ormes.labOutcome.submit(videoId, { outcome: "reject", reason: "Lab QA: gloves not allowed." });
+await ormes.labOutcome.submit(videoId, {
+  outcome: "reject",
+  reason: "Lab QA: gloves not allowed.",
+});
 
 // Or, when you already know it, at upload time:
-await ormes.videos.upload("./v_88214.mp4", { rubric_id, lab_outcome: { outcome: "accept" } });
+await ormes.videos.upload("./v_88214.mp4", {
+  rubric_id,
+  lab_outcome: { outcome: "accept" },
+});
 `;
 const LAB_PY = `
-ormes.lab_outcome.submit(video_id, outcome="reject", reason="Lab QA: gloves not allowed.")
+ormes.lab_outcome.submit(
+    video_id,
+    outcome="reject",
+    reason="Lab QA: gloves not allowed.",
+)
 
 # Or, when you already know it, at upload time:
-ormes.videos.upload("v_88214.mp4", rubric_id=rubric_id, lab_outcome={"outcome": "accept"})
+ormes.videos.upload(
+    "v_88214.mp4",
+    rubric_id=rubric_id,
+    lab_outcome={"outcome": "accept"},
+)
 `;
 const LAB_CURL = `
 curl -X POST "$ORMES_BASE_URL/videos/$VIDEO_ID/lab-outcome" \\

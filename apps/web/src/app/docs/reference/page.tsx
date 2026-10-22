@@ -161,7 +161,12 @@ export default function ReferencePage() {
       <H2 id="errors">Errors</H2>
       <P>Errors use standard HTTP status codes and one JSON shape:</P>
       <Code lang="json" title="error body">
-        {`{ "error": { "code": "invalid_request", "message": "size_bytes: Too big: expected number to be <=5368709120" } }`}
+        {`{
+  "error": {
+    "code": "invalid_request",
+    "message": "size_bytes: Too big: expected number to be <=5368709120"
+  }
+}`}
       </Code>
       <DataTable
         caption="Error codes"

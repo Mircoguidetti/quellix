@@ -85,7 +85,7 @@ export type Field = { name: string; type: string; default?: string; required?: b
 export function FieldTable({ fields, caption, showDefault = true }: { fields: Field[]; caption?: string; showDefault?: boolean }) {
   return (
     <div className="mt-5 overflow-x-auto rounded-xl border border-border">
-      <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
+      <table className="w-full min-w-[560px] border-collapse text-left text-[14px] [&_td:last-child_code]:whitespace-nowrap">
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead className="bg-subtle text-[12px] text-muted-foreground">
           <tr>
@@ -102,7 +102,7 @@ export function FieldTable({ fields, caption, showDefault = true }: { fields: Fi
                 {f.name}
                 {f.required ? <span className="ml-1.5 text-[11px] font-normal text-reject-fg">required</span> : null}
               </td>
-              <td className="px-4 py-3 font-mono text-[12.5px] text-muted-foreground">{f.type}</td>
+              <td className="px-4 py-3 font-mono text-[12.5px] text-muted-foreground">{f.type.replace(/ (?=[≥≤0-9])/g, "\u00a0")}</td>
               {showDefault ? <td className="whitespace-nowrap px-4 py-3 font-mono text-[12.5px] text-foreground/80">{f.default ?? "—"}</td> : null}
               <td className="px-4 py-3 leading-[1.6] text-foreground/85">{f.description}</td>
             </tr>
@@ -117,7 +117,7 @@ export function FieldTable({ fields, caption, showDefault = true }: { fields: Fi
 export function DataTable({ head, rows, caption, minWidth = 520 }: { head: string[]; rows: ReactNode[][]; caption?: string; minWidth?: number }) {
   return (
     <div className="mt-5 overflow-x-auto rounded-xl border border-border">
-      <table className="w-full border-collapse text-left text-[14px]" style={{ minWidth }}>
+      <table className="w-full border-collapse text-left text-[14px] [&_code]:whitespace-nowrap [&_code]:[overflow-wrap:normal]" style={{ minWidth }}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead className="bg-subtle text-[12px] text-muted-foreground">
           <tr>
@@ -180,13 +180,13 @@ export function Endpoint({ method, path, sdk }: { method: "GET" | "POST" | "PUT"
 
 /** Numbered steps with a rail; each step's heading is an H2 so it shows in "On this page". */
 export function Steps({ children }: { children: ReactNode }) {
-  return <ol className="relative mt-10 grid gap-12 [counter-reset:step]">{children}</ol>;
+  return <ol className="relative mt-10 grid grid-cols-[minmax(0,1fr)] gap-12 [counter-reset:step]">{children}</ol>;
 }
 
 export function Step({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <li className="relative pl-11 [counter-increment:step] before:absolute before:left-0 before:top-0 before:grid before:size-7 before:place-items-center before:rounded-full before:border before:border-border before:bg-background before:font-mono before:text-[12.5px] before:font-medium before:text-foreground before:content-[counter(step)] after:absolute after:bottom-[-36px] after:left-[13.5px] after:top-9 after:w-px after:bg-border last:after:hidden">
-      <H2 id={id} className="mt-0 text-[20px]">
+    <li className="relative min-w-0 sm:pl-11 [counter-increment:step] max-sm:after:hidden before:absolute before:left-0 before:top-0 before:grid before:size-7 before:place-items-center before:rounded-full before:border before:border-border before:bg-background before:font-mono before:text-[12.5px] before:font-medium before:text-foreground before:content-[counter(step)] after:absolute after:bottom-[-36px] after:left-[13.5px] after:top-9 after:w-px after:bg-border last:after:hidden">
+      <H2 id={id} className="mt-0 min-h-7 text-[20px] max-sm:pl-10">
         {title}
       </H2>
       {children}
