@@ -110,6 +110,51 @@ def shift_hands_out(frames: Frames, side: str = "left", fraction: float = 0.45) 
     return out
 
 
+# Hand defects: a crop/zoom applied to a known interval of the clip (HAND_INTERVAL, as
+# fractions of its length); outside it the clip is unchanged. Crops keep the aspect ratio, so
+# hands are neither stretched nor covered by black borders. Head-mounted footage shows the hands
+# in the lower part of the frame, one on each side of the centre (as `make_clean_clip` does).
+HAND_INTERVAL = (0.2, 0.8)
+
+
+def interval_frames(n: int, interval: tuple[float, float] = HAND_INTERVAL) -> range:
+    return range(int(round(n * interval[0])), int(round(n * interval[1])))
+
+
+def _zoom(f: np.ndarray, x0: float, y0: float, scale: float) -> np.ndarray:
+    """Crop a (scale*w, scale*h) window at (x0*w, y0*h) and resize it back to (w, h)."""
+    h, w = f.shape[:2]
+    cw, ch = int(round(w * scale)), int(round(h * scale))
+    x, y = int(round(w * x0)), int(round(h * y0))
+    return cv2.resize(f[y : y + ch, x : x + cw], (w, h), interpolation=cv2.INTER_LINEAR)
+
+
+def _in_interval(frames: Frames, fn: Callable[[np.ndarray], np.ndarray],
+                 interval: tuple[float, float] = HAND_INTERVAL) -> Frames:
+    idx = set(interval_frames(len(frames), interval))
+    return [fn(f) if i in idx else f for i, f in enumerate(frames)]
+
+
+def hand_out_one(frames: Frames, interval: tuple[float, float] = HAND_INTERVAL) -> Frames:
+    """Zoom on the bottom-right quarter: the left hand leaves through the left edge."""
+    return _in_interval(frames, lambda f: _zoom(f, 0.5, 0.5, 0.5), interval)
+
+
+def hands_out_both(frames: Frames, interval: tuple[float, float] = HAND_INTERVAL) -> Frames:
+    """Zoom on the upper middle (top 50%): both hands leave through the bottom edge."""
+    return _in_interval(frames, lambda f: _zoom(f, 0.25, 0.0, 0.5), interval)
+
+
+def hand_truncated(frames: Frames, interval: tuple[float, float] = HAND_INTERVAL) -> Frames:
+    """Zoom on the top 70%: the bottom edge cuts through the hands (seen, not fully visible)."""
+    return _in_interval(frames, lambda f: _zoom(f, 0.15, 0.0, 0.7), interval)
+
+
+def no_manipulation(frames: Frames) -> Frames:
+    """The middle frame held for the whole clip: a static scene, nothing is manipulated."""
+    return [frames[len(frames) // 2].copy() for _ in frames]
+
+
 def cut_before_end(frames: Frames, keep: float = 0.5) -> Frames:
     return frames[: max(1, int(len(frames) * keep))]
 
@@ -200,6 +245,19 @@ VARIANTS: dict[str, tuple[Variant, _Fn]] = {
     "hands_out": (
         Variant("hands_out", {"hands_visible": "fail"}, "reject",
                 "content shifted so hands leave the frame"), shift_hands_out),
+    "hand_out_one": (
+        Variant("hand_out_one", {"hands_visible": "fail"}, "reject",
+                "left hand pushed out of frame for the middle 60% of the clip"), hand_out_one),
+    "hands_out_both": (
+        Variant("hands_out_both", {"hands_visible": "fail"}, "reject",
+                "both hands pushed out of frame for the middle 60% of the clip"), hands_out_both),
+    "hand_truncated": (
+        Variant("hand_truncated", {"hands_visible": "fail"}, "reject",
+                "hands cut by the bottom edge for the middle 60% of the clip"), hand_truncated),
+    "no_manipulation": (
+        Variant("no_manipulation", {"hands_visible": "uncertain"}, "reject",
+                "static scene (one frame held): no manipulation, must go to review"),
+        no_manipulation),
     "truncated": (
         Variant("truncated", {"task_completed": "fail"}, "reject",
                 "clip cut before the task ends"), cut_before_end),
@@ -232,6 +290,12 @@ VARIANTS: dict[str, tuple[Variant, _Fn]] = {
     "dup_trim": (
         Variant("dup_trim", {"originality": "fail"}, "reject", "trimmed duplicate"), trim),
 }
+
+
+# Variants whose label is about hands_visible. They are only built from clips whose hands are
+# (assumed) visible, and they leave the other checks' labels unknown (the zoom changes them).
+HAND_VARIANTS = ("hands_out", "hand_out_one", "hands_out_both", "hand_truncated",
+                 "no_manipulation")
 
 
 def apply_variant(name: str, clip: Clip) -> tuple[Clip, Variant]:

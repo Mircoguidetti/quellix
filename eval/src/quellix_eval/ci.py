@@ -9,7 +9,8 @@ Gemini (cheapest Flash-Lite, free tier, public clips only) runs on the same mani
 GEMINI_API_KEY is set; otherwise the report says it was skipped.
 
 Source clips are ASSUMED acceptable: nobody reviewed them, so any rejection of an original is
-a mix of worker error and genuinely bad source footage. Hands and task are not evaluated.
+a mix of worker error and genuinely bad source footage. Hands are evaluated with synthetic
+hand defects (#53); task completion is not evaluated.
 """
 
 from __future__ import annotations
@@ -33,6 +34,8 @@ from .baselines.retry import RetryingClient
 from .datasets import egocentric10k
 from .datasets.manifest import ClipRecord, load_manifest, write_manifest
 from .defects.build import build_variants
+from .defects.generate import HAND_VARIANTS
+from .hands_report import hands_section
 from .prices import gemini_models_by_price
 from .privacy_report import contact_sheet, privacy_breakdown
 from .run import (
@@ -51,7 +54,9 @@ CI_VARIANTS = (
     "blur", "underexposed", "overexposed", "document", "face", "screen",
     "dup_reencode", "dup_crop", "dup_mirror", "dup_speed", "dup_trim",
 )
-VARIANTS_PER_CLIP = 3
+# Hand defects (#53): one per source clip, round-robin, on top of VARIANTS_PER_CLIP others.
+CI_HAND_VARIANTS = ("hand_out_one", "hands_out_both", "hand_truncated", "no_manipulation")
+VARIANTS_PER_CLIP = 2
 DEFAULT_CLIPS = 40
 MIN_FACTORIES = 8
 GEMINI_SUBSET_SOURCES = 20     # Gemini sees 20 originals + their variants (80 clips)
@@ -67,17 +72,38 @@ SourceBuilder = Callable[[Path, Path, int], int]
 
 
 def pick_variants(index: int, per_clip: int = VARIANTS_PER_CLIP) -> list[str]:
-    """Round-robin so a small run still covers every defect kind."""
-    return [CI_VARIANTS[(index * per_clip + j) % len(CI_VARIANTS)] for j in range(per_clip)]
+    """Round-robin so a small run still covers every defect kind: `per_clip` of the general
+    defects plus one hand defect."""
+    general = [CI_VARIANTS[(index * per_clip + j) % len(CI_VARIANTS)] for j in range(per_clip)]
+    return [*general, CI_HAND_VARIANTS[index % len(CI_HAND_VARIANTS)]]
 
 
 def label_sources(records: Sequence[ClipRecord]) -> list[ClipRecord]:
-    """Assumed per-check labels for the unreviewed originals."""
+    """Assumed per-check labels for the unreviewed originals (hands: both fully visible while
+    working, which is what head-mounted factory footage normally shows; not reviewed)."""
     return [
         r.model_copy(update={"checks": {"technical": "pass", "privacy": "pass",
-                                        "originality": "pass"}})
+                                        "originality": "pass", "hands_visible": "pass"}})
         for r in records
     ]
+
+
+def _variant_labels(rv: ClipRecord) -> ClipRecord:
+    """Only claim what the construction guarantees; everything else is unknown."""
+    name = rv.clip_id.split("__", 1)[1]
+    checks = dict(rv.checks)
+    if name in HAND_VARIANTS:
+        # A zoom on part of the frame changes sharpness, what is in view and the fingerprint.
+        for check in ("technical", "privacy", "originality"):
+            checks[check] = "unknown"
+    else:
+        # Blur, exposure, overlays and crops can genuinely hide hands.
+        checks["hands_visible"] = "unknown"
+        if not name.startswith("dup_"):
+            # A blurred / darkened / overlaid copy IS a near-duplicate of its source for the
+            # fingerprint, so what originality should say here is not known.
+            checks["originality"] = "unknown"
+    return rv.model_copy(update={"checks": checks})
 
 
 def build_eval_manifest(
@@ -88,11 +114,7 @@ def build_eval_manifest(
     out: list[ClipRecord] = list(originals)
     for i, rec in enumerate(originals):
         for rv in build_variants([rec], variants_dir, pick_variants(i, per_clip))[1:]:
-            if "__dup_" not in rv.clip_id:
-                # A blurred / darkened / overlaid copy IS a near-duplicate of its source for the
-                # fingerprint, so what originality should say here is not known.
-                rv = rv.model_copy(update={"checks": {**rv.checks, "originality": "unknown"}})
-            out.append(rv)
+            out.append(_variant_labels(rv))
     return out
 
 
@@ -162,9 +184,10 @@ def render_report(
         "reviewed them. A reject on an original may be the engine's mistake or genuinely bad "
         "footage (faces, screens or documents really in view).",
         f"- **{len(clips) - n_src} synthetic defect clips**, labelled by construction "
-        "(blur, exposure, overlays, duplicates).",
-        "- **Checks that are OFF:** hands visibility and task completion (no real labels yet). "
-        "Evaluated: technical, privacy, originality. Framing is on but has no labels.",
+        "(blur, exposure, overlays, duplicates, hands out of frame / cut / static scene).",
+        "- **Checks that are OFF:** task completion (no real labels yet). Evaluated: technical, "
+        "privacy (faces, documents and screens go to review, #47), originality, hands "
+        "visibility (see the hands section). Framing is on but has no labels.",
         "- Labels that are not known are excluded per check (counts below).",
         "- The base reject rate is set by how many defects we generated, not by real traffic: "
         "these numbers show detection ability, not production performance.",
@@ -270,6 +293,11 @@ class PhaseLimits:
         if self.stopped_by is None and self.cap_usd is not None and self.spent_usd >= self.cap_usd:
             self.stopped_by = "spend cap"
         return self.stopped_by
+
+    def deadline(self) -> float | None:
+        """Clock time at which the phase's budget runs out (None until the first clip). Lets a
+        client stop inside a clip (e.g. in a 429 backoff), not only between clips."""
+        return None if self.started is None else self.started + self.budget_s
 
     def describe(self, name: str) -> str:
         cap = "" if self.cap_usd is None else f" of the ${self.cap_usd:.2f} cap"
@@ -391,6 +419,7 @@ def run_ci(
         raise RuntimeError("no engine ran any clip: " + "; ".join(skipped))
     notes = [*notes, *extra_notes, *skipped]
     report = render_report(runs, manifest, notes, requested=clips)
+    report += hands_section(runs, manifest)
     if worker_results:
         report += privacy_breakdown(worker_results, manifest)
         frames = out_dir / "privacy_frames"
@@ -427,6 +456,7 @@ def build_engines(
     gemini_interval_s: float = GEMINI_INTERVAL_S,
     gemini_retries: int = 5,
     sleep: Callable[[float], None] = time.sleep,
+    gemini_limits: PhaseLimits | None = None,
 ) -> tuple[dict[str, Engine], list[str | Callable[[], str]]]:
     """The worker always; Gemini only when its key is set. Returns (engines, report notes).
 
@@ -442,8 +472,11 @@ def build_engines(
 
     def wrap(inner: VideoModelClient) -> RetryingClient:
         # The time budget is enforced per phase in run_ci (it starts at the first Gemini clip).
+        # The phase's own deadline also stops a clip stuck in 429 backoff (the last run's
+        # Gemini phase took 27 minutes of a 12-minute budget that way).
         return RetryingClient(
             inner, min_interval_s=gemini_interval_s, max_retries=gemini_retries, sleep=sleep,
+            deadline_fn=gemini_limits.deadline if gemini_limits else None,
         )
 
     client = FallbackClient(models, gemini_factory, wrap)
@@ -461,6 +494,22 @@ def build_engines(
     return engines, notes
 
 
+def hands_model_problem(rubric: Mapping[str, Any]) -> str | None:
+    """Why the worker would use the hands PLACEHOLDER (every clip -> review), or None.
+
+    Measuring hands with the placeholder would report a meaningless 100% "uncertain", so the run
+    refuses to start instead. Needs the `hands` extra and the downloaded weights."""
+    if not rubric.get("checks", {}).get("hands_visible", {}).get("enabled", True):
+        return None
+    from quellix_worker.checks.hands import configured_model
+
+    if configured_model() is None:
+        return ("hands_visible is enabled but the hands model is not available: run "
+                "`uv sync --extra hands` and `python -m quellix_hands.weights download` "
+                "(or pass --allow-placeholder-hands)")
+    return None
+
+
 def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None) -> int:
     started = time.monotonic()
     ap = argparse.ArgumentParser(description=__doc__)
@@ -468,7 +517,13 @@ def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None
     ap.add_argument("--out-dir", type=Path, default=Path("out"))
     ap.add_argument("--rubric", type=Path, default=DEFAULT_RUBRIC)
     ap.add_argument("--worker-cmd", nargs="+")
+    ap.add_argument("--allow-placeholder-hands", action="store_true",
+                    help="run even if the worker would use the hands placeholder")
     a = ap.parse_args(argv)
+    problem = hands_model_problem(json.loads(a.rubric.read_text()))
+    if problem and not a.allow_placeholder_hands:
+        print(f"error: {problem}", file=sys.stderr)
+        return 2
     env = os.environ if env is None else env
     out_dir = a.out_dir.resolve()
     # One fingerprint store per run, shared by every worker call, so duplicates find originals.
@@ -476,10 +531,11 @@ def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None
     # The worker saves an annotated frame for every privacy detection here (contact sheet).
     os.environ.setdefault("QUELLIX_DEBUG_FRAMES_DIR", str(out_dir / "privacy_frames"))
     out_dir.mkdir(parents=True, exist_ok=True)
-    engines, notes = build_engines(env, a.worker_cmd)
+    gemini_limits = PhaseLimits(GEMINI_BUDGET_S, GEMINI_CAP_USD)
+    engines, notes = build_engines(env, a.worker_cmd, gemini_limits=gemini_limits)
     report = run_ci(out_dir, a.clips, _hf_source, engines, a.rubric, notes=notes,
                     subset_sources={"gemini": GEMINI_SUBSET_SOURCES},
-                    limits={"gemini": PhaseLimits(GEMINI_BUDGET_S, GEMINI_CAP_USD)},
+                    limits={"gemini": gemini_limits},
                     job_deadline=started + JOB_BUDGET_S)
     print(report)
     return 0
