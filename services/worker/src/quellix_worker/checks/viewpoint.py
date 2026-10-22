@@ -30,14 +30,25 @@ MODEL = "viewpoint@0.1.0"
 
 WRIST, MIDDLE_MCP = 0, 9
 
-# --- constants (fitted on the dev split of eval/test_sets/viewpoint, see eval/reports/viewpoint)
+# --- constants, set on the dev split of eval/reports/viewpoint (features.jsonl.gz) only.
+# Dev (63 head-mounted + 2 founder first-person Pexels clips, 3 founder third-person clips) showed:
+# - first-person clips with enough hands point up in >= 72% of their hand frames (one Pexels
+#   clip 44%); the third-person ones 0-70%: the ratio alone does not separate them, so the
+#   region between the two thresholds is `uncertain` (review), not a guess;
+# - a still camera is NOT a tripod sign: two head-mounted factory clips are still 78-89% of the
+#   time and the founder's first-person Pexels clips are stabilised. Stillness is measured and
+#   reported, never used for the verdict;
+# - hands pointing *down* from the top of the frame happen on a tripod facing the person AND on
+#   a head camera mounted upside down (Egocentric-10K factory 19): that case is `uncertain`;
+# - faces: none in the third-person clips, some coworkers in the factory ones. A face blocks a
+#   first-person verdict (-> uncertain) but never makes a third-person one on its own.
 MIN_HAND_FRAMES = 6         # fewer frames with a hand: cannot tell
 UP_MIN = 0.3                # a hand "points up" when wrist->knuckles is within ~70 deg of up
-FIRST_PERSON_MIN = 0.6      # first_person_ratio at or above: first-person evidence
-THIRD_PERSON_MAX = 0.3      # at or below: third-person evidence
+FIRST_PERSON_MIN = 0.6      # first_person_ratio at or above (and no face): first-person
+THIRD_PERSON_MAX = 0.3      # at or below: third-person, unless the hands point straight down
+INVERTED_UP_MAX = -0.7      # median pointing-up at or below: down from the top (ambiguous)
 FACE_SHARE_MAX = 0.2        # a face in more than this share of the analysed frames
 STILL_SHIFT = 0.0015        # a 0.1 s pair moving less than this share of the width is "still"
-STILL_SHARE_MIN = 0.8       # most pairs still: a camera on a stand
 
 
 @dataclass(frozen=True)
@@ -112,19 +123,26 @@ def measure(hands_per_frame: Sequence[Sequence[HandView]], aspect: float,
 
 
 def verdict(m: Mapping[str, Any]) -> dict[str, Any]:
-    """``viewpoint`` and ``confidence`` from the evidence (see the constants above)."""
+    """``viewpoint``, ``confidence`` and, when uncertain, ``uncertain_why`` (constants above)."""
     ratio = m.get("first_person_ratio")
-    outside = (m.get("face_share") or 0.0) > FACE_SHARE_MAX or (
-        m.get("still_share") is not None and m["still_share"] >= STILL_SHARE_MIN)
+    face = (m.get("face_share") or 0.0) > FACE_SHARE_MAX
+
+    def unsure(why: str) -> dict[str, Any]:
+        return {"viewpoint": "uncertain", "confidence": 0.0, "uncertain_why": why}
+
     if ratio is None or m.get("hand_frames", 0) < MIN_HAND_FRAMES:
-        if outside:
-            return {"viewpoint": "third_person", "confidence": 0.6}
-        return {"viewpoint": "uncertain", "confidence": 0.0}
-    if ratio >= FIRST_PERSON_MIN and not outside:
+        return unsure("too few frames with a hand")
+    if ratio >= FIRST_PERSON_MIN:
+        if face:
+            return unsure("hands seen first-person, but a face is in view")
         return {"viewpoint": "first_person", "confidence": round(min(1.0, ratio), 2)}
     if ratio <= THIRD_PERSON_MAX:
+        up = m.get("pointing_up_median")
+        if up is not None and up <= INVERTED_UP_MAX:
+            return unsure("hands point down from the top: a camera facing the person, or a "
+                          "head camera upside down")
         return {"viewpoint": "third_person", "confidence": round(1.0 - ratio, 2)}
-    return {"viewpoint": "uncertain", "confidence": 0.0}
+    return unsure("hands point up in some frames and not in others")
 
 
 def hands_from_states(per_frame: Sequence[Any]) -> list[list[HandView]]:

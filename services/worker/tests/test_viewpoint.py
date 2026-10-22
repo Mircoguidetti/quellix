@@ -41,21 +41,27 @@ def test_hands_pointing_up_on_a_moving_camera_are_first_person():
     assert 0 < m["confidence"] <= 1
 
 
-def test_hands_pointing_down_or_across_are_third_person():
-    m = vp.measure([[DOWN], [SIDE]] * 10, 16 / 9, faces=0.0, shifts=[0.01] * 20)
+def test_hands_across_the_frame_are_third_person():
+    m = vp.measure([[SIDE]] * 20, 16 / 9, faces=0.0, shifts=[0.01] * 20)
     assert m["viewpoint"] == "third_person" and m["first_person_ratio"] == 0.0
 
 
-def test_a_face_or_a_still_camera_vetoes_first_person():
-    assert vp.measure([[UP]] * 20, 1.5, faces=0.5, shifts=[0.01] * 20)["viewpoint"] != (
-        "first_person")
-    assert vp.measure([[UP]] * 20, 1.5, faces=0.0, shifts=[0.0] * 20)["viewpoint"] != (
-        "first_person")
+def test_hands_down_from_the_top_are_uncertain_could_be_an_upside_down_head_camera():
+    m = vp.measure([[DOWN]] * 20, 16 / 9, faces=0.0, shifts=[0.01] * 20)
+    assert m["viewpoint"] == "uncertain" and "upside down" in m["uncertain_why"]
 
 
-def test_too_few_hands_is_uncertain_unless_seen_from_outside():
+def test_a_face_blocks_first_person_but_a_still_camera_does_not():
+    m = vp.measure([[UP]] * 20, 1.5, faces=0.5, shifts=[0.01] * 20)
+    assert m["viewpoint"] == "uncertain" and "face" in m["uncertain_why"]
+    m = vp.measure([[UP]] * 20, 1.5, faces=0.0, shifts=[0.0] * 20)
+    assert m["viewpoint"] == "first_person" and m["still_share"] == 1.0
+
+
+def test_mixed_or_too_few_hands_is_uncertain():
     assert vp.measure([[UP]] * 2 + [[]] * 20, 1.5, 0.0, [0.01] * 20)["viewpoint"] == "uncertain"
-    assert vp.measure([[]] * 20, 1.5, 0.6, [0.01] * 20)["viewpoint"] == "third_person"
+    assert vp.measure([[]] * 20, 1.5, 0.6, [0.01] * 20)["viewpoint"] == "uncertain"
+    assert vp.measure([[UP], [SIDE]] * 10, 1.5, 0.0, [0.01] * 20)["viewpoint"] == "uncertain"
 
 
 def test_face_share_counts_analysed_frames():
