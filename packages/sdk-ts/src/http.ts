@@ -1,6 +1,6 @@
 import {
   ConnectionError,
-  QuellixError,
+  OrmesError,
   RateLimitError,
   errorFromResponse,
 } from "./errors";
@@ -8,9 +8,9 @@ import {
 export const DEFAULT_BASE_URL = "https://quellix-orpin.vercel.app/api/v1";
 
 export interface ClientOptions {
-  /** API key (`qx_live_...`). Defaults to `QUELLIX_API_KEY`. */
+  /** API key (`orm_live_...`). Defaults to `ORMES_API_KEY`. */
   apiKey?: string;
-  /** Defaults to `QUELLIX_BASE_URL`, then the public API. */
+  /** Defaults to `ORMES_BASE_URL`, then the public API. */
   baseUrl?: string;
   /** Retries after the first attempt on 429/5xx and network errors. Default 2. */
   maxRetries?: number;
@@ -31,6 +31,11 @@ export interface RequestOptions {
 
 function env(name: string): string | undefined {
   return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[name];
+}
+
+/** The new variable name first; the pre-rename `QUELLIX_*` name still works. */
+function envWithFallback(name: string, legacy: string): string | undefined {
+  return env(name) || env(legacy) || undefined;
 }
 
 export function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -57,12 +62,12 @@ export class HttpClient {
   private readonly timeoutMs: number;
 
   constructor(options: ClientOptions = {}) {
-    const apiKey = options.apiKey ?? env("QUELLIX_API_KEY");
+    const apiKey = options.apiKey ?? envWithFallback("ORMES_API_KEY", "QUELLIX_API_KEY");
     if (!apiKey) {
-      throw new QuellixError("Missing API key: pass `apiKey` or set QUELLIX_API_KEY.");
+      throw new OrmesError("Missing API key: pass `apiKey` or set ORMES_API_KEY.");
     }
     this.apiKey = apiKey;
-    this.baseUrl = (options.baseUrl ?? env("QUELLIX_BASE_URL") ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.baseUrl = (options.baseUrl ?? envWithFallback("ORMES_BASE_URL", "QUELLIX_BASE_URL") ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.maxRetries = options.maxRetries ?? 2;
     this.timeoutMs = options.timeoutMs ?? 30_000;
     this.fetchImpl = options.fetch ?? ((input, init) => globalThis.fetch(input, init));

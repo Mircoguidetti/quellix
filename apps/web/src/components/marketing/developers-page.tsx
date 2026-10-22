@@ -13,8 +13,8 @@ export function DevelopersPage() {
           <h1>Three calls from upload to decision.</h1>{" "}
           <p className="hl">A REST API with TypeScript and Python SDKs. Create a video, upload the file, get the decision by webhook.</p>{" "}
           <div className="hb">
-            <span className="x-t">npm install @quellix/sdk</span>
-            <span className="x-t">pip install quellix</span>
+            <span className="x-t">npm install @ormes/sdk</span>
+            <span className="x-t">pip install ormes</span>
             <span className="badge">early access</span></div>{" "}
           <nav className="toc" aria-label="On this page">
             <a href="#quickstart">Quickstart</a>
@@ -26,7 +26,7 @@ export function DevelopersPage() {
         <div className="wrap">{" "}
           <h2>Quickstart</h2>{" "}
           <p className="lead">{"Create an API key in Settings. The SDK reads it from "}
-            <code className="x-t">QUELLIX_API_KEY</code>.</p>{" "}
+            <code className="x-t">ORMES_API_KEY</code>.</p>{" "}
           <div className="int">{" "}
             <div className="steps">{" "}
               <div>
@@ -54,9 +54,9 @@ export function DevelopersPage() {
               className="code"
               labels={["TypeScript", "Python", "cURL"]}
               panels={[
-                <Fragment key={0}><span className="k">{"import"}</span>{" { Quellix } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@quellix/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" qx = "}<span className="k">{"new"}</span>{" Quellix(); "}<span className="c">{"// reads QUELLIX_API_KEY"}</span>{"\n\n"}<span className="k">{"const"}</span>{" video = "}<span className="k">{"await"}</span>{" qx.videos.upload("}<span className="s">{"\"./v_88214.mp4\""}</span>{", {\n  rubricId: "}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n  contributorRef: "}<span className="s">{"\"c_4086\""}</span>{",\n});\n"}<span className="k">{"const"}</span>{" d = "}<span className="k">{"await"}</span>{" qx.videos.waitForDecision(video.id);\n\nd.decision;      "}<span className="c">{"// \"reject\""}</span>{"\nd.reasons[0];    "}<span className="c">{"// hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
-                <Fragment key={1}><span className="k">{"from"}</span>{" quellix "}<span className="k">{"import"}</span>{" Quellix\n\nqx = Quellix()  "}<span className="c">{"# reads QUELLIX_API_KEY"}</span>{"\n\nvideo = qx.videos.upload("}<span className="s">{"\"v_88214.mp4\""}</span>{",\n                         rubric_id="}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n                         contributor_ref="}<span className="s">{"\"c_4086\""}</span>{")\nd = qx.videos.wait_for_decision(video.id)\n\nd.decision      "}<span className="c">{"# \"reject\""}</span>{"\nd.reasons[0]    "}<span className="c">{"# hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
-                <Fragment key={2}><span className="c">{"# 1. register the video, get a signed upload URL"}</span>{"\ncurl -X POST $QX/v1/videos -H "}<span className="s">{"\"Authorization: Bearer $QUELLIX_API_KEY\""}</span>{" \\\n  -d "}<span className="s">{"'{\"rubric_id\":\"rub_load_dishwasher\",\"filename\":\"v_88214.mp4\",\n       \"content_type\":\"video/mp4\",\"size_bytes\":48211234}'"}</span>{"\n"}<span className="c">{"# 2. PUT the file to upload_url"}</span>{"\ncurl -X PUT "}<span className="s">{"\"$UPLOAD_URL\""}</span>{" -H "}<span className="s">{"\"Content-Type: video/mp4\""}</span>{" --data-binary @v_88214.mp4\n"}<span className="c">{"# 3. start the analysis; the decision arrives by webhook"}</span>{"\ncurl -X POST $QX/v1/videos/$ID/complete -H "}<span className="s">{"\"Authorization: Bearer $QUELLIX_API_KEY\""}</span></Fragment>,
+                <Fragment key={0}><span className="k">{"import"}</span>{" { Ormes } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@ormes/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" qx = "}<span className="k">{"new"}</span>{" Ormes(); "}<span className="c">{"// reads ORMES_API_KEY"}</span>{"\n\n"}<span className="k">{"const"}</span>{" video = "}<span className="k">{"await"}</span>{" qx.videos.upload("}<span className="s">{"\"./v_88214.mp4\""}</span>{", {\n  rubricId: "}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n  contributorRef: "}<span className="s">{"\"c_4086\""}</span>{",\n});\n"}<span className="k">{"const"}</span>{" d = "}<span className="k">{"await"}</span>{" qx.videos.waitForDecision(video.id);\n\nd.decision;      "}<span className="c">{"// \"reject\""}</span>{"\nd.reasons[0];    "}<span className="c">{"// hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
+                <Fragment key={1}><span className="k">{"from"}</span>{" ormes "}<span className="k">{"import"}</span>{" Ormes\n\nqx = Ormes()  "}<span className="c">{"# reads ORMES_API_KEY"}</span>{"\n\nvideo = qx.videos.upload("}<span className="s">{"\"v_88214.mp4\""}</span>{",\n                         rubric_id="}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n                         contributor_ref="}<span className="s">{"\"c_4086\""}</span>{")\nd = qx.videos.wait_for_decision(video.id)\n\nd.decision      "}<span className="c">{"# \"reject\""}</span>{"\nd.reasons[0]    "}<span className="c">{"# hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
+                <Fragment key={2}><span className="c">{"# 1. register the video, get a signed upload URL"}</span>{"\ncurl -X POST $QX/v1/videos -H "}<span className="s">{"\"Authorization: Bearer $ORMES_API_KEY\""}</span>{" \\\n  -d "}<span className="s">{"'{\"rubric_id\":\"rub_load_dishwasher\",\"filename\":\"v_88214.mp4\",\n       \"content_type\":\"video/mp4\",\"size_bytes\":48211234}'"}</span>{"\n"}<span className="c">{"# 2. PUT the file to upload_url"}</span>{"\ncurl -X PUT "}<span className="s">{"\"$UPLOAD_URL\""}</span>{" -H "}<span className="s">{"\"Content-Type: video/mp4\""}</span>{" --data-binary @v_88214.mp4\n"}<span className="c">{"# 3. start the analysis; the decision arrives by webhook"}</span>{"\ncurl -X POST $QX/v1/videos/$ID/complete -H "}<span className="s">{"\"Authorization: Bearer $ORMES_API_KEY\""}</span></Fragment>,
               ]}
             />{" "}</div></div></section>{" "}
       <section className="sec" id="endpoints">
@@ -118,7 +118,7 @@ export function DevelopersPage() {
                     <code>{"/v1/rubrics/{id}"}</code></td>
                   <td>Save a new version. Old versions are kept.</td></tr>{" "}</tbody></table></div>{" "}
           <p className="note">{"Authentication: "}
-            <code>Authorization: Bearer qx_live_…</code>. We store only a hash of each key.</p>{" "}</div></section>{" "}
+            <code>Authorization: Bearer orm_live_…</code>. We store only a hash of each key.</p>{" "}</div></section>{" "}
       <section className="sec" id="decision">
         <div className="wrap">{" "}
           <h2>The decision object</h2>{" "}
@@ -132,7 +132,7 @@ export function DevelopersPage() {
             <code className="x-t">video.decided</code>{" is sent when a decision is ready. Each request is signed with your webhook secret."}</p>{" "}
           <div className="dual">{" "}
             <div className="code">
-              <pre><span className="c">{"Quellix-Signature: t=1761062400,v1=5f2b\u2026c9"}</span>{"\n\n"}<span className="c">{"// v1 = HMAC-SHA256(secret, `${t}.${rawBody}`)"}</span>{"\n"}<span className="k">{"import"}</span>{" { verifySignature } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@quellix/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" ok = "}<span className="k">{"await"}</span>{" verifySignature(rawBody,\n  req.headers["}<span className="s">{"\"quellix-signature\""}</span>{"], secret);\n"}<span className="k">{"if"}</span>{" (!ok) "}<span className="k">{"return"}</span>{" res.status("}<span className="n">{"400"}</span>{").end();"}</pre></div>{" "}
+              <pre><span className="c">{"Ormes-Signature: t=1761062400,v1=5f2b\u2026c9"}</span>{"\n\n"}<span className="c">{"// v1 = HMAC-SHA256(secret, `${t}.${rawBody}`)"}</span>{"\n"}<span className="k">{"import"}</span>{" { verifySignature } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@ormes/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" ok = "}<span className="k">{"await"}</span>{" verifySignature(rawBody,\n  req.headers["}<span className="s">{"\"ormes-signature\""}</span>{"], secret);\n"}<span className="k">{"if"}</span>{" (!ok) "}<span className="k">{"return"}</span>{" res.status("}<span className="n">{"400"}</span>{").end();"}</pre></div>{" "}
             <div className="frd">{" "}
               <div>
                 <h3>Verify every request</h3>

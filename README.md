@@ -1,6 +1,6 @@
-# Quellix
+# Ormes
 
-Automated acceptance for robot-training video. Quellix applies a lab's spec to every first-person video a data collector receives and decides `accept`, `reject` or `review`, with the reasons.
+Automated acceptance for robot-training video. Ormes applies a lab's spec to every first-person video a data collector receives and decides `accept`, `reject` or `review`, with the reasons.
 
 See `CLAUDE.md` for the architecture, the contracts and the rules every contributor follows.
 

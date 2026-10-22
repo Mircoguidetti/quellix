@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
-  title: Quellix API
+  title: Ormes API
   version: 0.1.0
   description: |
     Automated acceptance for first-person training video.
     Flow: create a video -> upload the file to the signed URL -> call /complete -> receive the decision by webhook or poll GET /videos/{id}.
 servers:
-  - url: https://api.quellix.ai/v1
+  - url: https://api.ormes.ai/v1
 security:
   - apiKey: []
 
@@ -104,7 +104,7 @@ paths:
       - { name: video_id, in: path, required: true, schema: { type: string } }
     post:
       operationId: setLabOutcome
-      summary: Record what the lab decided about this video, used to measure Quellix's precision
+      summary: Record what the lab decided about this video, used to measure Ormes's precision
       requestBody:
         required: true
         content:
@@ -181,9 +181,11 @@ webhooks:
       summary: Sent when a decision is ready.
       description: |
         Signed with HMAC-SHA256 using the webhook's signing secret. The header is
-        `Quellix-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
+        `Ormes-Signature: t=<unix seconds>,v1=<hex>`, where `v1` is the hex HMAC-SHA256 of the
         string `<t>.<raw request body>`. Receivers must recompute it over the raw body,
         compare in constant time and reject timestamps older than a few minutes (replay).
+        Deliveries sent before the rename used the header name `Quellix-Signature` with the same
+        format; receivers may read it as a fallback.
       requestBody:
         content:
           application/json:
@@ -202,7 +204,8 @@ components:
     apiKey:
       type: http
       scheme: bearer
-      description: Organization API key, `qx_live_...`. Created in the dashboard.
+      description: Organization API key, `orm_live_...` (keys issued before the rename start with `qx_live_` and keep working).
+        Created in the dashboard.
 
   responses:
     Error:

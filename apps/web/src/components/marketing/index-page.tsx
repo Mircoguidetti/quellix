@@ -12,7 +12,7 @@ export function HomePage() {
       <section className="hero" id="top">
         <div className="hc">{" "}
           <h1>Stop watching every video before you pay for it.</h1>{" "}
-          <p className="hl">Quellix applies your lab’s spec to every first-person video and decides accept, reject or review. It checks what your reviewers check by hand: hands on the work, every step done, nothing private in view.</p>{" "}
+          <p className="hl">Ormes applies your lab’s spec to every first-person video and decides accept, reject or review. It checks what your reviewers check by hand: hands on the work, every step done, nothing private in view.</p>{" "}
           <div className="hb">
             <Link className="b w" href="/signup">Start a free pilot</Link>
             <Link className="b o" href="/product">See the product</Link></div>{" "}
@@ -46,7 +46,7 @@ export function HomePage() {
           <p className="lead">Most clips are rejected for what was recorded, not how: a hand out of frame, a task stopped early, a face in view. Those calls are still made by a person watching the video.</p>{" "}
           <div className="cost">{" "}
             <div className="pk">
-              <span className="ph">Without Quellix</span>
+              <span className="ph">Without Ormes</span>
               <div className="pp2">500 h</div>
               <div className="pe">of review per month, example</div>{" "}
               <div className="calc">
@@ -66,7 +66,7 @@ export function HomePage() {
                 <li>Each reviewer reads the spec their own way</li>
                 <li>Contributors wait days to learn why a video failed</li></ul></div>{" "}
             <div className="pk on">
-              <span className="ph">With Quellix</span>
+              <span className="ph">With Ormes</span>
               <div className="pp2">75 h</div>
               <div className="pe">of review per month, example</div>{" "}
               <div className="calc">
@@ -134,10 +134,10 @@ export function HomePage() {
           <div className="eyebrow">Review console</div>{" "}
           <h2>Doubtful cases take seconds, not minutes.</h2>{" "}
           <p className="lead">Reviewers never watch a whole video. They jump to the flagged moments, decide with one key and move on.</p>{" "}
-          <ReviewMock className="app" role="img" aria-label="The Quellix review screen: a queue of doubtful videos on the left, the selected video with its flagged moments and Accept and Reject buttons on the right">{" "}
+          <ReviewMock className="app" role="img" aria-label="The Ormes review screen: a queue of doubtful videos on the left, the selected video with its flagged moments and Accept and Reject buttons on the right">{" "}
             <aside>
               <div className="logo">
-                <i aria-hidden="true"></i>QUELLIX</div>{" "}
+                <i aria-hidden="true"></i>ORMES</div>{" "}
               <a>
                 <svg viewBox="0 0 24 24">
                   <rect x="3" y="3" width="7" height="9" rx="1"></rect>
@@ -233,7 +233,7 @@ export function HomePage() {
         <div className="wrap">{" "}
           <div className="eyebrow">Contributor feedback</div>{" "}
           <h2>Fewer rejections, not only faster ones.</h2>{" "}
-          <p className="lead">A reject is an hour you can’t bill and money an honest contributor doesn’t get. Quellix tells the person what went wrong, when, and how to fix it, while they can still record again.</p>{" "}
+          <p className="lead">A reject is an hour you can’t bill and money an honest contributor doesn’t get. Ormes tells the person what went wrong, when, and how to fix it, while they can still record again.</p>{" "}
           <div className="dual">{" "}
             <div className="pn">
               <div className="x-win">
@@ -266,7 +266,7 @@ export function HomePage() {
         <div className="wrap">{" "}
           <div className="eyebrow">Integration</div>{" "}
           <h2>One call where you approve videos today.</h2>{" "}
-          <p className="lead">Recruiting, tasks and payouts stay in your app. Quellix returns the decision by webhook or by polling.</p>{" "}
+          <p className="lead">Recruiting, tasks and payouts stay in your app. Ormes returns the decision by webhook or by polling.</p>{" "}
           <div className="int">{" "}
             <div className="steps">{" "}
               <div>
@@ -286,9 +286,9 @@ export function HomePage() {
               className="code"
               labels={["TypeScript", "Python", "cURL"]}
               panels={[
-                <Fragment key={0}><span className="k">{"import"}</span>{" { Quellix } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@quellix/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" qx = "}<span className="k">{"new"}</span>{" Quellix(); "}<span className="c">{"// reads QUELLIX_API_KEY"}</span>{"\n\n"}<span className="k">{"const"}</span>{" video = "}<span className="k">{"await"}</span>{" qx.videos.upload("}<span className="s">{"\"./v_88214.mp4\""}</span>{", {\n  rubricId: "}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n  contributorRef: "}<span className="s">{"\"c_4086\""}</span>{",\n});\n"}<span className="k">{"const"}</span>{" d = "}<span className="k">{"await"}</span>{" qx.videos.waitForDecision(video.id);\n\nd.decision;      "}<span className="c">{"// \"reject\""}</span>{"\nd.reasons[0];    "}<span className="c">{"// hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
-                <Fragment key={1}><span className="k">{"from"}</span>{" quellix "}<span className="k">{"import"}</span>{" Quellix\n\nqx = Quellix()  "}<span className="c">{"# reads QUELLIX_API_KEY"}</span>{"\n\nvideo = qx.videos.upload("}<span className="s">{"\"v_88214.mp4\""}</span>{",\n                         rubric_id="}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n                         contributor_ref="}<span className="s">{"\"c_4086\""}</span>{")\nd = qx.videos.wait_for_decision(video.id)\n\nd.decision      "}<span className="c">{"# \"reject\""}</span>{"\nd.reasons[0]    "}<span className="c">{"# hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
-                <Fragment key={2}><span className="c">{"# 1. register the video, get a signed upload URL"}</span>{"\ncurl -X POST $QX/v1/videos -H "}<span className="s">{"\"Authorization: Bearer $QUELLIX_API_KEY\""}</span>{" \\\n  -d "}<span className="s">{"'{\"rubric_id\":\"rub_load_dishwasher\",\"filename\":\"v_88214.mp4\",\n       \"content_type\":\"video/mp4\",\"size_bytes\":48211234}'"}</span>{"\n"}<span className="c">{"# 2. PUT the file to upload_url"}</span>{"\ncurl -X PUT "}<span className="s">{"\"$UPLOAD_URL\""}</span>{" -H "}<span className="s">{"\"Content-Type: video/mp4\""}</span>{" --data-binary @v_88214.mp4\n"}<span className="c">{"# 3. start the analysis; the decision arrives by webhook"}</span>{"\ncurl -X POST $QX/v1/videos/$ID/complete -H "}<span className="s">{"\"Authorization: Bearer $QUELLIX_API_KEY\""}</span></Fragment>,
+                <Fragment key={0}><span className="k">{"import"}</span>{" { Ormes } "}<span className="k">{"from"}</span>{" "}<span className="s">{"\"@ormes/sdk\""}</span>{";\n\n"}<span className="k">{"const"}</span>{" qx = "}<span className="k">{"new"}</span>{" Ormes(); "}<span className="c">{"// reads ORMES_API_KEY"}</span>{"\n\n"}<span className="k">{"const"}</span>{" video = "}<span className="k">{"await"}</span>{" qx.videos.upload("}<span className="s">{"\"./v_88214.mp4\""}</span>{", {\n  rubricId: "}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n  contributorRef: "}<span className="s">{"\"c_4086\""}</span>{",\n});\n"}<span className="k">{"const"}</span>{" d = "}<span className="k">{"await"}</span>{" qx.videos.waitForDecision(video.id);\n\nd.decision;      "}<span className="c">{"// \"reject\""}</span>{"\nd.reasons[0];    "}<span className="c">{"// hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
+                <Fragment key={1}><span className="k">{"from"}</span>{" ormes "}<span className="k">{"import"}</span>{" Ormes\n\nqx = Ormes()  "}<span className="c">{"# reads ORMES_API_KEY"}</span>{"\n\nvideo = qx.videos.upload("}<span className="s">{"\"v_88214.mp4\""}</span>{",\n                         rubric_id="}<span className="s">{"\"rub_load_dishwasher\""}</span>{",\n                         contributor_ref="}<span className="s">{"\"c_4086\""}</span>{")\nd = qx.videos.wait_for_decision(video.id)\n\nd.decision      "}<span className="c">{"# \"reject\""}</span>{"\nd.reasons[0]    "}<span className="c">{"# hands_visible.below_min, 61% (min 80%)"}</span></Fragment>,
+                <Fragment key={2}><span className="c">{"# 1. register the video, get a signed upload URL"}</span>{"\ncurl -X POST $QX/v1/videos -H "}<span className="s">{"\"Authorization: Bearer $ORMES_API_KEY\""}</span>{" \\\n  -d "}<span className="s">{"'{\"rubric_id\":\"rub_load_dishwasher\",\"filename\":\"v_88214.mp4\",\n       \"content_type\":\"video/mp4\",\"size_bytes\":48211234}'"}</span>{"\n"}<span className="c">{"# 2. PUT the file to upload_url"}</span>{"\ncurl -X PUT "}<span className="s">{"\"$UPLOAD_URL\""}</span>{" -H "}<span className="s">{"\"Content-Type: video/mp4\""}</span>{" --data-binary @v_88214.mp4\n"}<span className="c">{"# 3. start the analysis; the decision arrives by webhook"}</span>{"\ncurl -X POST $QX/v1/videos/$ID/complete -H "}<span className="s">{"\"Authorization: Bearer $ORMES_API_KEY\""}</span></Fragment>,
               ]}
             />{" "}</div>{" "}
           <p className="more">
@@ -296,7 +296,7 @@ export function HomePage() {
       <section className="sec" id="privacy">
         <div className="wrap">{" "}
           <h2>Videos are checked, not kept.</h2>{" "}
-          <p className="lead">Quellix analyses each video, returns its decision and deletes it. Videos waiting for a reviewer stay at most 14 days. Nothing is used to train models unless you opt in.</p>{" "}
+          <p className="lead">Ormes analyses each video, returns its decision and deletes it. Videos waiting for a reviewer stay at most 14 days. Nothing is used to train models unless you opt in.</p>{" "}
           <div className="body">
             <div className="flow">{" "}
               <div className="nd">
@@ -308,7 +308,7 @@ export function HomePage() {
               <div className="ln" aria-hidden="true"></div>{" "}
               <div className="nd on">
                 <small>Cloud</small>
-                <h3>Quellix</h3>
+                <h3>Ormes</h3>
                 <div className="tags">
                   <span className="x-t b">decision</span>
                   <span className="x-t b">reasons</span>
@@ -324,7 +324,7 @@ export function HomePage() {
             <Link href="/security">How your data is handled →</Link></p>{" "}</div></section>{" "}
       <section className="sec" id="limits">
         <div className="wrap">{" "}
-          <h2>What Quellix doesn’t do.</h2>{" "}
+          <h2>What Ormes doesn’t do.</h2>{" "}
           <div className="rows">{" "}
             <div className="rw">
               <h3>It doesn’t sell your data.</h3>
@@ -356,11 +356,11 @@ export function HomePage() {
           <h2>Questions</h2>{" "}
           <div className="faq">{" "}
             <details>
-              <summary>We already check uploads. Why Quellix?</summary>
-              <p>Upload checks catch technical problems. The expensive calls are hands, steps and privacy, which today need a person. Quellix makes those calls with reasons and sends only the doubtful ones to your reviewers.</p></details>{" "}
+              <summary>We already check uploads. Why Ormes?</summary>
+              <p>Upload checks catch technical problems. The expensive calls are hands, steps and privacy, which today need a person. Ormes makes those calls with reasons and sends only the doubtful ones to your reviewers.</p></details>{" "}
             <details>
               <summary>Why not prompt a general video model?</summary>
-              <p>General models are cheap, but in published tests of judging whether a task succeeded the best one is wrong about one time in four, and they lean toward “success”. Those are the videos your lab sends back. Quellix uses its own models for hands and tasks, and sends doubtful cases to review.</p></details>{" "}
+              <p>General models are cheap, but in published tests of judging whether a task succeeded the best one is wrong about one time in four, and they lean toward “success”. Those are the videos your lab sends back. Ormes uses its own models for hands and tasks, and sends doubtful cases to review.</p></details>{" "}
             <details>
               <summary>Who sets the criteria?</summary>
               <p>You, from your lab’s spec. Each task has its own rubric, and every decision records the rubric version it used.</p></details>{" "}
@@ -368,7 +368,7 @@ export function HomePage() {
               <summary>How accurate is it?</summary>
               <p>We report precision and recall on rejections against your own reject rate, on videos your reviewers or your lab have already judged. That is the pilot report.</p></details>{" "}
             <details>
-              <summary>Does Quellix keep my videos?</summary>
+              <summary>Does Ormes keep my videos?</summary>
               <p>No. Videos are deleted after analysis; those waiting for review within 14 days. We keep decisions, reasons and measurements so you have a record of every call.</p></details>{" "}</div></div></section>{" "}
       <section className="end" id="start">
         <div className="glow" aria-hidden="true"></div>{" "}

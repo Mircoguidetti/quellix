@@ -5,10 +5,10 @@ import { expect, test } from "./fixtures";
 // The marketing site ported from docs/design/site (issue #35).
 const OUT = path.join(__dirname, "screenshots");
 const PAGES = [
-  { route: "/", name: "home", title: "Quellix", h1: "Stop watching every video before you pay for it." },
-  { route: "/product", name: "product", title: "Quellix Product", h1: "One spec, applied the same way to every video." },
-  { route: "/developers", name: "developers", title: "Quellix Developers", h1: "Three calls from upload to decision." },
-  { route: "/security", name: "security", title: "Quellix Security", h1: "Videos are checked, not kept." },
+  { route: "/", name: "home", title: "Ormes", h1: "Stop watching every video before you pay for it." },
+  { route: "/product", name: "product", title: "Ormes Product", h1: "One spec, applied the same way to every video." },
+  { route: "/developers", name: "developers", title: "Ormes Developers", h1: "Three calls from upload to decision." },
+  { route: "/security", name: "security", title: "Ormes Security", h1: "Videos are checked, not kept." },
 ];
 const DEMO_COOKIE = { name: "qx_demo_session", value: "d3e0d3e0-0000-4000-8000-000000000001", url: "http://localhost:3100" };
 
@@ -77,7 +77,7 @@ test.describe("marketing site", () => {
     const python = box.getByRole("tab", { name: "Python" });
     await python.click();
     await expect(python).toHaveAttribute("aria-selected", "true");
-    await expect(box.getByRole("tabpanel")).toContainText("from quellix import Quellix");
+    await expect(box.getByRole("tabpanel")).toContainText("from ormes import Ormes");
     await page.keyboard.press("ArrowRight");
     await expect(box.getByRole("tab", { name: "cURL" })).toBeFocused();
     await expect(box.getByRole("tabpanel")).toContainText("curl -X POST");

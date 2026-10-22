@@ -146,7 +146,7 @@ def render_report(
     n_src = sum(1 for c in clips if "__" not in c.clip_id)
     factories = _factories(clips)
     lines = [
-        "# Quellix eval: worker vs. general model",
+        "# Ormes eval: worker vs. general model",
         "",
         _count_line(requested, n_src, len(clips)),
         "",

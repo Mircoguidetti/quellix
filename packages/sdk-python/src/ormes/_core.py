@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
-from .errors import QuellixError
+from .errors import OrmesError
 
 DEFAULT_BASE_URL = "https://quellix-orpin.vercel.app/api/v1"
 CHUNK_BYTES = 1 << 20
@@ -26,13 +26,18 @@ class Config:
     timeout: float
 
 
+def _env(name: str, legacy: str) -> str | None:
+    """The new variable name first; the pre-rename `QUELLIX_*` name still works."""
+    return os.environ.get(name) or os.environ.get(legacy) or None
+
+
 def resolve_config(
     api_key: str | None, base_url: str | None, max_retries: int, timeout: float
 ) -> Config:
-    key = api_key or os.environ.get("QUELLIX_API_KEY")
+    key = api_key or _env("ORMES_API_KEY", "QUELLIX_API_KEY")
     if not key:
-        raise QuellixError("Missing API key: pass `api_key` or set QUELLIX_API_KEY.")
-    url = base_url or os.environ.get("QUELLIX_BASE_URL") or DEFAULT_BASE_URL
+        raise OrmesError("Missing API key: pass `api_key` or set ORMES_API_KEY.")
+    url = base_url or _env("ORMES_BASE_URL", "QUELLIX_BASE_URL") or DEFAULT_BASE_URL
     return Config(key, url.rstrip("/"), max_retries, timeout)
 
 
@@ -93,11 +98,11 @@ def resolve_upload(
     name = filename or info.filename
     ctype = content_type or content_type_for(name)
     if size is None:
-        raise QuellixError("`size_bytes` is required when uploading a stream.")
+        raise OrmesError("`size_bytes` is required when uploading a stream.")
     if not name:
-        raise QuellixError("`filename` is required when it cannot be inferred from the source.")
+        raise OrmesError("`filename` is required when it cannot be inferred from the source.")
     if not ctype:
-        raise QuellixError(
+        raise OrmesError(
             "`content_type` is required: use video/mp4, video/quicktime or video/webm."
         )
     return name, ctype, size

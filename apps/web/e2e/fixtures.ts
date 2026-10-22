@@ -1,6 +1,6 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
-export const DEMO = { email: "demo@quellix.dev", password: "quellix-demo" };
+export const DEMO = { email: "demo@ormes.dev", password: "ormes-demo" };
 
 /** Every test fails on a console error, an uncaught exception or a hydration warning. */
 export const test = base.extend<{ consoleGuard: void }>({

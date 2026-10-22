@@ -35,5 +35,5 @@ async function Content({ searchParams }: { searchParams: PageProps<"/onboarding"
   const memberships = await listMemberships(user.id);
   if (memberships.length && !additional) redirect("/app");
   const firstName = user.name?.split(" ")[0];
-  return <OnboardingForm additional={additional} greeting={firstName ? `Welcome, ${firstName}` : "Welcome to Quellix"} />;
+  return <OnboardingForm additional={additional} greeting={firstName ? `Welcome, ${firstName}` : "Welcome to Ormes"} />;
 }

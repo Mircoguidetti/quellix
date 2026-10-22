@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { authenticate } from "./auth";
 import { ApiError } from "./errors";
-import { KEY, ORG, createFakeDb, type Call } from "@/test/fake-supabase";
+import { KEY, LEGACY_KEY, ORG, createFakeDb, type Call } from "@/test/fake-supabase";
 import { hashApiKey } from "@/lib/api-keys";
 
 const req = (authorization?: string) =>
@@ -27,11 +27,19 @@ describe("authenticate", () => {
     expect(calls.some((c) => c.op === "update" && "last_used_at" in (c.payload as object))).toBe(true);
   });
 
-  it("rejects a missing header, a wrong scheme and a key without the qx_live_ prefix", async () => {
+  it("rejects a missing header, a wrong scheme and a key without the orm_live_ or qx_live_ prefix", async () => {
     const { db } = createFakeDb(() => undefined);
     expect(await status(authenticate(req(), db))).toBe(401);
     expect(await status(authenticate(req(`Basic ${KEY}`), db))).toBe(401);
     expect(await status(authenticate(req("Bearer sk_other_123"), db))).toBe(401);
+  });
+
+  it("still accepts a key issued before the rename (qx_live_ prefix)", async () => {
+    const { db, calls } = createFakeDb((c) =>
+      c.table === "api_keys" && c.op === "select" ? { data: { id: "k", org_id: ORG, revoked_at: null }, error: null } : undefined,
+    );
+    await expect(authenticate(req(`Bearer ${LEGACY_KEY}`), db)).resolves.toEqual({ orgId: ORG, keyId: "k" });
+    expect(calls.find((c: Call) => c.op === "select")!.filters).toContainEqual(["eq:key_hash", hashApiKey(LEGACY_KEY)]);
   });
 
   it("rejects an unknown key", async () => {

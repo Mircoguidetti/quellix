@@ -203,11 +203,11 @@ export function seedDemo(): DemoStore {
     contests: [],
     jobs: [],
     api_keys: [
-      { id: randomUuid(rand), org_id: DEMO_ORG_ID, name: "Production ingest", prefix: "qx_live_N4wB7c", key_hash: "a".repeat(64), created_by: DEMO_USER_ID, created_at: iso(now - 45 * DAY), last_used_at: iso(now - 3 * 60 * 1000), revoked_at: null },
-      { id: randomUuid(rand), org_id: DEMO_ORG_ID, name: "Staging", prefix: "qx_live_s9Lm2Q", key_hash: "b".repeat(64), created_by: PRIYA_ID, created_at: iso(now - 38 * DAY), last_used_at: iso(now - 9 * DAY), revoked_at: iso(now - 8 * DAY) },
+      { id: randomUuid(rand), org_id: DEMO_ORG_ID, name: "Production ingest", prefix: "orm_live_N4wB7c", key_hash: "a".repeat(64), created_by: DEMO_USER_ID, created_at: iso(now - 45 * DAY), last_used_at: iso(now - 3 * 60 * 1000), revoked_at: null },
+      { id: randomUuid(rand), org_id: DEMO_ORG_ID, name: "Staging", prefix: "orm_live_s9Lm2Q", key_hash: "b".repeat(64), created_by: PRIYA_ID, created_at: iso(now - 38 * DAY), last_used_at: iso(now - 9 * DAY), revoked_at: iso(now - 8 * DAY) },
     ],
     webhooks: [
-      { id: randomUuid(rand), org_id: DEMO_ORG_ID, url: "https://ops.northwind-capture.com/hooks/quellix", active: true, signing_secret: "whsec_demo", created_at: iso(now - 44 * DAY) },
+      { id: randomUuid(rand), org_id: DEMO_ORG_ID, url: "https://ops.northwind-capture.com/hooks/ormes", active: true, signing_secret: "whsec_demo", created_at: iso(now - 44 * DAY) },
     ],
   };
 

@@ -73,7 +73,7 @@ class Fake:
             return httpx.Response(200, json=[{"id": "w", "url": "https://hook.test/x",
                                               "signing_secret": "s3"}])
         if req.url.host == "hook.test":
-            self.webhook_bodies.append((req.content, req.headers["Quellix-Signature"]))
+            self.webhook_bodies.append((req.content, req.headers["Ormes-Signature"]))
             return httpx.Response(200)
         if p.endswith("/fingerprints"):
             return httpx.Response(200, json=[]) if req.method == "GET" else httpx.Response(201)

@@ -1,6 +1,6 @@
-# How agents work on Quellix
+# How agents work on Ormes
 
-Several Claude Code sessions build Quellix in parallel. A coordinator (another Claude session working with the founder) assigns the work and reviews it. All communication goes through GitHub, never through files in the repo.
+Several Claude Code sessions build Ormes in parallel. A coordinator (another Claude session working with the founder) assigns the work and reviews it. All communication goes through GitHub, never through files in the repo.
 
 ## Your assignment
 

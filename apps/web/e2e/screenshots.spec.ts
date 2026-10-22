@@ -105,7 +105,7 @@ test.describe("screens", () => {
     await page.getByRole("button", { name: "Create key" }).click();
     await page.getByLabel("Name").fill(`Screenshot ${info.project.name}`);
     await page.getByRole("dialog").getByRole("button", { name: "Create key" }).click();
-    await expect(page.getByTestId("one-time-secret")).toContainText("qx_live_");
+    await expect(page.getByTestId("one-time-secret")).toContainText("orm_live_");
     await shot(page, info, "10-dialog-api-key", false);
     await page.getByRole("button", { name: "I have copied it" }).click();
 

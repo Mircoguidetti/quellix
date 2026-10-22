@@ -5,11 +5,11 @@ from typing import Any
 import httpx
 
 
-class QuellixError(Exception):
+class OrmesError(Exception):
     """Base class for every error raised by this SDK."""
 
 
-class APIError(QuellixError):
+class APIError(OrmesError):
     """The API answered with an error status."""
 
     def __init__(
@@ -53,15 +53,15 @@ class RateLimitError(APIError):
         self.retry_after = retry_after
 
 
-class ConnectionError(QuellixError):  # noqa: A001 - mirrors the TypeScript SDK
+class ConnectionError(OrmesError):  # noqa: A001 - mirrors the TypeScript SDK
     """Network failure or timeout: no HTTP response was received."""
 
 
-class TimeoutError(QuellixError):  # noqa: A001
+class TimeoutError(OrmesError):  # noqa: A001
     """`wait_for_decision` ran out of time."""
 
 
-class WebhookSignatureError(QuellixError):
+class WebhookSignatureError(OrmesError):
     """The webhook signature is missing, malformed, stale or wrong."""
 
 

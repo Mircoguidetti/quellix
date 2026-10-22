@@ -5,18 +5,18 @@ from pathlib import Path
 
 import pytest
 
-from quellix import AsyncQuellix, NotFoundError, RateLimitError, TimeoutError
+from ormes import AsyncOrmes, NotFoundError, RateLimitError, TimeoutError
 
 from .mock_api import API_KEY, BASE, MockApi
 
 
-def make(api: MockApi, sleeps: list[float] | None = None, **kwargs: int) -> AsyncQuellix:
+def make(api: MockApi, sleeps: list[float] | None = None, **kwargs: int) -> AsyncOrmes:
     record = sleeps if sleeps is not None else []
 
     async def sleep(seconds: float) -> None:
         record.append(seconds)
 
-    return AsyncQuellix(
+    return AsyncOrmes(
         API_KEY, base_url=BASE, transport=api.async_transport(), sleep=sleep, **kwargs
     )
 

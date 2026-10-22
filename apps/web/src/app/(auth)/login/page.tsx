@@ -12,13 +12,13 @@ export const metadata: Metadata = { title: "Sign in" };
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <AuthShell>
-      <AuthCard title="Sign in to Quellix" description="Decide every video the same way, review only the doubtful ones.">
+      <AuthCard title="Sign in to Ormes" description="Decide every video the same way, review only the doubtful ones.">
         <Suspense fallback={<AuthFormSkeleton />}>
           <Content searchParams={searchParams} />
         </Suspense>
       </AuthCard>
       <p className="mt-6 text-[14px] text-muted-foreground">
-        New to Quellix?{" "}
+        New to Ormes?{" "}
         <Link href="/signup" className="rounded font-medium text-foreground underline-offset-4 hover:underline">
           Create an account
         </Link>

@@ -29,7 +29,7 @@ export function ReportSide({ videoId, decision, review, lab }: Props) {
 
   const decide = async (value: "accept" | "reject") => {
     setPending(value);
-    const res = await overrideDecision(videoId, { decision: value, note: note.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Quellix." }));
+    const res = await overrideDecision(videoId, { decision: value, note: note.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Ormes." }));
     setPending(null);
     if (!res.ok) return toast.error(res.error);
     toast.success(value === "accept" ? "Marked as accepted" : "Marked as rejected");
@@ -49,7 +49,7 @@ export function ReportSide({ videoId, decision, review, lab }: Props) {
                 A reviewer decided <DecisionBadge value={review.decision} />
               </span>
             ) : decision === "review" ? (
-              "Quellix could not decide. Your answer is final."
+              "Ormes could not decide. Your answer is final."
             ) : (
               "Reviewers can override any automatic decision."
             )}
@@ -85,7 +85,7 @@ export function ReportSide({ videoId, decision, review, lab }: Props) {
             e.preventDefault();
             if (!outcome) return void toast.error("Choose what the lab decided.");
             startLab(async () => {
-              const res = await saveLabOutcome(videoId, { outcome, reason: reason.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Quellix." }));
+              const res = await saveLabOutcome(videoId, { outcome, reason: reason.trim() || undefined }).catch(() => ({ ok: false as const, error: "We could not reach Ormes." }));
               if (res.ok) toast.success("Lab outcome saved");
               else toast.error(res.error);
             });

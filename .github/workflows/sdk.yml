@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --filter @quellix/sdk...
+      - run: pnpm install --frozen-lockfile --filter @ormes/sdk...
         working-directory: .
       - name: Generated types are up to date
         run: pnpm check:generated
@@ -61,7 +61,7 @@ jobs:
       - name: Generated models are up to date
         run: |
           ./scripts/generate.sh
-          git diff --exit-code -- src/quellix/_generated
+          git diff --exit-code -- src/ormes/_generated
       - run: uv run ruff check .
       - run: uv run mypy
       - run: uv run pytest -q

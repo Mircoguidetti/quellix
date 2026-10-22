@@ -9,7 +9,7 @@ Next.js app (App Router, TypeScript strict, Tailwind). Deployed on Vercel with R
 - Upload page + report: upload videos (direct to Supabase Storage with signed URLs, never through Vercel), optional lab outcome per video, decisions with reasons.
 - Review list: videos in `review` with reason, player, accept / reject buttons (writes `reviews`). No assignments, shifts or reviewer stats in v1.
 - Contest: a contributor can contest a rejection; a person resolves it.
-- Public API `/api/v1/*`, implementing `packages/contracts/openapi.yaml`. Auth by org API key (`Authorization: Bearer qx_live_...`, stored only as a SHA-256 hash).
+- Public API `/api/v1/*`, implementing `packages/contracts/openapi.yaml`. Auth by org API key (`Authorization: Bearer orm_live_...`, stored only as a SHA-256 hash).
 - Public pages: data handling (deletion, no training without opt-in, sub-processors list), downloadable DPA.
 
 ## Rules

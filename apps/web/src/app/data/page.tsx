@@ -5,7 +5,7 @@ export const metadata = { title: "How we handle your data" };
 export default function DataPage() {
   return (
     <PublicPage title="How we handle your data">
-      <p>Quellix analyses the videos you upload and returns a decision with reasons. This page says what happens to them.</p>
+      <p>Ormes analyses the videos you upload and returns a decision with reasons. This page says what happens to them.</p>
 
       <h2>Videos are analysed, then deleted</h2>
       <p>

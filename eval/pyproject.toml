@@ -1,7 +1,7 @@
 [project]
 name = "quellix-eval"
 version = "0.1.0"
-description = "Quellix evaluation: datasets, synthetic defects, metrics, baseline comparisons."
+description = "Ormes evaluation: datasets, synthetic defects, metrics, baseline comparisons."
 requires-python = ">=3.12"
 dependencies = [
   "quellix-worker",

@@ -1,4 +1,4 @@
-"""Quellix hands model: hand visibility, truncation and manipulation on egocentric video."""
+"""Ormes hands model: hand visibility, truncation and manipulation on egocentric video."""
 
 from .aggregate import aggregate
 from .contact import ContactEstimator, HeuristicContact, segments_from_contact

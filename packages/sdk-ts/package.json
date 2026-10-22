@@ -1,7 +1,7 @@
 {
-  "name": "@quellix/sdk",
+  "name": "@ormes/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for the Quellix API",
+  "description": "TypeScript SDK for the Ormes API",
   "license": "UNLICENSED",
   "type": "module",
   "sideEffects": false,
