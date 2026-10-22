@@ -1,0 +1,176 @@
+name: Benchmark v2
+
+# Benchmark v2 (#64): HoloAssist task-completion and hand-visibility slices with independent
+# labels, a synthetic-defect slice, Ormes vs Gemini (cheap + strong model, structured answer).
+# Start it from the Actions tab, by pushing a file under eval/requests/benchmark/ to main, or by
+# adding the label `benchmark` to a pull request (one run per labelling; later pushes do not
+# re-run it). The newest request file may set {"cap_usd": 3, "sessions": 130, "sources": 40}.
+# The Gemini spend cap is shared by the three slice jobs: tasks 50%, hands 25%, synthetic 25%.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cap_usd:
+        description: Gemini spend cap for the whole run (USD)
+        default: "3"
+      sessions:
+        description: HoloAssist validation sessions per slice
+        default: "130"
+      sources:
+        description: Egocentric-10K source clips for the synthetic slice
+        default: "40"
+  pull_request:
+    types: [labeled]
+  push:
+    branches: [main]
+    paths: ["eval/requests/benchmark/**"]
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  params:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'benchmark'
+    runs-on: ubuntu-latest
+    outputs:
+      cap: ${{ steps.p.outputs.cap }}
+      sessions: ${{ steps.p.outputs.sessions }}
+      sources: ${{ steps.p.outputs.sources }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        env:
+          IN_CAP: ${{ inputs.cap_usd }}
+          IN_SESSIONS: ${{ inputs.sessions }}
+          IN_SOURCES: ${{ inputs.sources }}
+        run: |
+          req="$(ls eval/requests/benchmark/*.json 2>/dev/null | sort | tail -n 1 || true)"
+          get() { [ -n "$req" ] && python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2], ''))" "$req" "$1" || true; }
+          cap="${IN_CAP:-$(get cap_usd)}"; sessions="${IN_SESSIONS:-$(get sessions)}"; sources="${IN_SOURCES:-$(get sources)}"
+          cap="${cap:-3}"; sessions="${sessions:-130}"; sources="${sources:-40}"
+          python3 -c "import sys; assert 0 < float(sys.argv[1]) <= 20, 'cap_usd must be in (0, 20]'" "$cap"
+          case "$sessions$sources" in *[!0-9]*) echo "sessions/sources must be integers" >&2; exit 1;; esac
+          echo "cap=$cap" >> "$GITHUB_OUTPUT"
+          echo "sessions=$sessions" >> "$GITHUB_OUTPUT"
+          echo "sources=$sources" >> "$GITHUB_OUTPUT"
+          echo "Request: ${req:-none}; cap \$$cap, $sessions sessions, $sources sources"
+
+  slice:
+    needs: params
+    name: Slice ${{ matrix.slice }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { slice: tasks, share: "0.5" }
+          - { slice: hands, share: "0.25" }
+          - { slice: synthetic, share: "0.25" }
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for MediaPipe (hands model)
+        working-directory: .
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libegl1 libgles2 libgl1
+      - run: uv sync --extra data --extra gemini --extra hands
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/quellix/hands
+          key: hands-landmarker-fbc2a300
+      - run: uv run python -m quellix_hands.weights download
+      - name: HoloAssist tar indexes (cached; walking them takes minutes)
+        if: matrix.slice != 'synthetic'
+        uses: actions/cache@v4
+        with:
+          path: eval/out/holo-cache
+          key: holoassist-index-v1-${{ matrix.slice }}
+          restore-keys: holoassist-index-v1-
+      - name: Run the slice
+        env:
+          CAP: ${{ needs.params.outputs.cap }}
+          SHARE: ${{ matrix.share }}
+          SESSIONS: ${{ needs.params.outputs.sessions }}
+          SOURCES: ${{ needs.params.outputs.sources }}
+        run: |
+          budget="$(python3 -c "import sys; print(round(float(sys.argv[1]) * float(sys.argv[2]), 4))" "$CAP" "$SHARE")"
+          n="$SESSIONS"; parallel=2
+          if [ "${{ matrix.slice }}" = synthetic ]; then
+            # Duplicates must find their originals in ONE fingerprint store: one worker at a time.
+            n="$SOURCES"; parallel=1
+            export QUELLIX_FINGERPRINT_DB="$PWD/out/fingerprints.json"
+          fi
+          uv run python -m quellix_eval.benchmark.runner --slice "${{ matrix.slice }}" \
+            --sessions "$n" --budget-usd "$budget" --minutes 240 --parallel "$parallel" \
+            --out "out/${{ matrix.slice }}"
+      - name: Blind labelling kit (originals only, no Ormes output)
+        if: matrix.slice == 'synthetic'
+        run: uv run python -m quellix_eval.benchmark.kit --manifest out/synthetic/manifest.jsonl --out out/kit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-${{ matrix.slice }}
+          if-no-files-found: warn
+          path: |
+            eval/out/${{ matrix.slice }}/results.json
+            eval/out/${{ matrix.slice }}/manifest.jsonl
+      - uses: actions/upload-artifact@v4
+        if: matrix.slice == 'synthetic'
+        with:
+          name: blind-labelling-kit
+          path: eval/out/kit
+      - uses: actions/upload-artifact@v4
+        if: matrix.slice == 'hands'
+        with:
+          name: hand-label-overlays
+          if-no-files-found: warn
+          path: eval/out/hands/debug
+
+  report:
+    needs: [params, slice]
+    if: always() && needs.params.result == 'success'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-*
+          path: eval/out/results
+      - name: Render the report
+        run: |
+          mkdir -p reports
+          uv run python -m quellix_eval.benchmark.report out/results/*/results.json --out reports/benchmark-v2.md
+          cat reports/benchmark-v2.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-v2-report
+          path: eval/reports/benchmark-v2.md
+      - name: Post the report on issue #64
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head -c 60000 reports/benchmark-v2.md > /tmp/comment.md
+          gh issue comment 64 -R "${{ github.repository }}" --body-file /tmp/comment.md
