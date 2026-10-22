@@ -24,6 +24,7 @@ import httpx
 import numpy as np
 import pdqhash
 
+from ..jsonable import to_py
 from ..media import DecodedVideo, Frame
 from ..rubric import CheckOutput
 
@@ -39,9 +40,13 @@ PDQ_MODEL_NAME = "pdq"
 
 # Indexed copies of each frame cropped to these shares of the centre, so a copy that was
 # cropped and zoomed back still matches (PDQ alone is not robust to cropping).
-CROP_SHARES = (0.9, 0.8)
+CROP_SHARES = (0.95, 0.9, 0.85, 0.8, 0.75)
 
-_POPCOUNT = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint8)
+# PDQ's own quality score (0-100) falls for flat, dark or blown-out frames, whose hashes all
+# look alike. Hashes below this are neither indexed nor searched, otherwise two different dark
+# clips would match (PDQ guidance: ignore quality < 50).
+PDQ_MIN_QUALITY = 50
+
 
 
 @dataclass(frozen=True)
@@ -78,11 +83,17 @@ def _pdq(rgb: np.ndarray) -> bytes:
     return _pack(pdqhash.compute(rgb)[0])
 
 
-def pdq_variants(rgb: np.ndarray) -> list[bytes]:
+def _pdq_checked(rgb: np.ndarray) -> bytes | None:
+    """The hash, or None when the frame is too flat to fingerprint reliably."""
+    bits, quality = pdqhash.compute(rgb)
+    return _pack(bits) if quality >= PDQ_MIN_QUALITY else None
+
+
+def pdq_variants(rgb: np.ndarray) -> list[bytes | None]:
     """Hashes searched for a new frame: the frame itself and its horizontal mirror."""
     # Hash the physically mirrored pixels: exact, unlike deriving the mirror hash from the
     # original (pdqhash.compute_dihedral is only approximate after re-encoding).
-    return [_pdq(rgb), _pdq(np.ascontiguousarray(rgb[:, ::-1]))]
+    return [_pdq_checked(rgb), _pdq_checked(np.ascontiguousarray(rgb[:, ::-1]))]
 
 
 def _center_crop(rgb: np.ndarray, share: float) -> np.ndarray:
@@ -92,20 +103,28 @@ def _center_crop(rgb: np.ndarray, share: float) -> np.ndarray:
 
 
 def fingerprint(
-    frames: Sequence[Frame], embedder: Embedder | None = None
+    frames: Sequence[Frame],
+    embedder: Embedder | None = None,
+    embed_frames: Sequence[Frame] | None = None,
 ) -> list[FrameFingerprint]:
-    """Rows to store for a video: PDQ rows (full frame + centre crops) and, when an embedder
-    is configured, one embedding row per frame."""
+    """Rows to store for a video: PDQ rows for ``frames`` (full frame + centre crops) and, when
+    an embedder is configured, one embedding row per frame of ``embed_frames``."""
     out = []
     for f in frames:
-        out.append(FrameFingerprint(f.t_s, pdq=_pdq(f.rgb)))
-        out.extend(FrameFingerprint(f.t_s, pdq=_pdq(_center_crop(f.rgb, s)))
-                   for s in CROP_SHARES)
+        full = _pdq_checked(f.rgb)
+        if full is None:
+            continue  # flat frame: no reliable hash for it or its crops
+        out.append(FrameFingerprint(f.t_s, pdq=full))
+        for share in CROP_SHARES:
+            crop = _pdq_checked(_center_crop(f.rgb, share))
+            if crop is not None:
+                out.append(FrameFingerprint(f.t_s, pdq=crop))
     embedder = embedder or NoopEmbedder()
-    vectors = embedder.embed(frames)
+    emb_frames = list(frames if embed_frames is None else embed_frames)
+    vectors = embedder.embed(emb_frames)
     if vectors is not None:
         out.extend(FrameFingerprint(f.t_s, embedding=vectors[i], model=embedder.name)
-                   for i, f in enumerate(frames))
+                   for i, f in enumerate(emb_frames))
     return out
 
 
@@ -121,7 +140,9 @@ class FingerprintIndex:
 
     def __init__(self, video_ids: Sequence[str], pdq: np.ndarray) -> None:
         self.video_ids = np.asarray(video_ids, dtype=object)
-        self.pdq = np.asarray(pdq, dtype=np.uint8).reshape(-1, 32)
+        # 256 bits as 4 x uint64 per row, so a Hamming distance is xor + popcount.
+        self.pdq = np.ascontiguousarray(
+            np.asarray(pdq, dtype=np.uint8).reshape(-1, 32)).view(np.uint64)
 
     def __len__(self) -> int:
         return len(self.video_ids)
@@ -130,9 +151,12 @@ class FingerprintIndex:
         """Earlier videos holding a frame that matches this one (or its mirror)."""
         if len(self) == 0:
             return set()
-        queries = np.stack([np.frombuffer(v, dtype=np.uint8) for v in pdq_variants(rgb)])
-        # (variants, n, 32) -> Hamming distance per reference row; best variant wins.
-        dist = _POPCOUNT[queries[:, None, :] ^ self.pdq[None, :, :]].sum(axis=2).min(axis=0)
+        variants = [v for v in pdq_variants(rgb) if v is not None]
+        if not variants:
+            return set()
+        queries = np.stack([np.frombuffer(v, dtype=np.uint8) for v in variants]).view(np.uint64)
+        # (variants, n, 4) -> Hamming distance per reference row; best variant wins.
+        dist = np.bitwise_count(queries[:, None, :] ^ self.pdq[None, :, :]).sum(axis=2).min(axis=0)
         return {str(v) for v in self.video_ids[dist <= PDQ_MAX_DISTANCE]}
 
 
@@ -328,24 +352,35 @@ def run(
     if not video.frames:
         return CheckOutput(error="no frames to fingerprint"), []
     try:
-        prints = fingerprint(video.frames, embedder)
+        prints = fingerprint(video.fp_frames or video.frames, embedder, video.frames)
         index = store.index(org_id, video_id)
-        matched: dict[str, int] = {}
+        pdq_hits: dict[str, int] = {}
+        emb_hits: dict[str, int] = {}
+        usable = 0  # frames with a reliable hash (flat / dark frames carry no evidence)
         emb_by_t = {fp.t_s: fp.embedding for fp in prints if fp.embedding is not None}
-        for f in video.frames:
-            hit = index.hits(f.rgb)
+        # The index holds every fingerprint frame (16 fps); the query uses every fourth (4 fps).
+        queries = (video.fp_frames or video.frames)[::4 if video.fp_frames else 1]
+        for f in queries:
+            usable += _pdq_checked(f.rgb) is not None
+            for vid in index.hits(f.rgb):
+                pdq_hits[vid] = pdq_hits.get(vid, 0) + 1
+        for f in video.frames:  # embeddings: one query per analysis frame
             emb = emb_by_t.get(f.t_s)
             if emb is not None:
-                hit |= {m.video_id for m in store.match_embedding(org_id, emb, video_id)
-                        if m.similarity >= EMBEDDING_MIN_COSINE}
-            for vid in hit:
-                matched[vid] = matched.get(vid, 0) + 1
+                for vid in {m.video_id for m in store.match_embedding(org_id, emb, video_id)
+                            if m.similarity >= EMBEDDING_MIN_COSINE}:
+                    emb_hits[vid] = emb_hits.get(vid, 0) + 1
     except Exception as exc:
         return CheckOutput(error=f"fingerprint store unavailable: {exc}"), []
-    match_id = max(matched, key=lambda k: matched[k]) if matched else None
-    similarity = matched[match_id] / len(video.frames) if match_id else 0.0
+    # Per earlier video: the share of this video's frames it explains, by either signal.
+    share = {vid: max(pdq_hits.get(vid, 0) / max(1, usable),
+                      emb_hits.get(vid, 0) / max(1, len(emb_by_t)))
+             for vid in {*pdq_hits, *emb_hits}}
+    match_id = max(share, key=lambda k: share[k]) if share else None
+    similarity = min(1.0, share[match_id]) if match_id else 0.0
     models = MODEL if embedder is None else f"{MODEL}+{embedder.name}"
     return CheckOutput(
-        measurements={"max_similarity": round(similarity, 4), "match_video_id": match_id},
+        measurements=to_py({"max_similarity": round(similarity, 4),
+                            "match_video_id": match_id}),
         model=models,
     ), prints

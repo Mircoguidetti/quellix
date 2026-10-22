@@ -32,6 +32,10 @@ YUNET_SHA256 = "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4
 YUNET_URL = (f"https://media.githubusercontent.com/media/opencv/opencv_zoo/{YUNET_COMMIT}/"
              "models/face_detection_yunet/face_detection_yunet_2023mar.onnx")
 YUNET_PATH = "/models/face_detection_yunet_2023mar.onnx"
+TEXT_SHA256 = "03f550c6b406fda8bf54bd8327815f6c7e2edd98cea02348c93d879254366587"  # PP-OCRv3 DB
+TEXT_URL = (f"https://media.githubusercontent.com/media/opencv/opencv_zoo/{YUNET_COMMIT}/"
+            "models/text_detection_ppocr/text_detection_en_ppocrv3_2023may.onnx")
+TEXT_PATH = "/models/text_detection_en_ppocrv3_2023may.onnx"
 
 
 def compute_usd_per_second() -> float:
@@ -102,8 +106,11 @@ if modal is not None:
         .run_commands(
             f"mkdir -p /models && curl -fsSL -o {YUNET_PATH} {YUNET_URL}",
             f'echo "{YUNET_SHA256}  {YUNET_PATH}" | sha256sum -c -',
+            f"curl -fsSL -o {TEXT_PATH} {TEXT_URL}",
+            f'echo "{TEXT_SHA256}  {TEXT_PATH}" | sha256sum -c -',
         )
         .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
+              "QUELLIX_TEXT_MODEL_PATH": TEXT_PATH,
               **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
         .add_local_dir(str(_contracts), "/packages/contracts", copy=True)
         .add_local_python_source("quellix_worker")

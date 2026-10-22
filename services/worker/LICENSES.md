@@ -13,6 +13,7 @@ is usable commercially. Re-check when upgrading.
 | jsonschema | contract validation | MIT | |
 | modal (optional extra) | deployment | Apache-2.0 | |
 | YuNet `face_detection_yunet_2023mar.onnx` (opencv_zoo) | face detection | MIT | weights are in Git LFS; fetched on first use from github.com/opencv/opencv_zoo, or set `QUELLIX_YUNET_PATH` |
+| PP-OCRv3 DB English text detector `text_detection_en_ppocrv3_2023may.onnx` (opencv_zoo, PaddleOCR) | text lines for document / screen detection | Apache-2.0 | same pinned opencv_zoo commit + sha256 as YuNet; `QUELLIX_TEXT_MODEL_PATH` overrides |
 | DINOv2 ViT-S/14 (`facebook/dinov2-small`) | 384-d copy-detection embedding (optional `embed` extra) | Apache-2.0 | weights load lazily from Hugging Face or `QUELLIX_DINOV2_PATH`; enable with `QUELLIX_USE_DINOV2=1`. Cannot be downloaded in the CI sandbox, so the real-model test is skipped there |
 | torch, transformers | run DINOv2 | BSD-3-Clause, Apache-2.0 | optional `embed` extra |
 | ~~SSCD~~ | replaced | CC-BY-NC-4.0 | **not used**: not commercially usable |

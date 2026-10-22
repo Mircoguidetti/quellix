@@ -11,6 +11,7 @@ from typing import Any
 from . import media
 from .checks import framing, hands, originality, privacy, task_baseline, technical
 from .contracts import validate_decision, validate_rubric
+from .jsonable import to_py
 from .rubric import CheckOutput, evaluate
 
 
@@ -43,6 +44,12 @@ class PipelineResult:
     duration_s: float | None = None
     timings_ms: dict[str, int] = field(default_factory=dict)
     models: dict[str, str] = field(default_factory=dict)
+
+
+def _plain(out: CheckOutput) -> CheckOutput:
+    if out.measurements is None:
+        return out
+    return CheckOutput(measurements=to_py(out.measurements), model=out.model)
 
 
 def _critical_reject(rubric: Mapping[str, Any], outputs: dict[str, CheckOutput]) -> bool:
@@ -102,6 +109,7 @@ def run_pipeline(
             outputs["task_completed"], api_cost = timed("task_completed", lambda: task_baseline.run(
                 rubric, video.path, video.info.duration_s, deps.task_judge))
 
+    outputs = {n: _plain(o) for n, o in outputs.items()}  # numpy scalars never reach JSON
     decision = evaluate(video_id, rubric, outputs)
     validate_decision(decision)
     compute_cost = (time.monotonic() - started) * config.compute_usd_per_second
