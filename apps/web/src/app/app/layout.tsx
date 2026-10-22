@@ -5,6 +5,7 @@ import { ShellSkeleton } from "@/components/shell/shell-skeleton";
 import { isDemoMode } from "@/lib/demo/mode";
 import { countReviewQueue } from "@/lib/domain/videos";
 import { dashboardContext } from "@/lib/dashboard";
+import { pilotsEnabled } from "@/lib/pilots/flag";
 
 export default function AppLayout({ children }: LayoutProps<"/app">) {
   return (
@@ -26,6 +27,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
       reviewCount={reviewCount}
       initialCollapsed={jar.get("qx_sidebar")?.value === "collapsed"}
       demo={isDemoMode()}
+      pilots={pilotsEnabled()}
     >
       {children}
     </AppShell>

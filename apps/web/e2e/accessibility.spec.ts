@@ -91,6 +91,8 @@ for (const [name, path] of [
   ["settings", "/app/settings"],
   ["contests", "/app/contests"],
   ["audit export", "/app/audit"],
+  ["pilots", "/app/pilots"],
+  ["new pilot", "/app/pilots/new"],
 ] as const) {
   test(`axe: ${name} has no serious violations`, async ({ page }) => {
     if (path.startsWith("/app")) await signIn(page);
