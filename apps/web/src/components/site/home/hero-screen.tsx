@@ -1,7 +1,9 @@
 "use client";
 
-import { Hand, ListChecks, ScanFace } from "lucide-react";
-import { ClipPlayer, useClip } from "../clip-player";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Crosshair, Hand, ListChecks, ScanFace } from "lucide-react";
+import { CLIP_BASE, ClipPlayer, useClip, type ClipSidecar } from "../clip-player";
 import { SITE_CLIPS } from "../clips";
 import { ICON } from "../primitives";
 import { HeroCanvas } from "./hero-canvas";
@@ -11,6 +13,21 @@ const FIELDS = [
   { icon: Hand, label: "Hands on the work", value: "92%", accent: true },
   { icon: ScanFace, label: "Personal data", value: "none" },
 ];
+const pct = (v: unknown) => (typeof v === "number" ? `${Math.round(v * 100)}%` : "–");
+
+/** The card's rows from the worker's real measurements on the clip. */
+function clipFields(side: ClipSidecar) {
+  const checks = side.decision?.checks ?? {};
+  const hands = checks.hands_visible?.measurements ?? {};
+  const framing = checks.framing?.measurements ?? {};
+  const offTarget = framing.off_target_ratio;
+  return [
+    { icon: Hand, label: "Hands on the work", value: pct(hands.ratio_both_manipulation), accent: true },
+    { icon: Crosshair, label: "Camera on the work", value: typeof offTarget === "number" ? pct(1 - offTarget) : "–" },
+    { icon: ScanFace, label: "Personal data", value: checks.privacy?.status === "pass" ? "none" : (checks.privacy?.status ?? "–") },
+  ];
+}
+
 const TONE = { accept: "bg-ok/12 text-ok", review: "bg-brand/12 text-brand", reject: "bg-no/12 text-no" } as const;
 
 /**
@@ -20,19 +37,36 @@ const TONE = { accept: "bg-ok/12 text-ok", review: "bg-brand/12 text-brand", rej
  */
 export function HeroScreen() {
   const clip = useClip(SITE_CLIPS.hero);
+  // The clip (about 1 MB) starts after the page has loaded, so the poster paints first.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let timer = 0;
+    const go = () => (timer = window.setTimeout(() => setLoaded(true), 300));
+    if (document.readyState === "complete") go();
+    else window.addEventListener("load", go, { once: true });
+    return () => {
+      window.removeEventListener("load", go);
+      clearTimeout(timer);
+    };
+  }, []);
   const side = clip && clip !== "missing" ? clip : null;
   const decision = side?.decision ?? null;
 
   return (
     <div className="relative mx-auto mt-14 max-w-[1040px]">
       <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] border border-hairline bg-[#050607] sm:aspect-[16/9]">
-        {side ? <ClipPlayer side={side} /> : <HeroCanvas />}
+        {SITE_CLIPS.hero ? (
+          // The poster is in the server HTML so it paints first (it is the LCP); the clip and its
+          // hand boxes take over once the sidecar has loaded.
+          <Image src={`${CLIP_BASE}/${SITE_CLIPS.hero}.jpg`} alt="" fill priority sizes="(min-width: 1072px) 1040px, 100vw" className="object-cover" />
+        ) : null}
+        {side && loaded ? <ClipPlayer side={side} /> : SITE_CLIPS.hero ? null : <HeroCanvas />}
         <div aria-hidden className="absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-4 font-mono text-[11px] uppercase tracking-[0.12em] text-white/70 sm:p-5">
           <span className="inline-flex items-center gap-2">
             <i className="size-2 rounded-full bg-no motion-safe:animate-pulse" />
             {side ? "Analysed by Ormes" : "REC 00:24"}
           </span>
-          <span>{side ? side.id : "load the dishwasher"}</span>
+          <span>{side ? (side.source?.task ?? side.id) : "load the dishwasher"}</span>
         </div>
       </div>
       <div
@@ -44,13 +78,15 @@ export function HeroScreen() {
           <span className="font-mono text-[13px] text-muted-foreground">{side ? side.id : "v_88213"}</span>
           <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-medium ${TONE[decision?.decision ?? "accept"]}`}>{decision?.decision ?? "accept"}</span>
         </div>
-        {side && decision ? (
+        {side && decision && decision.reasons.length > 0 ? (
           <ul className="flex flex-col gap-1.5 py-1 text-[14px] text-muted-foreground">
-            {decision.reasons.length === 0 ? <li>No reasons: every check passed.</li> : decision.reasons.slice(0, 3).map((r) => <li key={r.code}>{r.message}</li>)}
+            {decision.reasons.slice(0, 3).map((r) => (
+              <li key={r.code}>{r.message}</li>
+            ))}
           </ul>
         ) : (
           <dl className="flex flex-col">
-            {FIELDS.map(({ icon: Icon, label, value, accent }) => (
+            {(side ? clipFields(side) : FIELDS).map(({ icon: Icon, label, value, accent }) => (
               <div key={label} className="flex items-center justify-between gap-3 py-2 text-[14px]">
                 <dt className="inline-flex items-center gap-2 text-muted-foreground">
                   <Icon {...ICON} className="size-4" />

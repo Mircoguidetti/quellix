@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { FileInput, GitCommitHorizontal, Library, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ICON, Soon } from "../primitives";
+import { ICON } from "../primitives";
 
 /** Hand-visibility ratios of recent decisions near the threshold (example data); the other 156 are far from it. */
 const NEAR = [0.58, 0.63, 0.66, 0.69, 0.71, 0.73, 0.74, 0.76, 0.77, 0.785, 0.795, 0.805, 0.826, 0.834, 0.842, 0.851, 0.858, 0.866, 0.874, 0.881, 0.889, 0.896];
@@ -158,20 +158,20 @@ export function RubricEditor() {
       </div>
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-        <li className="flex gap-3.5 rounded-2xl border border-dashed border-hairline p-5">
+        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
           <FileInput {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
           <div>
             <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              From the lab’s spec <Soon />
+              From the lab’s spec
             </h3>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Paste the lab’s guidelines and Ormes drafts the rubric, each value tied to the line it came from.</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Paste the lab’s guidelines or drop a PDF: Ormes drafts the rubric, each value tied to the line it came from.</p>
           </div>
         </li>
-        <li className="flex gap-3.5 rounded-2xl border border-dashed border-hairline p-5">
+        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
           <Library {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
           <div>
             <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              A library of specs <Soon />
+              A library of specs
             </h3>
             <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Ready rubrics for common task families: kitchen, laundry, factory assembly.</p>
           </div>

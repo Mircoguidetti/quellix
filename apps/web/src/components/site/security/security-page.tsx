@@ -167,6 +167,8 @@ export function SecurityPage() {
           </Link>
           <MoreLink href="/data">Data handling</MoreLink>
         </div>
+        {/* Attribution for the real footage on Home (issue #60): small, here only. */}
+        <p className="mt-10 text-[12.5px] text-muted-foreground">Example footage on this site: Build AI Egocentric-10K (Apache 2.0).</p>
       </Section>
 
       <section className="border-t border-hairline py-20 sm:py-24">

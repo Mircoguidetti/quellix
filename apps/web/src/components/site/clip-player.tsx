@@ -21,8 +21,10 @@ export type ClipSidecar = {
   id: string;
   video: { mp4: string; webm: string; poster: string; width: number; height: number; duration_s?: number };
   hands: { frames: { t: number; left: HandRow; right: HandRow }[] };
+  source?: { dataset: string; license: string; task?: string };
   decision: {
     decision: "accept" | "reject" | "review";
+    checks?: Record<string, { status: string; measurements?: Record<string, unknown> }>;
     reasons: { check: string; code: string; message: string; hint?: string; segments?: { start_s: number; end_s: number }[] }[];
   } | null;
 };
