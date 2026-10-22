@@ -6,7 +6,7 @@
       "license": "Pexels License"
     }
   ],
-  "total_bytes": 5743126,
+  "total_bytes": 5743329,
   "clips": [
     {
       "id": "clip-01",
@@ -208,10 +208,10 @@
       "fps": 25.0,
       "duration_s": 9.04,
       "bytes": {
-        "mp4": 528400,
+        "mp4": 528708,
         "webm": 348927,
         "poster": 61133,
-        "json": 13074
+        "json": 12969
       },
       "crf": {
         "mp4": 32,
