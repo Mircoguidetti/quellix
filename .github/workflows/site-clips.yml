@@ -1,0 +1,113 @@
+name: Site clips
+
+# Real first-person clips for the website, analysed by Ormes itself (issue #60).
+# Streams candidates from Build AI Egocentric-10K, keeps the ones with no face, document or
+# screen and both hands clearly working, and writes the best few (MP4, WebM, poster, JSON
+# sidecar with the hands model's per-frame boxes and the worker's decision) to
+# apps/web/public/media/clips/. Run it from the Actions tab, or push eval/site-clips-request.json
+# to the agent/site-clips branch. On a branch other than main the result is committed back.
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidates:
+        description: Candidate clips to stream from Egocentric-10K
+        default: "30"
+  push:
+    branches: [agent/site-clips]
+    paths:
+      - "eval/site-clips-request.json"
+
+concurrency:
+  group: site-clips
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  clips:
+    name: Pick and encode the site clips
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for the hands detector
+        working-directory: .
+        run: sudo apt-get update -q && sudo apt-get install -y -q libegl1 libgles2
+      - run: uv sync --extra data --extra mediapipe
+      - name: Hands model weights
+        run: uv run python -m quellix_hands.weights download
+      - name: Decide how many candidates
+        id: n
+        env:
+          INPUT_CANDIDATES: ${{ inputs.candidates }}
+        run: |
+          n="${INPUT_CANDIDATES:-}"
+          if [ -z "$n" ] && [ -f site-clips-request.json ]; then
+            n="$(python3 -c "import json; print(json.load(open('site-clips-request.json')).get('candidates', ''))")"
+          fi
+          n="${n:-30}"
+          case "$n" in ''|*[!0-9]*) echo "candidates must be a positive integer, got '$n'" >&2; exit 1;; esac
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+      - name: Pick and encode
+        run: |
+          uv run python -m quellix_eval.site_clips \
+            --candidates "${{ steps.n.outputs.n }}" --picks 6 --min-picks 1 \
+            --out-dir out/site-clips --final-dir ../apps/web/public/media/clips
+      - name: Post the result on issue #60
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Site clips run ${{ github.run_id }} on \`${{ github.ref_name }}\`."
+            echo
+            if [ -f ../apps/web/public/media/clips/manifest.json ]; then
+              python3 - <<'PY'
+          import json
+          m = json.load(open("../apps/web/public/media/clips/manifest.json"))
+          print(f"**{len(m['clips'])} clips, {m['total_bytes'] / 1e6:.2f} MB in total** ({m['dataset']}, {m['license']}).\n")
+          print("| clip | source | factory | worker decision | mp4 | webm | poster |")
+          print("|---|---|---|---|---|---|---|")
+          for c in m["clips"]:
+              b = c["bytes"]
+              print(f"| {c['id']} | `{c['source_clip']}` | {c['factory']} | {c['decision']} | {b['mp4']/1e6:.2f} MB | {b['webm']/1e6:.2f} MB | {b['poster']/1e3:.0f} kB |")
+          PY
+            else
+              echo "No clips were produced."
+            fi
+            echo
+            echo "### Every candidate"
+            echo
+            cat out/site-clips/candidates.md 2>/dev/null || echo "(no candidate table)"
+          } > out/comment.md
+          head -c 60000 out/comment.md > out/comment-trimmed.md
+          gh issue comment 60 -R "${{ github.repository }}" --body-file out/comment-trimmed.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-clips
+          if-no-files-found: warn
+          path: |
+            apps/web/public/media/clips
+            eval/out/site-clips/candidates.md
+      - name: Commit the clips to this branch
+        if: success() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A apps/web/public/media/clips
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "web: real site clips picked and analysed by Ormes (run ${{ github.run_id }})"
+          git push origin "HEAD:${{ github.ref_name }}"
