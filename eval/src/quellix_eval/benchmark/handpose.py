@@ -80,7 +80,10 @@ def project(points_world: np.ndarray, cam_pose: np.ndarray, k: np.ndarray) -> np
 
 def fully_visible(points_world: np.ndarray, cam_pose: np.ndarray, k: np.ndarray, width: int,
                   height: int, margin_px: float = 0.0) -> bool:
-    p = project(points_world, cam_pose, k)
+    return _inside(project(points_world, cam_pose, k), width, height, margin_px)
+
+
+def _inside(p: np.ndarray, width: int, height: int, margin_px: float = 0.0) -> bool:
     return bool(np.all(p[:, 2] > 0.05)
                 and np.all((p[:, 0] >= margin_px) & (p[:, 0] <= width - margin_px))
                 and np.all((p[:, 1] >= margin_px) & (p[:, 1] <= height - margin_px)))
@@ -91,18 +94,28 @@ class FrameVisibility:
     t_s: np.ndarray          # seconds from the start of the mp4
     left: np.ndarray         # bool per frame: left hand fully in frame
     right: np.ndarray
+    # For visual checks of the labels: projected joints (frames, 26, 2) in the intrinsics'
+    # pixel space (NaN where the hand is not tracked), and that space's size.
+    points_left: np.ndarray | None = None
+    points_right: np.ndarray | None = None
+    size: tuple[int, int] | None = None
 
 
 def visibility(left: HandTrack, right: HandTrack, ts: np.ndarray, poses: np.ndarray,
                k: np.ndarray, width: int, height: int, mp4_start: int) -> FrameVisibility:
     n = min(len(ts), len(left.valid), len(right.valid), len(poses))
-    vis = {}
+    vis, pts = {}, {}
     for side, track in (("left", left), ("right", right)):
-        vis[side] = np.array([
-            bool(track.valid[i]) and fully_visible(track.joints[i], poses[i], k, width, height)
-            for i in range(n)])
+        flags, points = [], np.full((n, JOINTS, 2), np.nan)
+        for i in range(n):
+            p = project(track.joints[i], poses[i], k)
+            if track.valid[i]:
+                points[i] = p[:, :2]
+            flags.append(bool(track.valid[i]) and _inside(p, width, height))
+        vis[side], pts[side] = np.array(flags, dtype=bool), points
     t_s = (ts[:n] - mp4_start) / TICKS_PER_S
-    return FrameVisibility(t_s, vis["left"], vis["right"])
+    return FrameVisibility(t_s, vis["left"], vis["right"], pts["left"], pts["right"],
+                           (width, height))
 
 
 def both_ratio(v: FrameVisibility, start_s: float, end_s: float,

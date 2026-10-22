@@ -282,3 +282,34 @@ def session_visibility(remote: Remote, session: str) -> handpose.FrameVisibility
     k, w, h = handpose.parse_intrinsics(txt["intr"])
     return handpose.visibility(handpose.parse_hand(txt["left"]), handpose.parse_hand(txt["right"]),
                                ts, poses, k, w, h, handpose.parse_mp4_start(txt["timing"]))
+
+
+def overlay(video: Path, vis: handpose.FrameVisibility, t_s: float, dst: Path, title: str) -> bool:
+    """Save the frame nearest `t_s` with the projected joints drawn on it (green = hand fully
+    inside the frame, red = not), so a person can check the hand labels by eye."""
+    import av
+    import cv2
+    import numpy as np
+
+    if vis.points_left is None or vis.points_right is None or vis.size is None:
+        return False
+    i = int(np.argmin(np.abs(vis.t_s - t_s)))
+    with av.open(str(video)) as c:
+        stream = c.streams.video[0]
+        c.seek(int(max(0.0, vis.t_s[i] - 1) / stream.time_base), stream=stream, backward=True)
+        img = None
+        for frame in c.decode(stream):
+            if frame.pts is not None and float(frame.pts * stream.time_base) >= vis.t_s[i]:
+                img = frame.to_ndarray(format="bgr24")
+                break
+    if img is None:
+        return False
+    sx, sy = img.shape[1] / vis.size[0], img.shape[0] / vis.size[1]
+    for pts, ok in ((vis.points_left[i], vis.left[i]), (vis.points_right[i], vis.right[i])):
+        color = (0, 200, 0) if ok else (0, 0, 255)
+        for x, y in pts:
+            if np.isfinite(x) and np.isfinite(y):
+                cv2.circle(img, (int(x * sx), int(y * sy)), 4, color, -1)
+    cv2.putText(img, title, (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    return bool(cv2.imwrite(str(dst), img))

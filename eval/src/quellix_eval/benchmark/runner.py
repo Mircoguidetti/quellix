@@ -43,6 +43,10 @@ from .gemini_v2 import (
 RUBRICS = Path(__file__).resolve().parents[3] / "rubrics"
 SLICE_RUBRIC = {"tasks": "benchmark_v2_tasks.json", "hands": "benchmark_v2_hands.json",
                 "synthetic": "eval_v0.json"}
+OVERLAYS = 12   # hands slice: frames with the projected joints drawn, to check labels by eye
+# Each model gets its own share of a job's cap, so the strong model cannot starve the cheap one
+# (run 39783934037: the strong model used 86% of a shared cap, the cheap one covered half).
+MODEL_SHARE = {CHEAP_MODEL: 0.3, STRONG_MODEL: 0.7}
 # Rough first-call guesses (USD per clip at low media resolution) until a real cost is seen.
 FIRST_GUESS = {CHEAP_MODEL: 0.003, STRONG_MODEL: 0.06}
 
@@ -109,6 +113,13 @@ def holo_clips(kind: str, sessions_n: int, work: Path, seed: int,
                 else:
                     assert vis is not None
                     rec = holo.hands_clip(session, ann[session], src, vis, work / "clips", rng)
+                    if rec is not None and stats.setdefault("overlays", 0) < OVERLAYS:
+                        meta = json.loads(rec.notes)
+                        a, b = meta["window_s"]
+                        stats["overlays"] += holo.overlay(
+                            src, vis, (a + b) / 2, work.parent / "debug" / f"{session}.jpg",
+                            f"{session} ratio={meta['both_visible_ratio']} "
+                            f"label={rec.checks['hands_visible']}")
                     if rec is None:
                         skip("no window with enough manipulation")
                     elif rec.checks["hands_visible"] == "unknown":
@@ -283,7 +294,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     stats["clip_build_minutes"] = round((time.monotonic() - started) / 60, 1)
     write_manifest(clips, a.out / "manifest.jsonl")
     rubric = json.loads((RUBRICS / SLICE_RUBRIC[a.slice]).read_text())
-    budget = Budget(a.budget_usd, FIRST_GUESS)
+    budget = Budget(a.budget_usd, FIRST_GUESS,
+                    model_caps={m: a.budget_usd * MODEL_SHARE.get(m, 1.0) for m in a.models})
     gemini: dict[str, StructuredClient] = {}
     if os.environ.get("GEMINI_API_KEY"):
         from .gemini_v2 import GeminiStructuredClient

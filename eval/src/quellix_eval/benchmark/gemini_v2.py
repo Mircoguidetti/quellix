@@ -70,6 +70,8 @@ class Budget:
 
     cap_usd: float
     first_guess_usd: Mapping[str, float] = field(default_factory=dict)
+    # Optional per-model caps inside the total, so one model cannot starve another.
+    model_caps: Mapping[str, float] = field(default_factory=dict)
     spent_usd: float = 0.0
     by_model: dict[str, float] = field(default_factory=dict)
     calls: dict[str, int] = field(default_factory=dict)
@@ -80,7 +82,9 @@ class Budget:
     def reserve(self, model: str) -> None:
         with self._lock:
             need = self._max_call.get(model, self.first_guess_usd.get(model, 0.01))
-            if self.spent_usd + need > self.cap_usd:
+            own = self.model_caps.get(model)
+            if self.spent_usd + need > self.cap_usd or (
+                    own is not None and self.by_model.get(model, 0.0) + need > own):
                 self.refused[model] = self.refused.get(model, 0) + 1
                 raise SpendCapReached(f"spend cap ${self.cap_usd:.2f} reached")
 

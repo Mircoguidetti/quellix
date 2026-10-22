@@ -135,6 +135,12 @@ jobs:
         with:
           name: blind-labelling-kit
           path: eval/out/kit
+      - uses: actions/upload-artifact@v4
+        if: matrix.slice == 'hands'
+        with:
+          name: hand-label-overlays
+          if-no-files-found: warn
+          path: eval/out/hands/debug
 
   report:
     needs: [params, slice]

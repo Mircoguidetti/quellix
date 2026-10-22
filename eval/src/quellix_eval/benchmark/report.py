@@ -97,7 +97,7 @@ def engine_rows(slices: Sequence[Mapping[str, Any]], fn: Any) -> list[list[str]]
         done = {k for k, v in res.items() if ran(v)}
         if e != "worker" and 0 < len(done) < total:
             w = {k: v for s in slices for k, v in s["engines"].get("worker", {}).items()}
-            rows.append(_row(f"Ormes, same {len(done)} clips", fn(clips, w, done)))
+            rows.append(_row(f"Ormes, same clips as {engine_title(e)}", fn(clips, w, done)))
     return rows
 
 

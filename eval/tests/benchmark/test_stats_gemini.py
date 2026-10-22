@@ -99,3 +99,13 @@ def test_budget_refuses_before_overshooting():
     with pytest.raises(g.SpendCapReached):
         b.reserve("m")                     # 0.04 spent + 0.02 expected > 0.05
     assert b.refused == {"m": 1} and b.spent_usd == pytest.approx(0.04)
+
+
+def test_per_model_caps_keep_one_model_from_starving_another():
+    b = g.Budget(1.0, {"strong": 0.3, "cheap": 0.01}, model_caps={"strong": 0.7, "cheap": 0.3})
+    for _ in range(2):
+        b.reserve("strong")
+        b.record("strong", 0.3)
+    with pytest.raises(g.SpendCapReached):
+        b.reserve("strong")                  # 0.6 + 0.3 > its own 0.7, total still has room
+    b.reserve("cheap")                       # the cheap model still has its share

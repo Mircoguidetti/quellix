@@ -130,3 +130,24 @@ def test_remote_indexes_are_walked_once(tmp_path, monkeypatch):
     r.hands()
     r.cams()
     assert calls == [holo.HANDS_TAR_URL, holo.CAM_TAR_URL]
+
+
+def test_overlay_draws_projected_joints(tmp_path):
+    from quellix_eval.defects import make_clean_clip, write_video
+
+    c = make_clean_clip(n_frames=30, size=(96, 128), fps=10.0)
+    video = tmp_path / "v.mp4"
+    write_video(video, c.frames, c.fps)
+    t = np.arange(30) / 10.0
+    pts = np.tile(np.array([[50.0, 40.0]]), (30, 26, 1))
+    vis = handpose.FrameVisibility(t, np.ones(30, bool), np.zeros(30, bool), pts,
+                                   np.full_like(pts, np.nan), (128, 96))
+    dst = tmp_path / "d" / "o.jpg"
+    assert holo.overlay(video, vis, 1.5, dst, "s ratio=0.5")
+    import cv2
+    img = cv2.imread(str(dst))
+    assert img.shape[:2] == (96, 128)
+    b, g_, r = img[40, 50].astype(int)
+    assert g_ > 150 and r < 100                       # green dot where the joint projects
+    assert not holo.overlay(video, handpose.FrameVisibility(t, vis.left, vis.right), 1.0,
+                            tmp_path / "x.jpg", "no points")
