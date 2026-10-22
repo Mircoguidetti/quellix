@@ -1,7 +1,17 @@
+import { isContributorVisible, reasonSegments } from "@/lib/feedback";
 import { reasonLabel } from "@/lib/format";
 import { fmtSeconds } from "@/lib/rubric-eval";
 
-export type TimelineReason = { check: string; code: string; message: string; effect: string };
+export type TimelineReason = {
+  check: string;
+  code: string;
+  message: string;
+  effect: string;
+  /** Schema v2 (issue #22): what the contributor should do, where it happens, and who may see it. */
+  hint?: string;
+  segments?: { start_s: number; end_s: number }[];
+  contributor_visible?: boolean;
+};
 export type StoredCheck = { status?: string; measurements?: Record<string, unknown> };
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -24,6 +34,10 @@ export type Moment = {
   reasonIndex: number;
   /** The measurement behind the reason, at that moment. */
   detail: string;
+  /** How the contributor can fix it, when the worker gave a hint. */
+  hint: string | null;
+  /** False when the contributor never sees this reason (duplicates, errors). */
+  contributorVisible: boolean;
 };
 
 const pct = (x: unknown) => (typeof x === "number" ? `${Math.round(x * 100)}%` : "—");
@@ -54,7 +68,8 @@ function wholeVideoDetail(r: TimelineReason, m: Record<string, unknown>): string
 /**
  * Every flagged moment of a decision, in time order, then reasons about the whole video. Privacy
  * reasons give one moment per detection; the task check points at where the model saw it end;
- * hands at the first manipulation segment. Each moment carries the measurement behind it.
+ * hands at the first manipulation segment. Reasons that carry `segments` (schema v2) use those
+ * instead: one moment per segment. Each moment carries the measurement behind it and the hint.
  */
 export function flaggedMoments(reasons: TimelineReason[], checks: Record<string, StoredCheck>, duration: number | null): Moment[] {
   const clamp = (t: number) => (duration === null ? Math.max(0, t) : Math.min(Math.max(0, t), duration));
@@ -62,7 +77,24 @@ export function flaggedMoments(reasons: TimelineReason[], checks: Record<string,
   const whole: Moment[] = [];
   reasons.forEach((r, reasonIndex) => {
     const m = checks[r.check]?.measurements ?? {};
-    const base = { label: reasonLabel(r.code), message: r.message, effect: (r.effect === "reject" ? "reject" : "review") as Moment["effect"], code: r.code, reasonIndex };
+    const base = {
+      label: reasonLabel(r.code),
+      message: r.message,
+      effect: (r.effect === "reject" ? "reject" : "review") as Moment["effect"],
+      code: r.code,
+      reasonIndex,
+      hint: typeof r.hint === "string" && r.hint ? r.hint : null,
+      contributorVisible: isContributorVisible(r),
+    };
+    const segments = reasonSegments(r.segments);
+    if (segments.length) {
+      segments.slice(0, MAX_DETECTIONS).forEach((seg, i) => {
+        const range = clock(seg.start_s) === clock(seg.end_s) ? clock(seg.start_s) : `${clock(seg.start_s)}–${clock(seg.end_s)}`;
+        const end = duration === null ? seg.end_s : Math.min(seg.end_s, duration);
+        timed.push({ ...base, key: `${reasonIndex}-s${i}`, t: clamp(seg.start_s), end, detail: segments.length > 1 ? `${range} · ${i + 1} of ${segments.length}` : range });
+      });
+      return;
+    }
     if (r.check === "privacy" && !r.code.endsWith(".error")) {
       const kind = r.code.split(".")[1];
       const list = (Array.isArray(m[kind]) ? (m[kind] as { t_s?: unknown; box?: unknown }[]) : []).filter((d) => num(d?.t_s) !== null);
