@@ -6,16 +6,16 @@
       "license": "Pexels License"
     }
   ],
-  "total_bytes": 5743329,
+  "total_bytes": 5641047,
   "clips": [
     {
       "id": "clip-01",
-      "source_clip": "pexels_7308220",
-      "factory": "a-woman-stacking-shirts",
+      "source_clip": "pexels_7204592",
+      "factory": "person-washing-a-drinking-glass",
       "dataset": "Pexels",
       "license": "Pexels License",
-      "task": "Folding laundry",
-      "page_url": "https://www.pexels.com/video/a-woman-stacking-shirts-7308220/",
+      "task": "Washing up in the sink",
+      "page_url": "https://www.pexels.com/video/person-washing-a-drinking-glass-7204592/",
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
@@ -26,12 +26,51 @@
       "width": 1280,
       "height": 720,
       "fps": 24.0,
-      "duration_s": 8.25,
+      "duration_s": 8.46,
       "bytes": {
-        "mp4": 593493,
-        "webm": 435942,
-        "poster": 68330,
-        "json": 12858
+        "mp4": 597212,
+        "webm": 337383,
+        "poster": 71062,
+        "json": 13026
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 56
+      }
+    },
+    {
+      "id": "clip-01-mobile",
+      "source_clip": "pexels_7204592",
+      "factory": "person-washing-a-drinking-glass",
+      "dataset": "Pexels",
+      "license": "Pexels License",
+      "task": "Washing up in the sink",
+      "page_url": "https://www.pexels.com/video/person-washing-a-drinking-glass-7204592/",
+      "author": "unknown (see the Pexels page)",
+      "author_url": "",
+      "orientation": "landscape",
+      "decision": "reject",
+      "variant_of": "clip-01",
+      "variant_kind": "mobile_crop",
+      "crop": {
+        "x0": 0.3418,
+        "width_frac": 0.3164,
+        "moved": false,
+        "centre_crop_keeps_hands": false,
+        "both_hands_whole_share": 0.0
+      },
+      "mp4": "clip-01-mobile.mp4",
+      "webm": "clip-01-mobile.webm",
+      "poster": "clip-01-mobile.jpg",
+      "width": 540,
+      "height": 960,
+      "fps": 24.0,
+      "duration_s": 8.46,
+      "bytes": {
+        "mp4": 593805,
+        "webm": 400228,
+        "poster": 50896,
+        "json": 13143
       },
       "crf": {
         "mp4": 32,
@@ -40,28 +79,30 @@
     },
     {
       "id": "clip-01-hand",
-      "source_clip": "pexels_7308220",
-      "factory": "a-woman-stacking-shirts",
+      "source_clip": "pexels_7204592",
+      "factory": "person-washing-a-drinking-glass",
       "dataset": "Pexels",
       "license": "Pexels License",
-      "task": "Folding laundry",
-      "page_url": "https://www.pexels.com/video/a-woman-stacking-shirts-7308220/",
+      "task": "Washing up in the sink",
+      "page_url": "https://www.pexels.com/video/person-washing-a-drinking-glass-7204592/",
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
-      "decision": "reject",
+      "decision": "review",
       "variant_of": "clip-01",
+      "variant_kind": "hand",
       "defect": {
         "kind": "hand",
-        "recipe": "hand_out_one: zoom on the bottom-right quarter",
+        "recipe": "slide: the left hand leaves through the left edge",
         "interval_s": [
-          2.62,
-          5.62
+          2.73,
+          5.73
         ],
         "tried": [
           {
-            "recipe": "hand_out_one: zoom on the bottom-right quarter",
-            "decision": "reject"
+            "recipe": "slide: the left hand leaves through the left edge",
+            "decision": "review",
+            "rank": 3
           }
         ]
       },
@@ -71,42 +112,54 @@
       "width": 1280,
       "height": 720,
       "fps": 24.0,
-      "duration_s": 8.25,
+      "duration_s": 8.46,
       "bytes": {
-        "mp4": 392754,
-        "webm": 270973,
-        "poster": 47685,
-        "json": 13431
+        "mp4": 385369,
+        "webm": 267186,
+        "poster": 53089,
+        "json": 13480
       },
       "crf": {
-        "mp4": 35,
-        "webm": 52
+        "mp4": 38,
+        "webm": 56
       }
     },
     {
       "id": "clip-01-dark",
-      "source_clip": "pexels_7308220",
-      "factory": "a-woman-stacking-shirts",
+      "source_clip": "pexels_7204592",
+      "factory": "person-washing-a-drinking-glass",
       "dataset": "Pexels",
       "license": "Pexels License",
-      "task": "Folding laundry",
-      "page_url": "https://www.pexels.com/video/a-woman-stacking-shirts-7308220/",
+      "task": "Washing up in the sink",
+      "page_url": "https://www.pexels.com/video/person-washing-a-drinking-glass-7204592/",
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
       "decision": "reject",
       "variant_of": "clip-01",
+      "variant_kind": "dark",
       "defect": {
         "kind": "dark",
         "recipe": "exposure x0.25",
         "interval_s": [
-          2.62,
-          5.62
+          2.73,
+          5.73
         ],
         "tried": [
           {
             "recipe": "exposure x0.25",
-            "decision": "reject"
+            "decision": "reject",
+            "rank": 2
+          },
+          {
+            "recipe": "exposure x0.15",
+            "decision": "reject",
+            "rank": 2
+          },
+          {
+            "recipe": "motion_blur",
+            "decision": "reject",
+            "rank": 2
           }
         ]
       },
@@ -116,26 +169,26 @@
       "width": 1280,
       "height": 720,
       "fps": 24.0,
-      "duration_s": 8.25,
+      "duration_s": 8.46,
       "bytes": {
-        "mp4": 475081,
-        "webm": 314524,
-        "poster": 35586,
-        "json": 13153
+        "mp4": 466277,
+        "webm": 302153,
+        "poster": 42527,
+        "json": 13593
       },
       "crf": {
-        "mp4": 32,
-        "webm": 48
+        "mp4": 35,
+        "webm": 52
       }
     },
     {
       "id": "clip-02",
-      "source_clip": "pexels_11102752",
-      "factory": "close-up-on-person-cooking-in-pot",
+      "source_clip": "pexels_7418650",
+      "factory": "a-person-making-a-salad",
       "dataset": "Pexels",
       "license": "Pexels License",
-      "task": "Cooking in a pot",
-      "page_url": "https://www.pexels.com/video/close-up-on-person-cooking-in-pot-11102752/",
+      "task": "Making a salad",
+      "page_url": "https://www.pexels.com/video/a-person-making-a-salad-7418650/",
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
@@ -144,28 +197,28 @@
       "webm": "clip-02.webm",
       "poster": "clip-02.jpg",
       "width": 1280,
-      "height": 720,
-      "fps": 29.97,
-      "duration_s": 8.58,
+      "height": 674,
+      "fps": 25.0,
+      "duration_s": 9.04,
       "bytes": {
-        "mp4": 589184,
-        "webm": 426029,
-        "poster": 65366,
-        "json": 14225
+        "mp4": 535664,
+        "webm": 418549,
+        "poster": 62383,
+        "json": 14257
       },
       "crf": {
-        "mp4": 35,
-        "webm": 52
+        "mp4": 32,
+        "webm": 44
       }
     },
     {
       "id": "clip-03",
-      "source_clip": "pexels_4440711",
-      "factory": "a-person-putting-clothes-on-the-washing-machine",
+      "source_clip": "pexels_37443407",
+      "factory": "whipping-cream-with-electric-mixer-in-bowl",
       "dataset": "Pexels",
       "license": "Pexels License",
-      "task": "Loading a washing machine",
-      "page_url": "https://www.pexels.com/video/a-person-putting-clothes-on-the-washing-machine-4440711/",
+      "task": "Whipping cream with an electric mixer",
+      "page_url": "https://www.pexels.com/video/whipping-cream-with-electric-mixer-in-bowl-37443407/",
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
@@ -176,45 +229,15 @@
       "width": 1280,
       "height": 720,
       "fps": 25.0,
-      "duration_s": 4.52,
+      "duration_s": 9.04,
       "bytes": {
-        "mp4": 528329,
-        "webm": 418047,
-        "poster": 68535,
-        "json": 8067
+        "mp4": 555824,
+        "webm": 348151,
+        "poster": 70197,
+        "json": 15593
       },
       "crf": {
         "mp4": 30,
-        "webm": 40
-      }
-    },
-    {
-      "id": "clip-04",
-      "source_clip": "pexels_7641501",
-      "factory": "woman-washing-cups-in-the-sink",
-      "dataset": "Pexels",
-      "license": "Pexels License",
-      "task": "Washing cups",
-      "page_url": "https://www.pexels.com/video/woman-washing-cups-in-the-sink-7641501/",
-      "author": "unknown (see the Pexels page)",
-      "author_url": "",
-      "orientation": "portrait",
-      "decision": "review",
-      "mp4": "clip-04.mp4",
-      "webm": "clip-04.webm",
-      "poster": "clip-04.jpg",
-      "width": 720,
-      "height": 1366,
-      "fps": 25.0,
-      "duration_s": 9.04,
-      "bytes": {
-        "mp4": 528708,
-        "webm": 348927,
-        "poster": 61133,
-        "json": 12969
-      },
-      "crf": {
-        "mp4": 32,
         "webm": 48
       }
     }
