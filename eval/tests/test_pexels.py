@@ -87,7 +87,8 @@ def test_fetch_pick_reports_every_exact_error(tmp_path):
 
 
 def test_the_landing_clips_and_the_third_person_set():
-    assert [p.pexels_id for p in px.LANDING_CLIPS] == [7204592, 7418650, 37443407, 7658012]
+    assert [p.pexels_id for p in px.LANDING_CLIPS] == [
+        7204592, 7418650, 37443407, 7658012, 27917233, 6693828]
     assert px.LANDING is px.LANDING_CLIPS[0] and px.LANDING.orientation == "landscape"
     assert not {p.pexels_id for p in px.LANDING_CLIPS} & {p.pexels_id for p in px.THIRD_PERSON}
     assert [p.pexels_id for p in px.THIRD_PERSON] == [
