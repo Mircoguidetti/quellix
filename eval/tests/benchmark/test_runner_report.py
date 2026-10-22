@@ -143,3 +143,13 @@ def test_cut_writes_the_requested_window(tmp_path):
     assert dur == pytest.approx(1.0, abs=0.1) and out.frames[0].shape[1] == 64
     with pytest.raises(ValueError):
         cut(src, tmp_path / "x.mp4", 2.0, 2.0)
+
+
+def test_report_says_why_an_engine_did_not_score_clips():
+    data = {"slice": "tasks", "rubric": {}, "spend": {"cap_usd": 1, "spent_usd": 0, "by_model": {}},
+            "clips": [{"clip_id": "a", "truth": "accept", "checks": {"task_completed": "pass"}}],
+            "engines": {"worker": {"a": {"decision": "review", "checks": {}}},
+                        "gemini:m": {"a": {"not_run": True,
+                                           "error": "m: 402 credits are depleted"}}}}
+    text = report.render([data])
+    assert "Gemini m: 1 clips not scored (m: 402 credits are depleted)." in text

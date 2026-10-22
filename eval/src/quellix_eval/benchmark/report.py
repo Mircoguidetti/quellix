@@ -148,6 +148,14 @@ def render(slices: Sequence[Mapping[str, Any]], meta: Mapping[str, str] | None =
             rows = [r for r in engine_rows([s], fn) if r[1] != "0"]
             if rows:
                 lines += [f"Check `{check}`:", "", *_table(rows), ""]
+        for engine, res in s["engines"].items():
+            reasons: dict[str, int] = {}
+            for r in res.values():
+                if r.get("not_run") or (r.get("decision") is None and r.get("error")):
+                    why = str(r.get("error") or "not run")[:160]
+                    reasons[why] = reasons.get(why, 0) + 1
+            for why, n in sorted(reasons.items(), key=lambda kv: -kv[1])[:3]:
+                lines.append(f"{engine_title(engine)}: {n} clips not scored ({why}).")
         skipped = s.get("stats", {}).get("skipped") or {}
         if skipped:
             lines.append("Not included: " + "; ".join(f"{v} {k}" for k, v in skipped.items())
