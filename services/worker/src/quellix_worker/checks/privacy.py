@@ -37,33 +37,53 @@ def _zoo_url(filename: str) -> str:
 YUNET_URL = _zoo_url(YUNET_FILENAME)
 TEXT_URL = _zoo_url(TEXT_FILENAME)
 
-FACE_SCORE_THRESHOLD = 0.8
-# Ignore faces narrower than this share of the frame width: in factory footage, small faces far
-# in the background are coworkers at a distance, not the person who is the subject. (Was 0.02,
-# i.e. 10 px of a 480 px frame, which is below what is identifiable anyway.)
-MIN_FACE_SHARE = 0.04
+# --- faces -----------------------------------------------------------------------------
+# YuNet reports a score per face. A face is *confident* (reported in ``faces``) from
+# FACE_CONFIDENT_SCORE and FACE_CONFIDENT_SHARE of the frame width; weaker or smaller ones
+# (down to FACE_MIN_SCORE / FACE_MIN_SHARE) are *possible* (``faces_possible``): in factory
+# footage, small faces far in the background are coworkers at a distance, not the subject.
+FACE_MIN_SCORE = 0.6
+FACE_MIN_SHARE = 0.02
+FACE_CONFIDENT_SCORE = 0.8
+FACE_CONFIDENT_SHARE = 0.04
 
-# A detection only counts when the same kind is seen in at least PERSIST_MIN_HITS sampled
+# A detection only counts when the same kind is seen in at least PERSIST_MIN_HITS analysed
 # frames within PERSIST_WINDOW_S seconds. A single-frame hit is a flicker (a poster, a lit
-# panel, a motion-blurred shape), not something that was in view.
-PERSIST_MIN_HITS = 3
+# panel, a motion-blurred shape), not something that was in view. Privacy analyses every
+# PRIVACY_STRIDE-th sampled frame (4 fps / 2 = 2 fps), so 2 hits mean about one second.
+PRIVACY_STRIDE = 2
+PERSIST_MIN_HITS = 2
 PERSIST_WINDOW_S = 2.0
 
-# Documents / screens: a candidate is a large, filled, axis-aligned rectangle that is bright
-# (paper, or a bright screen) or dark (a dark screen), with text evidence inside it.
-# HEURISTIC v0: validated on generated overlays only (no labelled real footage yet).
+# --- documents and screens ------------------------------------------------------------
+# HEURISTICS, validated on overlays over real photographs (scikit-image sample images) and
+# on generated frames; not yet on labelled factory footage.
 MIN_REGION_SHARE, MAX_REGION_SHARE = 0.04, 0.70  # of the frame area
 MIN_FILL = 0.80  # contour area / bounding rectangle area
 BRIGHT_LEVEL, DARK_LEVEL = 170, 70  # pixel levels for the connected-region search
 BRIGHT_MEAN, DARK_MEAN = 150, 90  # mean level inside an outlined rectangle
-FLOOD_TOLERANCE = 25  # how far from the seed level a pixel may be and still be the same surface
-MIN_TEXT_BOXES_IN_DOCUMENT = 3  # text lines found by the text detector
-MIN_SCREEN_SHARE = 0.05  # a dark screen must cover at least this much of the frame
-MIN_LINE_ROWS = 6  # or: distinct dark rows (ruled / printed lines) inside a bright rectangle
-LINE_ROW_DIP = 20  # a row is a "line" when its mean is this much darker than the page
+
+# A ruled / printed page: at least MIN_RULED_LINES long, thin, dark horizontal lines on a
+# bright background, stacked with the same horizontal extent. Independent of what is behind it.
+MIN_RULED_LINES = 6
+RULE_CONTRAST = 45  # a line is this much darker than the bright page around it
+RULE_PAGE_LEVEL = 160  # ... and the page level is at least this bright
+MIN_RULE_SHARE = 0.06  # a line is at least this share of the frame width
+# A text document found by the text detector: this many text lines inside a bright rectangle
+# is a confident document, one less is a possible one.
+MIN_TEXT_LINES_IN_DOCUMENT = 3
+# A screen: a large, flat, dark panel (std <= PANEL_STD, level <= PANEL_LEVEL) with content,
+# i.e. text found inside / around it or bright accents. Dark panels without content (a
+# switched-off monitor, a window) are not reported. Text is a confident screen, accents only
+# a possible one.
+PANEL_LEVEL, PANEL_STD = 45, 8
+MIN_SCREEN_SHARE = 0.05
+PANEL_PAD = 0.7  # content is looked for in the panel grown by this much of its size
+ACCENT_LEVEL, ACCENT_SHARE = 120, 0.005
+MAX_OCR_CANDIDATES = 3  # per frame; the text detector only ever runs on candidate crops
 
 
-def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+def _iou(a: tuple[int, ...], b: tuple[int, ...]) -> float:
     ix = max(0, min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]))
     iy = max(0, min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1]))
     inter = ix * iy
@@ -126,7 +146,7 @@ class YuNetFaceDetector:
         h, w = rgb.shape[:2]
         if self._detector is None:
             self._detector = cv2.FaceDetectorYN.create(
-                self._path, "", (w, h), FACE_SCORE_THRESHOLD, 0.3, 5000
+                self._path, "", (w, h), FACE_MIN_SCORE, 0.3, 5000
             )
         self._detector.setInputSize((w, h))
         _, faces = self._detector.detect(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
@@ -134,66 +154,53 @@ class YuNetFaceDetector:
             return []
         boxes = [(float(f[0]) / w, float(f[1]) / h, float(f[2]) / w, float(f[3]) / h,
                   float(f[-1])) for f in faces]  # last column of YuNet's output is the score
-        return [b for b in boxes if b[2] >= MIN_FACE_SHARE]
+        return [b for b in boxes if b[2] >= FACE_MIN_SHARE]
 
 
 class RegionAnalyzer:
-    """Documents and screens in one frame: text lines (PP-OCRv3 DB) + rectangle analysis."""
+    """Documents and screens in one frame: structure first (cheap), the text detector only on
+    candidate crops, never on the whole frame."""
 
     def __init__(self, text_model: str | Path | None = None) -> None:
         self._path = str(text_model or text_model_path())
         self._text: Any = None
 
-    def _text_boxes(self, rgb: np.ndarray) -> list[np.ndarray]:
-        """Corner polygons (4 x 2, pixels) of the detected text lines."""
+    def _text_lines(self, rgb: np.ndarray) -> list[np.ndarray]:
+        """Corner polygons (n x 2, pixels of ``rgb``) of the text lines in an image crop."""
         if self._text is None:
             m = cv2.dnn.TextDetectionModel_DB(self._path)
             m.setBinaryThreshold(0.3)
             m.setPolygonThreshold(0.5)
             m.setMaxCandidates(200)
             m.setUnclipRatio(2.0)
-            m.setInputParams(1.0 / 255, (640, 384), (122.67891434, 116.66876762, 104.00698793),
-                             swapRB=True)
             self._text = m
+        h, w = rgb.shape[:2]
+        # Text in a 480 px frame is only ~8-10 px tall, below what the text detector sees
+        # (it needs ~12 px): crops are upscaled by 1.5, capped at 800 px on the long side.
+        scale = min(1.5, 800 / max(h, w))
+        iw = max(64, int(round(w * scale / 32)) * 32)
+        ih = max(64, int(round(h * scale / 32)) * 32)
+        self._text.setInputParams(1.0 / 255, (iw, ih), (122.67891434, 116.66876762, 104.00698793),
+                                  swapRB=True)
         polygons, _ = self._text.detect(rgb)
         return [np.asarray(poly, dtype=np.float32).reshape(-1, 2) for poly in polygons]
 
-    @staticmethod
-    def _flood_regions(gray: np.ndarray, polygons: list[np.ndarray]
-                       ) -> list[tuple[tuple[int, int, int, int], float]]:
-        """For each text line: the uniform surface it sits on (flood fill from just outside the
-        text), as (bounding rectangle, mean level). A screen or a page is bounded by its bezel
-        or edge, so the fill stops there even when the room behind has a similar tone."""
-        h, w = gray.shape
-        out = []
-        for poly in polygons:
-            # seed: the pixel closest to the box's median level (the surface, not the text)
-            x0, x1 = int(poly[:, 0].min()), int(poly[:, 0].max())
-            y0, y1 = int(poly[:, 1].min()), int(poly[:, 1].max())
-            patch = gray[max(0, y0): y1 + 1, max(0, x0): x1 + 1]
-            if patch.size == 0:
-                continue
-            dy, dx = np.unravel_index(
-                np.argmin(np.abs(patch.astype(np.int16) - int(np.median(patch)))), patch.shape)
-            sx, sy = max(0, x0) + int(dx), max(0, y0) + int(dy)
-            mask = np.zeros((h + 2, w + 2), np.uint8)
-            cv2.floodFill(gray.copy(), mask, (sx, sy), 255,
-                          loDiff=FLOOD_TOLERANCE, upDiff=FLOOD_TOLERANCE,
-                          flags=4 | cv2.FLOODFILL_MASK_ONLY | cv2.FLOODFILL_FIXED_RANGE
-                          | (255 << 8))
-            region = mask[1:-1, 1:-1]
-            x, y, cw, ch = cv2.boundingRect(region)
-            area = cv2.countNonZero(region)
-            if cw * ch == 0 or area / (cw * ch) < MIN_FILL:
-                continue
-            if MIN_REGION_SHARE <= cw * ch / (w * h) <= MAX_REGION_SHARE:
-                out.append(((x, y, cw, ch), float(gray[region > 0].mean())))
-        return out
+    def _text_in(self, rgb: np.ndarray, rect: tuple[int, int, int, int],
+                 pad: float = 0.1) -> int:
+        """Text lines inside ``rect`` (grown by ``pad``), found on that crop only."""
+        h, w = rgb.shape[:2]
+        x, y, cw, ch = rect
+        dx, dy = int(cw * pad), int(ch * pad)
+        x0, y0 = max(0, x - dx), max(0, y - dy)
+        x1, y1 = min(w, x + cw + dx), min(h, y + ch + dy)
+        if x1 - x0 < 16 or y1 - y0 < 16:
+            return 0
+        return len(self._text_lines(np.ascontiguousarray(rgb[y0:y1, x0:x1])))
 
     @staticmethod
     def _rectangles(gray: np.ndarray, bright: bool) -> list[tuple[int, int, int, int]]:
-        """Large filled rectangles that are bright (paper, lit screen) or dark (screen), found
-        two ways so neither a busy background nor a soft edge hides them: connected regions of
+        """Large filled rectangles that are bright (paper, lit screen) or dark, found two
+        ways so neither a busy background nor a soft edge hides them: connected regions of
         the bright/dark mask, and four-sided outlines found from edges."""
         h, w = gray.shape
         found: list[tuple[int, int, int, int]] = []
@@ -225,48 +232,96 @@ class RegionAnalyzer:
             if inner.size and ((inner.mean() >= BRIGHT_MEAN) if bright
                                else (inner.mean() <= DARK_MEAN)):
                 keep(x, y, cw, ch)
-
         return _unique(found)
 
     @staticmethod
-    def _line_rows(gray: np.ndarray, rect: tuple[int, int, int, int]) -> int:
-        x, y, w, h = rect
-        inner = gray[y + h // 20: y + h - h // 20, x + w // 20: x + w - w // 20]
-        if inner.size == 0:
-            return 0
-        rows = inner.mean(axis=1)
-        dark = rows < np.median(rows) - LINE_ROW_DIP
-        return int(np.count_nonzero(dark[1:] & ~dark[:-1]) + int(dark[0]))  # runs of dark rows
+    def ruled_pages(gray: np.ndarray) -> list[tuple[int, int, int, int, int]]:
+        """Stacks of long thin dark horizontal lines on a bright page: (x, y, w, h, n_lines)."""
+        h, w = gray.shape
+        close = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, np.ones((7, 1), np.uint8))
+        mask = ((cv2.subtract(close, gray) >= RULE_CONTRAST) & (close >= RULE_PAGE_LEVEL))
+        mask = cv2.morphologyEx(mask.astype(np.uint8) * 255, cv2.MORPH_OPEN,
+                                np.ones((1, max(9, int(w * MIN_RULE_SHARE))), np.uint8))
+        n, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        lines = [tuple(int(v) for v in stats[i][:4]) for i in range(1, n)
+                 if stats[i][3] <= 5 and stats[i][2] >= w * MIN_RULE_SHARE * 1.3]
+        groups: list[dict[str, Any]] = []
+        for x, y, cw, ch in sorted(lines, key=lambda r: r[1]):
+            for g in groups:
+                if (abs(x - g["x"]) <= 0.04 * w and abs(x + cw - g["x1"]) <= 0.04 * w
+                        and y - g["ys"][-1] <= 0.12 * h):
+                    g["ys"].append(y)
+                    g["y1"] = max(g["y1"], y + ch)
+                    break
+            else:
+                groups.append({"x": x, "x1": x + cw, "ys": [y], "y1": y + ch})
+        return [(g["x"], g["ys"][0], g["x1"] - g["x"], g["y1"] - g["ys"][0], len(g["ys"]))
+                for g in groups if len(g["ys"]) >= MIN_RULED_LINES]
+
+    @staticmethod
+    def dark_panels(gray: np.ndarray) -> list[tuple[int, int, int, int]]:
+        """Large flat dark rectangles (std <= PANEL_STD): screens, or just dark surfaces."""
+        h, w = gray.shape
+        f = gray.astype(np.float32)
+        mean = cv2.blur(f, (5, 5))
+        std = np.sqrt(np.maximum(cv2.blur(f * f, (5, 5)) - mean * mean, 0))
+        mask = ((gray <= PANEL_LEVEL) & (std <= PANEL_STD)).astype(np.uint8) * 255
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        out = []
+        for c in contours:
+            x, y, cw, ch = cv2.boundingRect(c)
+            if (MIN_SCREEN_SHARE <= cw * ch / (w * h) <= MAX_REGION_SHARE
+                    and cv2.contourArea(c) / max(1, cw * ch) >= MIN_FILL):
+                out.append((x, y, cw, ch))
+        return out
 
     def analyze(self, rgb: np.ndarray) -> dict[str, list[tuple[float, ...]]]:
+        """-> {"documents": [(x, y, w, h, evidence)], "screens": [...]}, boxes as frame
+        fractions; evidence = number of text / ruled lines (0.5 = bright accents only)."""
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         h, w = gray.shape
-        polygons = self._text_boxes(rgb)
-        centres = [(float(p[:, 0].mean()), float(p[:, 1].mean())) for p in polygons]
 
-        def inside(rect: tuple[int, int, int, int]) -> int:
+        def norm(r: tuple[int, ...], ev: float) -> tuple[float, ...]:
+            return (r[0] / w, r[1] / h, r[2] / w, r[3] / h, float(ev))
+
+        documents: list[tuple[float, ...]] = []
+        screens: list[tuple[float, ...]] = []
+
+        ruled = self.ruled_pages(gray)
+        for x, y, cw, ch, n_lines in ruled:
+            documents.append(norm((x, y, cw, ch), n_lines))
+
+        budget = MAX_OCR_CANDIDATES
+        panels = sorted(self.dark_panels(gray), key=lambda r: -r[2] * r[3])
+        for rect in panels:
             x, y, cw, ch = rect
-            return sum(x <= cx <= x + cw and y <= cy <= y + ch for cx, cy in centres)
+            grown = (max(0, int(x - PANEL_PAD * cw)), max(0, int(y - PANEL_PAD * ch)),
+                     int(cw * (1 + 2 * PANEL_PAD)), int(ch * (1 + 2 * PANEL_PAD)))
+            gx, gy, gw, gh = grown
+            region = gray[gy:gy + gh, gx:gx + gw]
+            accents = float((region >= ACCENT_LEVEL).mean()) >= ACCENT_SHARE
+            lines = 0
+            if budget > 0:
+                budget -= 1
+                lines = self._text_in(rgb, grown, pad=0.0)
+            if lines >= 1:
+                screens.append(norm(rect, lines))
+            elif accents:
+                screens.append(norm(rect, 0.5))
 
-        def norm(r: tuple[int, int, int, int]) -> tuple[float, float, float, float]:
-            return (r[0] / w, r[1] / h, r[2] / w, r[3] / h)
-
-        documents = [r for r in self._rectangles(gray, bright=True)
-                     if inside(r) >= MIN_TEXT_BOXES_IN_DOCUMENT
-                     or self._line_rows(gray, r) >= MIN_LINE_ROWS]
-        screens = [r for r in self._rectangles(gray, bright=False)
-                   if inside(r) >= 1 and r[2] * r[3] / (w * h) >= MIN_SCREEN_SHARE]
-        for rect, level in self._flood_regions(gray, polygons):
-            if level >= BRIGHT_MEAN and inside(rect) >= MIN_TEXT_BOXES_IN_DOCUMENT:
-                documents.append(rect)
-            elif (level <= DARK_MEAN and inside(rect) >= 1
-                  and rect[2] * rect[3] / (w * h) >= MIN_SCREEN_SHARE):
-                screens.append(rect)
-
-        def scored(rects):  # evidence = text lines inside the rectangle
-            return [(*norm(r), float(inside(r))) for r in _unique(rects)]
-
-        return {"documents": scored(documents), "screens": scored(screens)}
+        # Text documents on a bright rectangle that is not already a ruled page.
+        for rect in sorted(self._rectangles(gray, bright=True), key=lambda r: -r[2] * r[3]):
+            if budget <= 0:
+                break
+            if any(_iou(rect, (r[0], r[1], r[2], r[3])) > 0.3 for r in ruled):
+                continue
+            budget -= 1
+            lines = self._text_in(rgb, rect)
+            if lines >= MIN_TEXT_LINES_IN_DOCUMENT - 1:
+                documents.append(norm(rect, lines))
+        return {"documents": documents, "screens": screens}
 
 
 class _Cached:
@@ -339,6 +394,19 @@ def _save_debug_frames(frames, kind: str, detections: list[dict[str, Any]], labe
         return
 
 
+def _is_confident(kind: str, det: dict[str, Any]) -> bool:
+    """Confident detections go to the rubric's ``faces`` / ``documents`` / ``screens``;
+    weaker ones to ``<kind>_possible``. A detector that gives no score is confident."""
+    score = det.get("score")
+    if score is None:
+        return True
+    if kind == "faces":
+        return score >= FACE_CONFIDENT_SCORE and det["box"][2] >= FACE_CONFIDENT_SHARE
+    if kind == "documents":
+        return score >= MIN_TEXT_LINES_IN_DOCUMENT
+    return score >= 1.0  # screens: text found (0.5 = bright accents only)
+
+
 def run(
     video: DecodedVideo,
     faces: Any | None = None,
@@ -352,13 +420,16 @@ def run(
             analyzer = RegionAnalyzer()
             documents = documents or _Cached(analyzer, "documents")
             screens = screens or _Cached(analyzer, "screens")
-        result = {
-            "faces": persistent(_detections(video.frames, face_detector)),
-            "documents": persistent(_detections(video.frames, documents)),
-            "screens": persistent(_detections(video.frames, screens)),
-        }
+        frames = video.frames[::PRIVACY_STRIDE]  # privacy does not need every sampled frame
+        result: dict[str, list[dict[str, Any]]] = {}
+        for kind, detector in (("faces", face_detector), ("documents", documents),
+                               ("screens", screens)):
+            raw = _detections(frames, detector)
+            result[kind] = persistent([d for d in raw if _is_confident(kind, d)])
+            result[f"{kind}_possible"] = persistent(
+                [d for d in raw if not _is_confident(kind, d)])
         for kind, found in result.items():
-            _save_debug_frames(video.frames, kind, found, label)
+            _save_debug_frames(frames, kind, found, label)
     except Exception as exc:  # missing weights, bad model: review, never silent pass
         return CheckOutput(error=f"privacy detector unavailable: {exc}")
     return CheckOutput(measurements=to_py(result), model=MODEL)
