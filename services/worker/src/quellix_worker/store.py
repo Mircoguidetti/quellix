@@ -28,11 +28,11 @@ VISIBILITY_TIMEOUT_S = 2100
 MAX_ATTEMPTS = 3
 REVIEW_RETENTION = timedelta(days=14)  # founder data rule: a review video is kept at most this long
 RETRY_DELAYS_S = (60, 300)  # wait before attempt 2 and 3
-SIGNATURE_HEADER = "Quellix-Signature"
+SIGNATURE_HEADER = "Ormes-Signature"
 
 
 def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
-    """``Quellix-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
+    """``Ormes-Signature`` header value: ``t=<unix>,v1=<hex>`` where ``v1`` is the hex
     HMAC-SHA256 of ``"<t>.<raw body>"`` (the timestamp lets receivers reject replays)."""
     t = int(time.time()) if timestamp is None else timestamp
     digest = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()

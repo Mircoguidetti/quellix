@@ -1,8 +1,8 @@
-"""The metrics Quellix is judged on.
+"""The metrics Ormes is judged on.
 
 Ground truth per video is the final human verdict: `accept` or `reject`
 (the lab's outcome when available, otherwise the collector's reviewer).
-A prediction is Quellix's decision: `accept`, `reject` or `review`.
+A prediction is Ormes's decision: `accept`, `reject` or `review`.
 
 We never report generic "agreement": if 85% of videos are acceptable, a system that
 accepts everything already agrees 85% of the time. We report rejections.

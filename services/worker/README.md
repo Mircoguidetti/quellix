@@ -1,6 +1,6 @@
 # services/worker
 
-The Quellix video pipeline (decode, checks, rubric evaluation, decision). Runs on Modal.
+The Ormes video pipeline (decode, checks, rubric evaluation, decision). Runs on Modal.
 See `CLAUDE.md` for the architecture and the measurement contract.
 
 ## Local
@@ -25,7 +25,7 @@ pgmq queue `video_jobs`. On Modal:
 3. A failed attempt is retried (the message is re-sent after 60 s, then 300 s). After the third
    failure the job and the video are `failed` with the error in `jobs.error`, the customer file
    is deleted, and the message is archived; nothing is decided and nothing is silently rejected.
-4. The webhook carries `Quellix-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`
+4. The webhook carries `Ormes-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`
    (see `openapi.yaml`), signed with `webhooks.signing_secret`.
 
 Containers scale to zero. The default is CPU (2 cores, 4 GiB); a GPU is opt-in (below).

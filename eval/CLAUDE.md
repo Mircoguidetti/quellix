@@ -1,10 +1,10 @@
 # eval
 
-How we know Quellix is good. Everything another folder claims about accuracy must be reproducible from here.
+How we know Ormes is good. Everything another folder claims about accuracy must be reproducible from here.
 
 ## Metrics (`src/quellix_eval/metrics.py`)
 
-Truth per video is `accept` / `reject` (lab outcome when available, otherwise a human reviewer). Quellix predicts `accept` / `reject` / `review`. We report:
+Truth per video is `accept` / `reject` (lab outcome when available, otherwise a human reviewer). Ormes predicts `accept` / `reject` / `review`. We report:
 - precision and recall on rejections, flag recall (reject or review), false reject rate, false accept rate, review rate;
 - a cost-weighted total vs. "a person reviews everything";
 - always next to the **base reject rate** and next to the **general-model baselines** (Gemini, TwelveLabs Pegasus) on the same videos.

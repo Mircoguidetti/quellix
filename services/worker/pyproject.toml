@@ -1,7 +1,7 @@
 [project]
 name = "quellix-worker"
 version = "0.1.0"
-description = "Quellix video pipeline: checks, rubric evaluation, decision."
+description = "Ormes video pipeline: checks, rubric evaluation, decision."
 requires-python = ">=3.12"
 dependencies = [
   "av>=19.0.2",
