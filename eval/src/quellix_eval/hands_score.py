@@ -230,23 +230,60 @@ def run_synthetic(n: int, work: Path, models: Mapping[str, Any],
     return scored
 
 
-def run_pexels(work: Path, models: Mapping[str, Any], detectors: Sequence[CachedDetector],
-               rubric: Mapping[str, Any]) -> list[Scored]:  # pragma: no cover - network
-    from .datasets import pexels
+# Pexels clips (Pexels License): the landing clips and the third-person test set. Listed here
+# rather than imported from the site-clips code, which is not on `main` yet (PR #75).
+PEXELS_CLIPS: tuple[tuple[int, str, str], ...] = (
+    (7204592, "Washing up in the sink", "first-person"),
+    (7418650, "Making a salad", "first-person"),
+    (37443407, "Whipping cream with an electric mixer", "first-person"),
+    (7658012, "Putting ground coffee in a filter", "first-person"),
+    (7308220, "Folding laundry", "third-person"),
+    (4520150, "Packing jeans in a box", "third-person"),
+    (11102752, "Cooking in a pot", "third-person"),
+    (5592524, "Cleaning a countertop", "third-person"),
+    (4440711, "Loading a washing machine", "third-person"),
+    (7641501, "Washing cups", "third-person"),
+    (9141844, "Putting folded clothes in a bag", "third-person"),
+)
+PEXELS_DOWNLOAD = "https://www.pexels.com/download/video/{id}/"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124"
 
-    net, out = pexels.UrllibNet(), []
-    for pick in (*pexels.LANDING_CLIPS, *pexels.THIRD_PERSON):
+
+def download(url: str, dst: Path) -> None:  # pragma: no cover - network
+    import urllib.request
+
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=120) as r, open(dst, "wb") as f:  # noqa: S310
+        while chunk := r.read(1 << 20):
+            f.write(chunk)
+
+
+def run_pexels(work: Path, models: Mapping[str, Any], detectors: Sequence[CachedDetector],
+               rubric: Mapping[str, Any], fetch: Any = download) -> list[Scored]:
+    """Download each Pexels clip, score it, delete it. A failed download is skipped."""
+    out = []
+    for pid, task, view in PEXELS_CLIPS:
+        path = work / f"pexels_{pid}.mp4"
         try:
-            path, _ = pexels.fetch_pick(net, pick, work, os.environ.get("PEXELS_API_KEY", ""),
-                                        lambda s: None)
-        except Exception as e:  # noqa: BLE001
-            print(f"pexels {pick.clip_id}: {e}", file=sys.stderr)
+            fetch(PEXELS_DOWNLOAD.format(id=pid), path)
+        except Exception as e:  # noqa: BLE001 - one missing clip must not end the run
+            print(f"pexels {pid}: {type(e).__name__}: {e}", file=sys.stderr)
             continue
-        view = "first-person" if pick in pexels.LANDING_CLIPS else "third-person"
-        out.append(score_clip(f"{pick.clip_id} ({pick.task}, {view})", path, "unknown", models,
+        out.append(score_clip(f"pexels_{pid} ({task}, {view})", path, "unknown", models,
                               detectors, rubric, "pexels"))
         path.unlink(missing_ok=True)
     return out
+
+
+def write_outputs(out: Path, chosen: float, dev: Sequence[Scored], val: Sequence[Scored],
+                  synth: Sequence[Scored], free: Sequence[Scored],
+                  extra: Mapping[str, Any]) -> None:
+    """Called after every stage, so a late failure keeps what was already scored."""
+    (out / "report.md").write_text(report(chosen, dev, val, synth, free, extra))
+    (out / "scored.json").write_text(json.dumps({
+        "chosen": chosen, "dev": [vars(s) for s in dev], "val": [vars(s) for s in val],
+        "synthetic": [vars(s) for s in synth], "free": [vars(s) for s in free]}, indent=1))
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
@@ -283,15 +320,25 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     val, val_clips, st = run_holo("val", a.val_sessions, a.out / "val", a.seed, keep, dets,
                                   rubric, remote, client)
     extra["val"] = st
-    holo_overlay_pairs(val_clips, models, chosen, a.out / "overlays")
-    synth = run_synthetic(a.synthetic_sources, a.out / "synthetic", keep, dets, rubric) \
-        if a.synthetic_sources else []
-    free = run_pexels(a.out / "pexels", keep, dets, rubric) if a.pexels else []
-    extra["minutes"] = round((time.monotonic() - started) / 60, 1)
-    (a.out / "report.md").write_text(report(chosen, dev, val, synth, free, extra))
-    (a.out / "scored.json").write_text(json.dumps({
-        "chosen": chosen, "dev": [vars(s) for s in dev], "val": [vars(s) for s in val],
-        "synthetic": [vars(s) for s in synth], "free": [vars(s) for s in free]}, indent=1))
+    synth: list[Scored] = []
+    free: list[Scored] = []
+    write_outputs(a.out, chosen, dev, val, synth, free, extra)
+    stages = [("overlays", lambda: holo_overlay_pairs(val_clips, models, chosen,
+                                                       a.out / "overlays"))]
+    if a.synthetic_sources:
+        stages.append(("synthetic", lambda: synth.extend(
+            run_synthetic(a.synthetic_sources, a.out / "synthetic", keep, dets, rubric))))
+    if a.pexels:
+        stages.append(("pexels", lambda: free.extend(
+            run_pexels(a.out / "pexels", keep, dets, rubric))))
+    for name, stage in stages:
+        try:
+            stage()
+        except Exception as e:  # noqa: BLE001 - keep what is scored, say what failed
+            extra[f"{name}_error"] = f"{type(e).__name__}: {e}"
+            print(f"stage {name} failed: {e}", file=sys.stderr)
+        extra["minutes"] = round((time.monotonic() - started) / 60, 1)
+        write_outputs(a.out, chosen, dev, val, synth, free, extra)
     print((a.out / "report.md").read_text())
     return 0
 

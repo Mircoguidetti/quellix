@@ -127,3 +127,30 @@ def test_run_holo_creates_the_work_directory_the_benchmark_builder_writes_into(t
                                        {}, None, None)
     assert scored == [] and clips == [] and stats == {"split": "train"}
     assert seen["split"] == "train" and (seen["work"] / "annotations.json").exists()
+
+
+def test_pexels_stage_downloads_scores_and_deletes_each_clip_and_skips_failures(tmp_path):
+    inner = hs.CachedDetector(TwoHands())
+    models = {"v0": HandsModel.v0(inner), "v1@0.5": HandsModel(inner)}
+    rubric = json.loads(hs.RUBRIC.read_text())
+    src = video(tmp_path)
+    fetched = []
+
+    def fetch(url, dst):
+        fetched.append(url)
+        if "7418650" in url:
+            raise OSError("HTTP Error 403")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(src.read_bytes())
+
+    out = hs.run_pexels(tmp_path / "px", models, [inner], rubric, fetch=fetch)
+    assert len(fetched) == len(hs.PEXELS_CLIPS) and len(out) == len(hs.PEXELS_CLIPS) - 1
+    assert out[0].clip_id.startswith("pexels_7204592") and out[0].status["v1@0.5"] == "pass"
+    assert not list((tmp_path / "px").glob("*.mp4"))            # nothing kept
+
+
+def test_outputs_are_written_after_every_stage(tmp_path):
+    rows = [scored("pass", **{"v0": "fail", "v1@0.2": "pass"})]
+    hs.write_outputs(tmp_path, 0.2, rows, rows, [], [], {"pexels_error": "boom"})
+    assert "pexels_error" in (tmp_path / "report.md").read_text()
+    assert json.loads((tmp_path / "scored.json").read_text())["chosen"] == 0.2
