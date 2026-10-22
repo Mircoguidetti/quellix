@@ -95,6 +95,7 @@ class Meta:
     author: str
     author_url: str
     page: str
+    debug: str = ""
 
 
 _FILE = re.compile(
@@ -127,22 +128,57 @@ def best_rendition(options: Sequence[Rendition], orientation: str) -> Rendition 
     return max(fits, key=long_side)
 
 
+def _find_person(node: object) -> tuple[str, str] | None:
+    """(name, url) of the first author/creator in a parsed JSON-LD tree."""
+    if isinstance(node, list):
+        for item in node:
+            if found := _find_person(item):
+                return found
+    elif isinstance(node, dict):
+        for key in ("author", "creator"):
+            person = node.get(key)
+            if isinstance(person, list) and person:
+                person = person[0]
+            if isinstance(person, dict) and person.get("name"):
+                return str(person["name"]), str(person.get("url") or "")
+        for value in node.values():
+            if isinstance(value, dict | list) and (found := _find_person(value)):
+                return found
+    return None
+
+
 def meta_from_page(html: str, fallback_page: str) -> Meta:
-    """Author name and profile link from the page's JSON-LD, else the page itself."""
+    """Author name and profile link from the page, trying what Pexels is known to embed.
+
+    1. JSON-LD (`author` / `creator`, at any depth);
+    2. the page's data: a `user` object with first_name / last_name / username;
+    3. the most linked profile (`/@handle`), shown as "@handle".
+    When all fail the author is "unknown" and `debug` carries the page fragments to look at.
+    """
     for block in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', html, re.S):
         try:
-            data = json.loads(block)
+            found = _find_person(json.loads(block))
         except ValueError:
             continue
-        for item in data if isinstance(data, list) else [data]:
-            if not isinstance(item, dict):
-                continue
-            author = item.get("author") or item.get("creator")
-            if isinstance(author, list) and author:
-                author = author[0]
-            if isinstance(author, dict) and author.get("name"):
-                return Meta(str(author["name"]), str(author.get("url") or ""), fallback_page)
-    return Meta("unknown (see the Pexels page)", "", fallback_page)
+        if found:
+            return Meta(found[0], found[1], fallback_page)
+    flat = html.replace('\\"', '"')
+    m = re.search(r'"first_name":"([^"]*)","last_name":"([^"]*)"', flat)
+    handle = re.search(r'"(?:username|slug)":"([A-Za-z0-9._-]+)"', flat[m.end():m.end() + 400]
+                       if m else "")
+    if m and (m.group(1) or m.group(2)):
+        name = f"{m.group(1)} {m.group(2)}".strip()
+        return Meta(name, f"https://www.pexels.com/@{handle.group(1)}" if handle else "",
+                    fallback_page)
+    handles = re.findall(r'href="(?:https://www\.pexels\.com)?/@([A-Za-z0-9._-]+)/?"', html)
+    if handles:
+        top = max(set(handles), key=handles.count)
+        return Meta(f"@{top}", f"https://www.pexels.com/@{top}", fallback_page)
+    pattern = r'(?i)"(?:author|creator|photographer|first_name)"|/@\w'
+    clues = [html[max(0, i.start() - 60): i.start() + 200].replace("\n", " ")
+             for i in re.finditer(pattern, html)][:4]
+    return Meta("unknown (see the Pexels page)", "", fallback_page,
+                " || ".join(clues) or f"no author clue in {len(html)} bytes of page")
 
 
 def api_rendition(net: Net, pexels_id: int, orientation: str, key: str) -> tuple[Rendition, Meta]:

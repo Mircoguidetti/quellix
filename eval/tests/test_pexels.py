@@ -223,3 +223,18 @@ def test_produce_drops_a_clip_the_worker_rejects_and_adds_defective_copies(tmp_p
     entry = {c["id"]: c for c in manifest["clips"]}["clip-01-hand"]
     assert entry["variant_of"] == "clip-01" and entry["author"] == "Ada Lens"
     assert entry["page_url"].startswith("https://www.pexels.com/")
+
+
+def test_author_from_the_other_formats_pexels_pages_use():
+    graph = ('<script type="application/ld+json">{"@graph":[{"@type":"WebPage"},{"@type":'
+             '"VideoObject","creator":{"@type":"Person","name":"Bo Frame",'
+             '"url":"https://www.pexels.com/@bo"}}]}</script>')
+    assert px.meta_from_page(graph, "p").author == "Bo Frame"
+    data = ('<script>{"user":{"id":1,"first_name":"Cy","last_name":"Reel",'
+            '"username":"cyreel"}}</script>')
+    meta = px.meta_from_page(data.replace('"', '\\"'), "p")          # embedded as an escaped string
+    assert (meta.author, meta.author_url) == ("Cy Reel", "https://www.pexels.com/@cyreel")
+    links = '<a href="/@dee">x</a><a href="/@dee/">y</a><a href="/@other">z</a>'
+    assert px.meta_from_page(links, "p").author == "@dee"
+    none = px.meta_from_page('<html><body>hello "creator": 3</body></html>', "p")
+    assert none.author.startswith("unknown") and "creator" in none.debug

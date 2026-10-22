@@ -778,6 +778,9 @@ def fetch_pexels(
         except Exception as e:  # noqa: BLE001 - one failure must not hide the others
             errors.append(f"{pick.clip_id}: {e}")
             continue
+        if meta.debug:
+            errors.append(
+                f"{pick.clip_id}: AUTHOR NOT FOUND on the page; clues: {meta.debug[:700]}")
         got.append(Fetched(pick.clip_id, raw, SourceInfo(
             "pexels", pexels.DATASET, pexels.LICENSE, pick.slug, pick.task, 0.0, (),
             meta.page, meta.author, meta.author_url, pick.orientation, fixed=True)))
