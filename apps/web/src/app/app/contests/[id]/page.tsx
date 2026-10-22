@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { dashboardContext } from "@/lib/dashboard";
-import { contributorReasons, getContest } from "@/lib/domain/contests";
+import { getContest } from "@/lib/domain/contests";
+import { contestFeedback } from "@/lib/feedback";
+import { FeedbackList } from "@/components/feedback-list";
 import { getVideo } from "@/lib/domain/videos";
 import { formatDateTime } from "@/lib/format";
 import { ResolveDialog } from "./resolve-dialog";
@@ -35,7 +37,7 @@ async function Content({ params }: { params: PageProps<"/app/contests/[id]">["pa
   const contest = await getContest(db, orgId, id);
   if (!contest) notFound();
   const video = await getVideo(db, orgId, contest.video_id).catch(() => null);
-  const shown = contributorReasons(video?.decision?.reasons);
+  const shown = contestFeedback(video?.decision?.reasons);
 
   return (
     <>
@@ -80,13 +82,7 @@ async function Content({ params }: { params: PageProps<"/app/contests/[id]">["pa
         <div className="grid gap-1.5">
           <h3 className="text-[13px] font-medium">What the contributor was told</h3>
           {shown.length ? (
-            <ul className="grid gap-1 pl-5 text-[14px]">
-              {shown.map((r) => (
-                <li key={r} className="list-disc">
-                  {r}
-                </li>
-              ))}
-            </ul>
+            <FeedbackList items={shown} size="sm" />
           ) : (
             <p className="text-[14px] text-muted-foreground">No detailed reason was shown.</p>
           )}

@@ -250,6 +250,10 @@ export interface components {
         Rubric: components["schemas"]["rubric.schema"];
         /** @enum {unknown} */
         checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality";
+        segment: {
+            start_s: number;
+            end_s: number;
+        };
         checkResult: {
             /** @enum {unknown} */
             status: "pass" | "fail" | "uncertain" | "skipped" | "error";
@@ -263,6 +267,8 @@ export interface components {
          * @description What Ormes decided about one video, why, and on what measurements. Produced by services/worker, stored in the decisions table, returned by the API and the webhook.
          */
         "decision.schema": {
+            /** @description Version of this schema the decision was written with. Absent means 1. Version 2 added hint, segments and contributor_visible on reasons. */
+            schema_version?: number;
             video_id: string;
             /** @enum {unknown} */
             decision: "accept" | "reject" | "review";
@@ -274,6 +280,12 @@ export interface components {
                 message: string;
                 /** @enum {unknown} */
                 effect: "reject" | "review";
+                /** @description One short, actionable sentence for the person who filmed the video, e.g. 'Keep both hands in frame: hold the camera lower.' */
+                hint?: string;
+                /** @description Where in the video the problem happens, in seconds from the start. Empty or absent for reasons about the whole video. */
+                segments?: components["schemas"]["segment"][];
+                /** @description Whether the contributor may see this reason (message, hint, segments). Absent means true, except originality.*, *.error and pipeline.* reasons, which are always treated as hidden. Originality reasons are never visible: a contributor must not learn how duplicates are detected. */
+                contributor_visible?: boolean;
             }[];
             checks: {
                 [key: string]: components["schemas"]["checkResult"];
@@ -286,6 +298,10 @@ export interface components {
             /** Format: date-time */
             created_at?: string;
             $defs: {
+                segment: {
+                    start_s: number;
+                    end_s: number;
+                };
                 /** @enum {unknown} */
                 checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality";
                 checkResult: {

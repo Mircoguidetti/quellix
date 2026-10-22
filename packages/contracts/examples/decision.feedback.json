@@ -1,0 +1,64 @@
+{
+  "schema_version": 2,
+  "video_id": "vid_feedback_example",
+  "decision": "reject",
+  "reasons": [
+    {
+      "check": "hands_visible",
+      "code": "hands_visible.below_min",
+      "message": "Both hands visible 55% of the time during manipulation (minimum 80%).",
+      "effect": "reject",
+      "hint": "Keep both hands in frame while you work: hold the camera a little lower.",
+      "segments": [{ "start_s": 12.0, "end_s": 18.5 }, { "start_s": 40.0, "end_s": 44.0 }]
+    },
+    {
+      "check": "privacy",
+      "code": "privacy.faces",
+      "message": "A face is visible at 00:05.",
+      "effect": "review",
+      "hint": "Point the camera away from people's faces.",
+      "segments": [{ "start_s": 5.0, "end_s": 5.5 }]
+    },
+    {
+      "check": "technical",
+      "code": "technical.blurry",
+      "message": "Blurry 12% of the time (maximum 5%).",
+      "effect": "reject",
+      "hint": "Clean the lens and move the camera more slowly."
+    },
+    {
+      "check": "originality",
+      "code": "originality.duplicate",
+      "message": "This video was already delivered (matches video vid_other); similarity 0.97.",
+      "effect": "reject",
+      "hint": "Do not resubmit a video.",
+      "segments": [{ "start_s": 0.0, "end_s": 30.0 }],
+      "contributor_visible": false
+    },
+    {
+      "check": "framing",
+      "code": "framing.error",
+      "message": "The framing check failed: model timeout.",
+      "effect": "review"
+    },
+    {
+      "check": "framing",
+      "code": "framing.unstable",
+      "message": "Unstable camera 20% of the time (maximum 10%).",
+      "effect": "review",
+      "hint": "Keep your head steady, or mount the camera more firmly.",
+      "segments": [{ "start_s": 2.0, "end_s": 9.0 }],
+      "contributor_visible": true
+    }
+  ],
+  "checks": {
+    "hands_visible": { "status": "fail", "measurements": { "ratio_both_manipulation": 0.55 }, "model": "hands@0.1.0" },
+    "privacy": { "status": "fail", "measurements": { "faces": [{ "t_s": 5.0 }] } },
+    "technical": { "status": "fail", "measurements": { "blur_ratio": 0.12 } },
+    "originality": { "status": "fail", "measurements": { "max_similarity": 0.97, "match_video_id": "vid_other" } },
+    "framing": { "status": "error" }
+  },
+  "rubric": { "id": "rub_example_dishwasher", "version": 1 },
+  "engine_version": "0.1.0",
+  "created_at": "2026-10-22T10:00:00Z"
+}

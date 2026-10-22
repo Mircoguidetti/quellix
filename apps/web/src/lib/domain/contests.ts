@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { errors } from "@/lib/api/errors";
+import { contestFeedback, type FeedbackItem } from "@/lib/feedback";
 import { isUuid } from "./ids";
 
-export type PublicContestInfo = { videoId: string; orgId: string; contributorRef: string | null; reasons: string[] };
+export type PublicContestInfo = { videoId: string; orgId: string; contributorRef: string | null; feedback: FeedbackItem[] };
 
-/** What a contributor may see: only the human-readable reasons of a rejection. Never measurements. */
+/** What a contributor may see: the feedback for a rejection (message, hint, when). Never measurements. */
 export async function getContestInfo(db: SupabaseClient, videoId: string): Promise<PublicContestInfo | null> {
   if (!isUuid(videoId)) return null;
   const { data: video } = await db
@@ -21,19 +22,7 @@ export async function getContestInfo(db: SupabaseClient, videoId: string): Promi
   const rejected = review ? review.decision === "reject" : decision?.decision === "reject";
   if (!rejected) return null;
 
-  return { videoId, orgId: video.org_id, contributorRef: video.contributor_ref, reasons: contributorReasons(decision?.reasons) };
-}
-
-/**
- * What a contributor may read about a rejection: only the reasons that caused it (`effect:
- * reject`). Reasons that only sent the video to review are operational details for the
- * collector's reviewers (issue #8).
- */
-export function contributorReasons(reasons: unknown): string[] {
-  if (!Array.isArray(reasons)) return [];
-  return (reasons as { message?: unknown; effect?: unknown }[])
-    .filter((r) => r && r.effect === "reject" && typeof r.message === "string" && r.message)
-    .map((r) => r.message as string);
+  return { videoId, orgId: video.org_id, contributorRef: video.contributor_ref, feedback: contestFeedback(decision?.reasons) };
 }
 
 export async function submitContest(db: SupabaseClient, info: PublicContestInfo, message: string) {

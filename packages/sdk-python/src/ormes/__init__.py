@@ -14,6 +14,7 @@ from .errors import (
     ValidationError,
     WebhookSignatureError,
 )
+from .feedback import FeedbackItem, FeedbackSegment, contributor_feedback
 from .types import (
     CreateVideoResponse,
     Decision,
@@ -40,6 +41,8 @@ __all__ = [
     "ConnectionError",
     "CreateVideoResponse",
     "Decision",
+    "FeedbackItem",
+    "FeedbackSegment",
     "LabOutcome",
     "NotFoundError",
     "Ormes",
@@ -52,6 +55,7 @@ __all__ = [
     "VideoDecidedEvent",
     "WebhookSignatureError",
     "construct_event",
+    "contributor_feedback",
     "signature_from_headers",
     "verify_signature",
 ]

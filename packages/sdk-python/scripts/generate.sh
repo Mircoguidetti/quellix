@@ -9,4 +9,5 @@ uv run datamodel-codegen \
   --target-python-version 3.10 \
   --extra-fields allow --use-union-operator --use-standard-collections \
   --disable-timestamp \
-  --formatters ruff-format
+  --formatters ruff-format \
+  --base-class-map '{"decision.Schema": "ormes._decision_base.DecisionBase"}'
