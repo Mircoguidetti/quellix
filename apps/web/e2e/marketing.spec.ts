@@ -97,6 +97,35 @@ test.describe("marketing site", () => {
     await expect(page.getByText("Saving creates v4")).toBeVisible();
   });
 
+  test("Home: nine sections, one buyer question each, in order (issue #69)", async ({ page }) => {
+    await page.goto("/");
+    const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
+    expect(ids).toEqual(["top", "problem", "flow", "checks", "why", "privacy", "api", "pilot", "faq", "start"]);
+    // The review console and the old phone moved off Home; "What Ormes doesn't do" and pricing are gone.
+    await expect(page.getByText("What Ormes doesn’t do.")).toHaveCount(0);
+    await expect(page.getByText("Pay per hour of video checked.")).toHaveCount(0);
+    await expect(page.getByRole("img", { name: /The Ormes review screen/ })).toHaveCount(0);
+    // Problem sources are cited.
+    await expect(page.locator("#problem").getByRole("link", { name: /Market Xcel/ })).toBeVisible();
+    await expect(page.locator("#problem").getByRole("link", { name: /Unidata/ })).toBeVisible();
+    // Why Ormes, at rest: the reviewer's verdict tomorrow vs Ormes's reason and the contributor's fix.
+    const why = page.locator("#why");
+    await expect(why.getByText("tomorrow")).toBeVisible();
+    await expect(why.getByText("Your video was rejected.")).toBeVisible();
+    await expect(why.getByText("Hold the phone lower and record again.")).toBeVisible();
+    await expect(why.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/product");
+    // FAQ keeps the five questions and adds the sixth.
+    await expect(page.locator("#faq details")).toHaveCount(6);
+    await expect(page.getByText("Can Ormes reject a good video?")).toBeVisible();
+  });
+
+  test("Product: the review section shows the console and its shortcuts", async ({ page }) => {
+    await page.goto("/product");
+    const review = page.locator("#review");
+    await expect(review.getByRole("img", { name: /The Ormes review screen/ })).toBeVisible();
+    await expect(review.getByLabel("Review shortcuts")).toContainText("Replay the current moment");
+  });
+
   test("Product: hovering a check lights its path to an outcome", async ({ page, isMobile }) => {
     test.skip(isMobile, "Hover");
     await page.goto("/product");
