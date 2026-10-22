@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CircleCheck, CircleX, ScanEye, type LucideIcon } from "lucide-react";
-import { Code } from "@/components/docs/code-block";
+import { Code, CodeBlock } from "@/components/docs/code-block";
 import { DocPage } from "@/components/docs/doc-page";
 import { A, C, Callout, DataTable, FieldTable, H2, P, Ul } from "@/components/docs/prose";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ const TOC = [
   { id: "rule", label: "The rule" },
   { id: "object", label: "The decision object" },
   { id: "reasons", label: "Reasons" },
+  { id: "feedback", label: "Contributor feedback" },
   { id: "measurements", label: "Measurements" },
   { id: "check-statuses", label: "Check statuses" },
   { id: "video-statuses", label: "Video statuses" },
@@ -94,6 +95,29 @@ const REASON_CODES: [string, string][] = [
   ["pipeline.skipped_without_reject", "Some checks were skipped without a rejection. Always review."],
 ];
 
+const FEEDBACK_TS = `
+import { Ormes, contributorFeedback } from "@ormes/sdk";
+
+const ormes = new Ormes();
+const video = await ormes.videos.waitForDecision(videoId);
+
+for (const item of contributorFeedback(video.decision)) {
+  // item: { check, code, effect, message, hint, segments }
+  showToContributor(item.message, item.hint, item.segments);
+}
+`;
+
+const FEEDBACK_PY = `
+from ormes import Ormes
+
+ormes = Ormes()
+video = ormes.videos.wait_for_decision(video_id)
+
+for item in video.decision.contributor_feedback() if video.decision else []:
+    # item: FeedbackItem(check, code, effect, message, hint, segments)
+    show_to_contributor(item.message, item.hint, item.segments)
+`;
+
 const MEASUREMENTS: [string, string][] = [
   ["task_completed", "completed, confidence"],
   ["hands_visible", "ratio_both_manipulation, ratio_any_manipulation, ratio_both_whole, ratio_any_whole"],
@@ -142,6 +166,7 @@ export default function DecisionsPage() {
         showDefault={false}
         caption="Decision fields"
         fields={[
+          { name: "schema_version", type: "integer", description: "Version of the decision format. Absent means 1; version 2 added hint, segments and contributor_visible on reasons." },
           { name: "video_id", type: "string", required: true, description: "The video this decision is about." },
           { name: "decision", type: '"accept" | "reject" | "review"', required: true, description: "The outcome of the rule above." },
           { name: "reasons", type: "Reason[]", required: true, description: "Why. Empty for accept. Reasons that reject come first." },
@@ -163,8 +188,36 @@ export default function DecisionsPage() {
       <DataTable caption="Reason codes" head={["Code", "Meaning"]} rows={REASON_CODES.map(([code, meaning]) => [code, meaning])} />
       <P>
         Unless noted, the effect follows the check&apos;s <C>critical</C> setting. When a contributor <A href="/docs/review#contests">contests a rejection</A>, they see
-        only the messages of reasons whose effect is <C>reject</C>; never measurements.
+        the <A href="#feedback">contributor feedback</A> of the reasons that rejected it; never measurements.
       </P>
+
+      <H2 id="feedback">Contributor feedback</H2>
+      <P>
+        Since <C>schema_version</C> 2, a reason can also say what to fix and when, for the person who filmed the video. These fields are optional: a reason may
+        not carry them.
+      </P>
+      <FieldTable
+        showDefault={false}
+        caption="Reason fields"
+        fields={[
+          { name: "check", type: "string", required: true, description: "The check that raised the reason." },
+          { name: "code", type: "string", required: true, description: "Stable machine code, e.g. hands_visible.below_min." },
+          { name: "message", type: "string", required: true, description: "Human-readable reason." },
+          { name: "effect", type: '"reject" | "review"', required: true, description: "What the reason does to the decision." },
+          { name: "hint", type: "string", description: "One short, actionable sentence for the contributor, at most 200 characters." },
+          { name: "segments", type: "{ start_s, end_s }[]", description: "Where in the video the problem happens, in seconds. Empty or absent for the whole video." },
+          {
+            name: "contributor_visible",
+            type: "boolean",
+            description: "Whether the contributor may see this reason. Absent means visible, except originality.*, *.error and pipeline.* reasons. Originality is never visible.",
+          },
+        ]}
+      />
+      <P>
+        Don&apos;t filter reasons yourself: the SDKs apply the visibility rule, order items by time, and fold hidden rejections into one generic message, so a contributor
+        never learns how a duplicate was caught.
+      </P>
+      <CodeBlock samples={[{ lang: "ts", code: FEEDBACK_TS }, { lang: "py", code: FEEDBACK_PY }]} />
 
       <H2 id="measurements">Measurements</H2>
       <P>
