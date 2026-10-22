@@ -37,6 +37,16 @@ test.describe("marketing site", () => {
     }
   });
 
+  test("hero trust row keeps the design's spacing and dots", async ({ page }) => {
+    await page.goto("/");
+    const trust = page.locator(".trust");
+    await expect(trust).toHaveCSS("display", "flex");
+    await expect(trust).toHaveCSS("column-gap", "18px");
+    await expect(trust).toHaveCSS("row-gap", "8px");
+    const dotWidth = await trust.locator("span").first().evaluate((el) => getComputedStyle(el, "::before").width);
+    expect(dotWidth).toBe("5px");
+  });
+
   test("navigation: links, current page and footer", async ({ page, isMobile }) => {
     test.skip(isMobile, "Desktop nav");
     await page.goto("/");
