@@ -5,14 +5,17 @@ export const labOutcomeSchema = z.object({
   reason: z.string().max(2000).optional(),
 });
 
+export const ACCEPTED_CONTENT_TYPES = ["video/mp4", "video/quicktime", "video/webm"] as const;
+export const MAX_UPLOAD_BYTES = 5_368_709_120;
+
 export const createVideoSchema = z.object({
   rubric_id: z.string().min(1),
   rubric_version: z.number().int().min(1).optional(),
   external_id: z.string().max(200).optional(),
   contributor_ref: z.string().max(200).optional(),
   filename: z.string().min(1).max(300),
-  content_type: z.enum(["video/mp4", "video/quicktime", "video/webm"]),
-  size_bytes: z.number().int().min(1).max(5_368_709_120),
+  content_type: z.enum(ACCEPTED_CONTENT_TYPES),
+  size_bytes: z.number().int().min(1).max(MAX_UPLOAD_BYTES),
   lab_outcome: labOutcomeSchema.optional(),
 });
 
