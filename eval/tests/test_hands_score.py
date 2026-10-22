@@ -108,3 +108,22 @@ def test_check_status_rubric_is_the_benchmarks_hands_rubric():
     assert cfg["require_both"] and cfg["scope"] == "manipulation" and cfg["min_ratio"] == 0.8
     with pytest.raises(KeyError):
         hs.build_models({})
+
+
+def test_run_holo_creates_the_work_directory_the_benchmark_builder_writes_into(tmp_path,
+                                                                               monkeypatch):
+    """Run 1 failed with FileNotFoundError on out/hands/dev/annotations.json."""
+    from quellix_eval.benchmark import runner
+
+    seen = {}
+
+    def fake_holo_clips(kind, n, work, seed, remote, client, split="val"):
+        (work / "annotations.json").write_bytes(b"{}")       # what the real builder does first
+        seen.update(kind=kind, split=split, work=work)
+        return [], {"split": split}
+
+    monkeypatch.setattr(runner, "holo_clips", fake_holo_clips)
+    scored, clips, stats = hs.run_holo("train", 3, tmp_path / "out" / "hands" / "dev", 7, {}, [],
+                                       {}, None, None)
+    assert scored == [] and clips == [] and stats == {"split": "train"}
+    assert seen["split"] == "train" and (seen["work"] / "annotations.json").exists()

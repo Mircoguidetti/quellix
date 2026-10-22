@@ -201,6 +201,7 @@ def run_holo(split: str, n: int, work: Path, seed: int, models: Mapping[str, Any
              remote: Any, client: Any) -> tuple[list[Scored], list[Any], dict[str, Any]]:
     from .benchmark.runner import holo_clips
 
+    work.mkdir(parents=True, exist_ok=True)     # holo_clips writes the annotations file there
     clips, stats = holo_clips("hands", n, work, seed, remote, client, split=split)
     scored = []
     for c in clips:
@@ -216,6 +217,7 @@ def run_synthetic(n: int, work: Path, models: Mapping[str, Any],
                   rubric: Mapping[str, Any]) -> list[Scored]:  # pragma: no cover - network
     from .benchmark.runner import synthetic_clips
 
+    work.mkdir(parents=True, exist_ok=True)
     clips, _ = synthetic_clips(n, work)
     scored = []
     for c in clips:

@@ -83,9 +83,11 @@ jobs:
           echo "dev=$dev" >> "$GITHUB_OUTPUT"; echo "val=$val" >> "$GITHUB_OUTPUT"; echo "syn=$syn" >> "$GITHUB_OUTPUT"
       - name: Score
         run: |
+          mkdir -p out/hands
+          set -o pipefail
           uv run python -m quellix_eval.hands_score --out out/hands --pexels \
             --dev-sessions "${{ steps.n.outputs.dev }}" --val-sessions "${{ steps.n.outputs.val }}" \
-            --synthetic-sources "${{ steps.n.outputs.syn }}"
+            --synthetic-sources "${{ steps.n.outputs.syn }}" 2>&1 | tee out/hands/run.log
       - name: Post the report on issue #4
         if: always()
         env:
@@ -94,7 +96,12 @@ jobs:
           if [ -f out/hands/report.md ]; then
             { echo "Hands fix run ${{ github.run_id }} on \`${{ github.ref_name }}\`."; echo; cat out/hands/report.md; } > out/comment.md
           else
-            echo "Hands fix run ${{ github.run_id }} on \`${{ github.ref_name }}\` produced no report. See https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > out/comment.md
+            {
+              echo "Hands fix run ${{ github.run_id }} on \`${{ github.ref_name }}\` **failed in the Score step** and produced no report."
+              echo; echo "Last lines of its output (warnings from the detector library removed):"; echo
+              echo '```'; grep -v -E "^(W0000|INFO:|WARNING: Logging)" out/hands/run.log 2>/dev/null | tail -n 40 || echo "(no log)"; echo '```'
+              echo; echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            } > out/comment.md
           fi
           head -c 60000 out/comment.md > out/comment-trimmed.md
           gh issue comment 4 -R "${{ github.repository }}" --body-file out/comment-trimmed.md
@@ -105,6 +112,7 @@ jobs:
           if-no-files-found: warn
           path: |
             eval/out/hands/report.md
+            eval/out/hands/run.log
             eval/out/hands/scored.json
             eval/out/hands/debug
             eval/out/hands/overlays
