@@ -5,6 +5,7 @@ description = "Ormes evaluation: datasets, synthetic defects, metrics, baseline 
 requires-python = ">=3.12"
 dependencies = [
   "quellix-worker",
+  "quellix-hands",
   "pydantic>=2.7",
   "av>=13",
   "numpy>=2",
@@ -19,6 +20,8 @@ twelvelabs = ["twelvelabs>=0.4"]
 # The real hands model (models/hands, MediaPipe Hand Landmarker) for the hands_visible check.
 # Weights: `python -m quellix_hands.weights download` (sha256-checked, never in git).
 hands = ["quellix-hands[mediapipe]"]
+# The real hands detector (needs libegl1 / libgles2 on Linux), for the site-clips job.
+mediapipe = ["quellix-hands[mediapipe]"]
 
 [dependency-groups]
 dev = [

@@ -1434,6 +1434,7 @@ dependencies = [
     { name = "numpy" },
     { name = "opencv-python-headless" },
     { name = "pydantic" },
+    { name = "quellix-hands" },
     { name = "quellix-worker" },
 ]
 
@@ -1445,6 +1446,9 @@ gemini = [
     { name = "google-genai" },
 ]
 hands = [
+    { name = "quellix-hands", extra = ["mediapipe"] },
+]
+mediapipe = [
     { name = "quellix-hands", extra = ["mediapipe"] },
 ]
 twelvelabs = [
@@ -1465,11 +1469,13 @@ requires-dist = [
     { name = "numpy", specifier = ">=2" },
     { name = "opencv-python-headless", specifier = ">=4.10" },
     { name = "pydantic", specifier = ">=2.7" },
+    { name = "quellix-hands", editable = "../models/hands" },
     { name = "quellix-hands", extras = ["mediapipe"], marker = "extra == 'hands'", editable = "../models/hands" },
+    { name = "quellix-hands", extras = ["mediapipe"], marker = "extra == 'mediapipe'", editable = "../models/hands" },
     { name = "quellix-worker", editable = "../services/worker" },
     { name = "twelvelabs", marker = "extra == 'twelvelabs'", specifier = ">=0.4" },
 ]
-provides-extras = ["data", "gemini", "twelvelabs", "hands"]
+provides-extras = ["data", "gemini", "twelvelabs", "hands", "mediapipe"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1537,6 +1543,7 @@ dev = [
     { name = "pytest", specifier = ">=8" },
     { name = "quellix-hands", editable = "../models/hands" },
     { name = "ruff", specifier = ">=0.7" },
+    { name = "scikit-image", specifier = ">=0.26.0" },
 ]
 
 [[package]]
