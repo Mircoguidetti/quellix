@@ -2,9 +2,12 @@ import hashlib
 import hmac
 import json
 import time
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import httpx
 import numpy as np
+import pytest
 
 from quellix_worker.checks.originality import FrameFingerprint, SupabaseFingerprintStore
 from quellix_worker.jobs import process_job
@@ -17,9 +20,15 @@ from .clips import scene, write_clip
 class Fake:
     """A tiny fake Supabase: records requests, answers from a script."""
 
-    def __init__(self, video: bytes = b"", status: str = "queued", attempts: int = 0):
+    def __init__(self, video: bytes = b"", status: str = "queued", attempts: int = 0,
+                 delete_after: str | None = None, last_decision: str | None = None,
+                 due: list[dict] | None = None):
         self.status = status
         self.attempts = attempts
+        self.delete_after = delete_after
+        self.last_decision = last_decision
+        self.due = due or []
+        self.rubric = RUBRIC_BODY
         self.log: list[httpx.Request] = []
         self.video = video
         self.webhook_bodies: list[tuple[bytes, str]] = []
@@ -27,6 +36,9 @@ class Fake:
     def __call__(self, req: httpx.Request) -> httpx.Response:
         self.log.append(req)
         p = req.url.path
+        if (p.endswith("/rest/v1/videos") and req.method == "GET"
+                and "delete_after" in req.url.params):
+            return httpx.Response(200, json=self.due)
         if p.endswith("/rpc/send") or p.endswith("/rpc/delete") or p.endswith("/rpc/archive"):
             return httpx.Response(200, json=[1])
         if p.endswith("/rpc/read"):
@@ -34,19 +46,27 @@ class Fake:
                                               "message": {"job_id": "j1", "video_id": "v1"}}])
         if p.endswith("/rest/v1/jobs") and req.method == "GET":
             return httpx.Response(200, json=[{"attempts": self.attempts}])
+        if p.endswith("/rest/v1/videos") and req.method == "GET" and "select" in req.url.params \
+                and req.url.params["select"] == "storage_path,delete_after":
+            return httpx.Response(200, json=[{"storage_path": "org/o1/v1/a.mp4",
+                                              "delete_after": self.delete_after}])
         if p.endswith("/rest/v1/videos") and req.method == "GET":
             return httpx.Response(200, json=[{
                 "org_id": "o1", "status": self.status, "created_at": "2026-10-21T00:00:00Z",
-                "external_id": "ext1", "storage_path": "org/o1/v1/a.mp4", "filename": "a.mp4",
+                "external_id": "ext1", "delete_after": self.delete_after,
+                "storage_path": "org/o1/v1/a.mp4", "filename": "a.mp4",
                 "rubric_id": "r1", "rubric_version": 1,
                 "organizations": {"training_opt_in": False,
                                   "allow_external_models": True}}])
         if p.endswith("/rubric_versions"):
-            return httpx.Response(200, json=[{"body": RUBRIC_BODY}])
+            return httpx.Response(200, json=[{"body": self.rubric}])
         if p.startswith("/storage/v1/object/videos/org") and req.method == "GET":
             return httpx.Response(200, content=self.video)
         if p == "/storage/v1/object/videos":
             return httpx.Response(200, json=[])
+        if p.endswith("/decisions") and req.method == "GET":
+            return httpx.Response(200, json=(
+                [{"decision": self.last_decision}] if self.last_decision else []))
         if p.endswith("/decisions"):
             return httpx.Response(201, json=[{"id": "d1"}])
         if p.endswith("/webhooks"):
@@ -60,7 +80,13 @@ class Fake:
         return httpx.Response(204)
 
 
-RUBRIC_BODY = {"name": "t", "task": {"description": "d"}, "checks": {"technical": {}}}
+# Only technical is on, so a good clip is `accept`; with HANDS_ON the hands placeholder sends
+# it to `review` (no hands model yet).
+OFF = {"enabled": False}
+RUBRIC_BODY = {"name": "t", "task": {"description": "d"}, "checks": {
+    "technical": {}, "task_completed": OFF, "hands_visible": OFF, "framing": OFF,
+    "privacy": OFF, "originality": OFF}}
+HANDS_ON = {**RUBRIC_BODY, "checks": {**RUBRIC_BODY["checks"], "hands_visible": {}}}
 
 
 def make(fake):
@@ -182,14 +208,15 @@ def test_third_failure_marks_failed_and_archives():
     assert any(b.get("storage_path", 1) is None and b.get("file_deleted_at")
                for b in _bodies(f, "/videos"))
     assert not any(r.url.path.endswith("/rpc/send") for r in f.log)
-    assert not any(r.url.path.endswith("/decisions") for r in f.log)  # never a silent reject
+    assert not any(r.method == "POST" and r.url.path.endswith("/decisions")
+                   for r in f.log)  # never a silent reject
 
 
 def test_duplicate_delivery_only_cleans_up():
     f = Fake(b"", status="decided")
     assert process_job(make(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(),
                        Dependencies()) == "skipped"
-    assert not any(r.url.path.endswith("/decisions") for r in f.log)
+    assert not any(r.method == "POST" and r.url.path.endswith("/decisions") for r in f.log)
     assert any(r.method == "DELETE" and r.url.path == "/storage/v1/object/videos" for r in f.log)
     assert any(r.url.path.endswith("/rpc/archive") for r in f.log)
 
@@ -289,3 +316,140 @@ def test_external_models_need_org_and_global_switch(tmp_path, monkeypatch):
         process_job(s, s.read_job(), _fp(f), PipelineConfig(allow_external_models=switch),
                     Dependencies())
     assert seen == [True, False, False]
+
+
+# --- retention: review videos are kept (<= 14 days), everything else is deleted --------------
+
+
+def _run(f, tmp_path=None):
+    deps = Dependencies(face_detector=type("F", (), {"detect": lambda self, rgb: []})())
+    return process_job(make(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(), deps)
+
+
+def _storage_deletes(f):
+    return [r for r in f.log if r.method == "DELETE" and r.url.path == "/storage/v1/object/videos"]
+
+
+def _video_patches(f):
+    return _bodies(f, "/videos")
+
+
+@pytest.fixture(scope="module")
+def good_clip(tmp_path_factory):
+    return write_clip(tmp_path_factory.mktemp("ret") / "a.mp4", scene(1, 30), fps=15).read_bytes()
+
+
+def test_accept_is_deleted_immediately(good_clip):
+    f = Fake(good_clip)
+    assert _run(f) == "accept"
+    assert len(_storage_deletes(f)) == 1
+    assert not any("delete_after" in b for b in _video_patches(f))
+
+
+def test_reject_is_deleted_immediately():
+    f = Fake(b"not a video")  # undecodable -> reject
+    assert _run(f) == "reject"
+    assert len(_storage_deletes(f)) == 1
+    assert not any("delete_after" in b for b in _video_patches(f))
+
+
+def test_review_is_kept_for_at_most_14_days(good_clip):
+    f = Fake(good_clip)
+    f.rubric = HANDS_ON
+    before = datetime.now(UTC)
+    assert _run(f) == "review"
+    assert _storage_deletes(f) == []  # the reviewer can still watch it
+    patches = _video_patches(f)
+    deadline = datetime.fromisoformat(next(b["delete_after"] for b in patches
+                                           if "delete_after" in b))
+    assert timedelta(days=13, hours=23) < deadline - before <= timedelta(days=14, minutes=1)
+    assert any(b.get("status") == "decided" for b in patches)
+    assert not any(b.get("storage_path", 1) is None for b in patches)  # the row keeps the path
+    decisions = [r for r in f.log if r.method == "POST" and r.url.path.endswith("/decisions")]
+    assert json.loads(decisions[0].content)["decision"] == "review"  # decision still stored
+
+
+def test_final_failure_deletes_the_file():
+    f = Fake(b"", attempts=2)
+    assert process_job(_boom_store(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(),
+                       Dependencies()) == "failed"
+    assert len(_storage_deletes(f)) == 1
+
+
+def test_final_failure_after_a_kept_review_does_not_delete_the_file():
+    f = Fake(b"", attempts=2, delete_after="2026-11-01T00:00:00+00:00")
+    assert process_job(_boom_store(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(),
+                       Dependencies()) == "failed"
+    assert _storage_deletes(f) == []
+
+
+@pytest.mark.parametrize("last,kept", [("review", True), ("accept", False), ("reject", False)])
+def test_duplicate_delivery_respects_the_decision(last, kept):
+    f = Fake(b"", status="decided", last_decision=last)
+    assert process_job(make(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(),
+                       Dependencies()) == "skipped"
+    assert bool(_storage_deletes(f)) is (not kept)
+    assert any("delete_after" in b for b in _video_patches(f)) is kept
+
+
+def test_duplicate_delivery_never_deletes_a_kept_review_file():
+    f = Fake(b"", status="decided", delete_after="2026-11-01T00:00:00+00:00",
+             last_decision="review")
+    process_job(make(f), Job(7, "j1", "v1"), _fp(f), PipelineConfig(), Dependencies())
+    assert _storage_deletes(f) == []
+
+
+def test_purge_expired_deletes_only_what_is_due():
+    f = Fake(due=[{"id": "v9", "storage_path": "org/o1/v9/a.mp4"}])
+    now = datetime(2026, 11, 5, tzinfo=UTC)
+    assert make(f).purge_expired(now) == ["v9"]
+    get = next(r for r in f.log if r.method == "GET" and r.url.path.endswith("/videos"))
+    assert get.url.params["delete_after"] == f"lt.{now.isoformat()}"
+    assert get.url.params["storage_path"] == "not.is.null"
+    assert len(_storage_deletes(f)) == 1
+    assert any(b.get("storage_path", 1) is None for b in _video_patches(f))
+    assert any(b.get("file_deleted_at") for b in _video_patches(f))
+
+
+def test_purge_reviewed_targets_kept_videos_with_a_review():
+    f = Fake(due=[{"id": "v8", "storage_path": "org/o1/v8/a.mp4", "reviews": [{"id": "r"}]}])
+    assert make(f).purge_reviewed() == ["v8"]
+    get = next(r for r in f.log if r.method == "GET" and r.url.path.endswith("/videos"))
+    assert "reviews!inner" in get.url.params["select"]
+    assert get.url.params["delete_after"] == "not.is.null"
+
+
+def test_a_failing_file_does_not_stop_the_sweep():
+    f = Fake(due=[{"id": "a", "storage_path": "p/a"}, {"id": "b", "storage_path": "p/b"}])
+    s = make(f)
+    real = s.delete_video_file
+    calls = []
+
+    def flaky(video_id, path):
+        calls.append(video_id)
+        if video_id == "a":
+            raise httpx.ConnectError("down")
+        real(video_id, path)
+
+    s.delete_video_file = flaky
+    assert s.purge_expired() == ["b"] and calls == ["a", "b"]
+
+
+def test_nothing_in_the_worker_deletes_rows_we_keep():
+    """Decisions, fingerprints, rubric versions, reviews and lab outcomes are never deleted by
+    the worker: the only DELETEs it issues are Storage objects and queue messages."""
+    import re
+
+    src = "".join(p.read_text() for p in Path(__file__).parents[1].joinpath("src").rglob("*.py"))
+    assert not re.search(r'_rest\(\s*"DELETE"', src)
+    assert not re.search(r'request\(\s*"DELETE",\s*f?"[^"]*/rest/v1', src)
+
+
+def test_modal_sweep_runs_both_purges(monkeypatch):
+    from quellix_worker import modal_app, store
+
+    monkeypatch.setenv("SUPABASE_URL", "https://x.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "k")
+    monkeypatch.setattr(store.SupabaseStore, "purge_expired", lambda self: ["a", "b"])
+    monkeypatch.setattr(store.SupabaseStore, "purge_reviewed", lambda self: ["c"])
+    assert modal_app.sweep() == {"expired": 2, "reviewed": 1}

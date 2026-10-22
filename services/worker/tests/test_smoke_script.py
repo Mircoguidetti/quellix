@@ -11,6 +11,9 @@ smoke = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(smoke)
 
 
+kept = {"review": False}
+
+
 def fake_supabase(decision_after: int):
     """Returns (handler, log). The decision appears after `decision_after` polls."""
     log: list[httpx.Request] = []
@@ -33,11 +36,17 @@ def fake_supabase(decision_after: int):
                 return httpx.Response(200, json=[])
             return httpx.Response(200, json=[{
                 "video_id": req.url.params["video_id"].removeprefix("eq."),
-                "decision": "review", "reasons": [], "checks": {}, "rubric_id": "rub1",
+                "decision": "review" if kept["review"] else "accept", "reasons": [],
+                "checks": {}, "rubric_id": "rub1",
                 "rubric_version": 1, "engine_version": "0.1.0"}])
         if p.endswith("/videos") and m == "GET":
+            if kept["review"]:
+                return httpx.Response(200, json=[{
+                    "status": "decided", "storage_path": "p", "file_deleted_at": None,
+                    "delete_after": "2026-11-04T00:00:00Z"}])
             return httpx.Response(200, json=[{"status": "decided", "storage_path": None,
-                                              "file_deleted_at": "2026-10-21T00:00:00Z"}])
+                                              "file_deleted_at": "2026-10-21T00:00:00Z",
+                                              "delete_after": None}])
         return httpx.Response(200, json=[]) if m == "GET" else httpx.Response(201, json=[])
 
     return handler, log
@@ -86,3 +95,13 @@ def test_skipped_without_credentials(monkeypatch, capsys):
     monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
     assert smoke.main([]) == smoke.EXIT_SKIPPED
     assert "SKIPPED" in capsys.readouterr().out
+
+
+def test_review_file_is_kept_with_a_deadline(tmp_path, monkeypatch):
+    monkeypatch.setattr(smoke.time, "sleep", lambda s: None)
+    kept["review"] = True
+    try:
+        s, _ = run_smoke(tmp_path)
+        s.verify(s.wait_for_decision(5))
+    finally:
+        kept["review"] = False

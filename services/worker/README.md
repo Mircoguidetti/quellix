@@ -19,7 +19,8 @@ pgmq queue `video_jobs`. On Modal:
    container per message.
 2. `process` downloads the file from the private `videos` bucket, runs the pipeline, writes the
    `decisions` row (decision, reasons, every measurement, rubric id + version), sets the video to
-   `decided`, deletes the file (`storage_path = null`, `file_deleted_at`), records
+   `decided`, deletes the file (`storage_path = null`, `file_deleted_at`) unless the decision is
+   `review` (see Data retention), records
    `jobs.cost_usd`, sends the signed `video.decided` webhook and archives the message.
 3. A failed attempt is retried (the message is re-sent after 60 s, then 300 s). After the third
    failure the job and the video are `failed` with the error in `jobs.error`, the customer file
@@ -62,3 +63,17 @@ the function's compute (modal.com/pricing); otherwise only API spend is recorded
 `scripts/smoke_test.py` creates a test org (`quellix-smoke-test`), uploads a generated clip,
 enqueues it, waits up to 5 minutes, asserts a schema-valid decision and that the file was deleted,
 and cleans up. Run it by hand with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set.
+
+## Data retention
+
+Founder rule (root `CLAUDE.md`): we keep what surrounds the video, not the video.
+
+- **accept / reject:** the file is deleted right after the decision is written.
+- **review:** the file is kept so a person can watch it; `videos.delete_after = now + 14 days`.
+  It is deleted when a review decision is recorded (the web review screen does this) or when
+  `delete_after` passes: the Modal function `retention_sweep` runs daily at 03:17 UTC and deletes
+  expired files and kept files that already have a review row.
+- **final processing failure:** the file is deleted after the last attempt.
+- **kept per customer, never deleted by the worker:** decisions, reasons, every measurement,
+  rubric versions, reviewer overrides with their note, lab outcomes, fingerprints. The worker only
+  ever deletes Storage objects and queue messages (asserted by a test).
