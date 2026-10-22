@@ -88,6 +88,7 @@ for (const [name, path] of [
   ["review", "/app/review"],
   ["videos", "/app/videos"],
   ["rubrics", "/app/rubrics"],
+  ["import a spec", "/app/rubrics/import"],
   ["settings", "/app/settings"],
   ["contests", "/app/contests"],
   ["audit export", "/app/audit"],
