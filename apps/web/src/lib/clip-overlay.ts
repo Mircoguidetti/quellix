@@ -13,19 +13,32 @@ export type ClipDecision = {
 export type ClipSidecar = {
   schema: string;
   id: string;
-  source: { dataset: string; license: string; clip_id: string; factory: string; segment_in_source_s: [number, number] };
+  source: { dataset: string; license: string; task: string; clip_id: string; group: string; segment_in_source_s: [number, number] };
   video: { mp4: string; webm: string; poster: string; width: number; height: number; fps: number; duration_s: number };
   hands: { model: string; sample_fps: number; frames: FrameRow[] };
-  steps: { name: string; t_s: number }[];
+  steps: ClipStep[];
   decision: ClipDecision;
   selection: { both_hands_full: number; both_hands_working: number; mean_luminance: number; contrast: number };
 };
 
+export type ClipStep = { name: string; t_s: number; end_s?: number; source?: string };
+
 export type ClipManifest = {
-  dataset: string;
-  license: string;
+  sources: { dataset: string; license: string }[];
   total_bytes: number;
-  clips: { id: string; source_clip: string; factory: string; decision: string | null; mp4: string; webm: string; poster: string; bytes: Record<string, number> }[];
+  clips: {
+    id: string;
+    source_clip: string;
+    factory: string;
+    dataset: string;
+    license: string;
+    task: string;
+    decision: string | null;
+    mp4: string;
+    webm: string;
+    poster: string;
+    bytes: Record<string, number>;
+  }[];
 };
 
 /** The sampled frame closest to `t` (frames are sorted by time), or null when there are none. */
@@ -62,9 +75,17 @@ export const STATE_LABEL: Record<HandState, string> = {
   absent: "not seen",
 };
 
-/** The step active at time `t`: the last step that started at or before it. */
-export function stepAt(steps: readonly { name: string; t_s: number }[], t: number) {
-  let current: { name: string; t_s: number } | null = null;
-  for (const s of steps) if (s.t_s <= t && (!current || s.t_s >= current.t_s)) current = s;
+/** The step active at time `t`: the last one that started at or before it, and has not ended yet. */
+export function stepAt(steps: readonly ClipStep[], t: number): ClipStep | null {
+  let current: ClipStep | null = null;
+  for (const s of steps) {
+    if (s.t_s > t || (s.end_s !== undefined && s.end_s < t)) continue;
+    if (!current || s.t_s >= current.t_s) current = s;
+  }
   return current;
+}
+
+/** "HoloAssist (CDLA-Permissive-2.0)" for a list of sources, for the page intro. */
+export function sourcesLabel(sources: readonly { dataset: string; license: string }[]): string {
+  return sources.map((s) => `${s.dataset} (${s.license})`).join(" and ");
 }

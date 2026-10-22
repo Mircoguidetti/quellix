@@ -6,6 +6,7 @@ import {
   STATE_LABEL,
   boxRect,
   frameAt,
+  sourcesLabel,
   stepAt,
   type ClipManifest,
   type ClipSidecar,
@@ -40,7 +41,7 @@ export function ClipPreview() {
   return (
     <div className="grid gap-10">
       <p className="text-sm text-muted-foreground">
-        {manifest.clips.length} clips from {manifest.dataset} ({manifest.license}), {(manifest.total_bytes / 1e6).toFixed(1)} MB in
+        {manifest.clips.length} clips from {sourcesLabel(manifest.sources ?? [])}, {(manifest.total_bytes / 1e6).toFixed(1)} MB in
         total. Boxes are the hands model&apos;s own output for each frame; the decision is the worker&apos;s verdict on the clip itself.
       </p>
       <div className="grid gap-10 lg:grid-cols-2">
@@ -122,7 +123,7 @@ function ClipCard({ id }: { id: string }) {
           loop
           playsInline
           preload="metadata"
-          aria-label={`Example footage ${id}: ${side.source.factory}`}
+          aria-label={`Example footage ${id}: ${side.source.dataset}, ${side.source.task}`}
         >
           <source src={`${BASE}/${side.video.webm}`} type="video/webm" />
           <source src={`${BASE}/${side.video.mp4}`} type="video/mp4" />
@@ -132,12 +133,22 @@ function ClipCard({ id }: { id: string }) {
       <figcaption className="grid gap-2 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-medium">
-            {id} <span className="font-normal text-muted-foreground">· {side.source.factory} · {side.video.duration_s.toFixed(1)} s</span>
+            {id} <span className="font-normal text-muted-foreground">· {side.video.duration_s.toFixed(1)} s</span>
           </span>
           <label className="flex items-center gap-2 text-muted-foreground">
             <input type="checkbox" checked={overlay} onChange={(e) => setOverlay(e.target.checked)} /> Hand boxes
           </label>
         </div>
+        <p className="flex flex-wrap gap-x-4 gap-y-1">
+          <span>
+            <span className="text-muted-foreground">Source:</span> {side.source.dataset}{" "}
+            <span className="text-muted-foreground">({side.source.license})</span>
+          </span>
+          <span>
+            <span className="text-muted-foreground">Task:</span> {side.source.task}
+          </span>
+          <span className="text-muted-foreground">{side.source.group}</span>
+        </p>
         <p>
           Ormes decision: <strong>{decision ? decision.decision : "not available"}</strong>
           {decision && decision.reasons.length === 0 ? " · no reasons to flag" : null}
@@ -154,7 +165,10 @@ function ClipCard({ id }: { id: string }) {
           {Math.round(side.selection.both_hands_working * 100)}%. {side.hands.model}.
         </p>
         {side.steps.length > 0 ? (
-          <p className="text-muted-foreground">Step: {step ? step.name : "-"}</p>
+          <p className="text-muted-foreground">
+            Step: {step ? step.name : "-"}
+            {step?.source ? <span className="text-xs"> ({step.source})</span> : null}
+          </p>
         ) : null}
       </figcaption>
     </figure>

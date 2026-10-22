@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxRect, frameAt, stepAt, type FrameRow } from "./clip-overlay";
+import { boxRect, frameAt, sourcesLabel, stepAt, type FrameRow } from "./clip-overlay";
 
 const row = (t: number): FrameRow => ({
   t,
@@ -46,5 +46,28 @@ describe("stepAt", () => {
     expect(stepAt(steps, 2)?.name).toBe("pick");
     expect(stepAt(steps, 4)?.name).toBe("place");
     expect(stepAt([], 3)).toBeNull();
+  });
+});
+
+describe("stepAt with ends and labels", () => {
+  const steps = [
+    { name: "grab lens", t_s: 0, end_s: 2, source: "HoloAssist annotation" },
+    { name: "turn dial", t_s: 5, end_s: 9 },
+  ];
+
+  it("hides a step once it has ended", () => {
+    expect(stepAt(steps, 1)?.name).toBe("grab lens");
+    expect(stepAt(steps, 3)).toBeNull();
+    expect(stepAt(steps, 6)?.name).toBe("turn dial");
+    expect(stepAt(steps, 9.5)).toBeNull();
+  });
+});
+
+describe("sourcesLabel", () => {
+  it("joins datasets with their licenses", () => {
+    expect(sourcesLabel([{ dataset: "Build AI Egocentric-10K", license: "Apache-2.0" }, { dataset: "HoloAssist", license: "CDLA-Permissive-2.0" }])).toBe(
+      "Build AI Egocentric-10K (Apache-2.0) and HoloAssist (CDLA-Permissive-2.0)",
+    );
+    expect(sourcesLabel([])).toBe("");
   });
 });
