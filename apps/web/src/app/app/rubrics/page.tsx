@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ListChecks, Plus } from "lucide-react";
+import { FileUp, ListChecks, Plus } from "lucide-react";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageContainer, PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +20,20 @@ export default function RubricsPage() {
         title="Rubrics"
         description="A rubric is your lab's spec for one task. Every save is a new version, and every decision records the version it used."
         actions={
-          <Button asChild>
-            <Link href="/app/rubrics/new">
-              <Plus aria-hidden />
-              New rubric
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/app/rubrics/import">
+                <FileUp aria-hidden />
+                Import a spec
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/app/rubrics/new">
+                <Plus aria-hidden />
+                New rubric
+              </Link>
+            </Button>
+          </div>
         }
       />
       <Suspense fallback={<ListSkeleton />}>
@@ -43,7 +51,7 @@ async function Content() {
       <EmptyState
         icon={ListChecks}
         title="No rubrics yet"
-        description="Start from the dishwasher example and adjust each threshold to match what your lab accepts."
+        description="Paste the lab’s spec to get a cited draft, or start from a ready rubric and adjust each threshold to what your lab accepts."
         action={
           <Button asChild>
             <Link href="/app/rubrics/new">

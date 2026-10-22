@@ -1,0 +1,146 @@
+{
+  "schema": "ormes.site-clips/2",
+  "sources": [
+    {
+      "dataset": "Build AI Egocentric-10K",
+      "license": "Apache-2.0"
+    },
+    {
+      "dataset": "HoloAssist",
+      "license": "CDLA-Permissive-2.0"
+    }
+  ],
+  "total_bytes": 8129272,
+  "clips": [
+    {
+      "id": "clip-01",
+      "source_clip": "ego10k_factory012_worker001_00009",
+      "factory": "factory012",
+      "dataset": "Build AI Egocentric-10K",
+      "license": "Apache-2.0",
+      "task": "Factory work",
+      "decision": "accept",
+      "mp4": "clip-01.mp4",
+      "webm": "clip-01.webm",
+      "poster": "clip-01.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 30.0,
+      "duration_s": 9.03,
+      "bytes": {
+        "mp4": 1040212,
+        "webm": 723499,
+        "poster": 107158,
+        "json": 16499
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 56
+      }
+    },
+    {
+      "id": "clip-02",
+      "source_clip": "ego10k_factory014_worker001_00007",
+      "factory": "factory014",
+      "dataset": "Build AI Egocentric-10K",
+      "license": "Apache-2.0",
+      "task": "Factory work",
+      "decision": "accept",
+      "mp4": "clip-02.mp4",
+      "webm": "clip-02.webm",
+      "poster": "clip-02.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 30.0,
+      "duration_s": 9.03,
+      "bytes": {
+        "mp4": 850722,
+        "webm": 826889,
+        "poster": 97674,
+        "json": 16492
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 56
+      }
+    },
+    {
+      "id": "clip-03",
+      "source_clip": "ego10k_factory017_worker001_00002",
+      "factory": "factory017",
+      "dataset": "Build AI Egocentric-10K",
+      "license": "Apache-2.0",
+      "task": "Factory work",
+      "decision": "accept",
+      "mp4": "clip-03.mp4",
+      "webm": "clip-03.webm",
+      "poster": "clip-03.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 30.0,
+      "duration_s": 9.03,
+      "bytes": {
+        "mp4": 757134,
+        "webm": 480619,
+        "poster": 98049,
+        "json": 16445
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 56
+      }
+    },
+    {
+      "id": "clip-04",
+      "source_clip": "ego10k_factory013_worker001_00008",
+      "factory": "factory013",
+      "dataset": "Build AI Egocentric-10K",
+      "license": "Apache-2.0",
+      "task": "Factory work",
+      "decision": "accept",
+      "mp4": "clip-04.mp4",
+      "webm": "clip-04.webm",
+      "poster": "clip-04.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 30.0,
+      "duration_s": 8.23,
+      "bytes": {
+        "mp4": 877248,
+        "webm": 600737,
+        "poster": 94982,
+        "json": 14829
+      },
+      "crf": {
+        "mp4": 35,
+        "webm": 56
+      }
+    },
+    {
+      "id": "clip-05",
+      "source_clip": "holoassist_R060-14July-Nespresso",
+      "factory": "Nespresso",
+      "dataset": "HoloAssist",
+      "license": "CDLA-Permissive-2.0",
+      "task": "make coffee with nespresso machine",
+      "decision": "accept",
+      "mp4": "clip-05.mp4",
+      "webm": "clip-05.webm",
+      "poster": "clip-05.jpg",
+      "width": 896,
+      "height": 504,
+      "fps": 22.32,
+      "duration_s": 9.01,
+      "bytes": {
+        "mp4": 921721,
+        "webm": 501235,
+        "poster": 74236,
+        "json": 12892
+      },
+      "crf": {
+        "mp4": 24,
+        "webm": 40
+      }
+    }
+  ]
+}
