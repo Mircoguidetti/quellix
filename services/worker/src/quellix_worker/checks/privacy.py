@@ -37,8 +37,17 @@ def _zoo_url(filename: str) -> str:
 YUNET_URL = _zoo_url(YUNET_FILENAME)
 TEXT_URL = _zoo_url(TEXT_FILENAME)
 
-FACE_SCORE_THRESHOLD = 0.7
-MIN_FACE_SHARE = 0.02  # ignore faces narrower than 2% of the frame width (far background)
+FACE_SCORE_THRESHOLD = 0.8
+# Ignore faces narrower than this share of the frame width: in factory footage, small faces far
+# in the background are coworkers at a distance, not the person who is the subject. (Was 0.02,
+# i.e. 10 px of a 480 px frame, which is below what is identifiable anyway.)
+MIN_FACE_SHARE = 0.04
+
+# A detection only counts when the same kind is seen in at least PERSIST_MIN_HITS sampled
+# frames within PERSIST_WINDOW_S seconds. A single-frame hit is a flicker (a poster, a lit
+# panel, a motion-blurred shape), not something that was in view.
+PERSIST_MIN_HITS = 3
+PERSIST_WINDOW_S = 2.0
 
 # Documents / screens: a candidate is a large, filled, axis-aligned rectangle that is bright
 # (paper, or a bright screen) or dark (a dark screen), with text evidence inside it.
@@ -48,8 +57,9 @@ MIN_FILL = 0.80  # contour area / bounding rectangle area
 BRIGHT_LEVEL, DARK_LEVEL = 170, 70  # pixel levels for the connected-region search
 BRIGHT_MEAN, DARK_MEAN = 150, 90  # mean level inside an outlined rectangle
 FLOOD_TOLERANCE = 25  # how far from the seed level a pixel may be and still be the same surface
-MIN_TEXT_BOXES_IN_DOCUMENT = 2  # text lines found by the text detector
-MIN_LINE_ROWS = 5  # or: distinct dark rows (ruled / printed lines) inside a bright rectangle
+MIN_TEXT_BOXES_IN_DOCUMENT = 3  # text lines found by the text detector
+MIN_SCREEN_SHARE = 0.05  # a dark screen must cover at least this much of the frame
+MIN_LINE_ROWS = 6  # or: distinct dark rows (ruled / printed lines) inside a bright rectangle
 LINE_ROW_DIP = 20  # a row is a "line" when its mean is this much darker than the page
 
 
@@ -71,13 +81,13 @@ def _unique(rects: list[tuple[int, int, int, int]]) -> list[tuple[int, int, int,
 
 class RegionDetector(Protocol):
     """Finds readable documents or screens in one RGB frame; returns boxes (x, y, w, h) as
-    fractions of the frame, in [0, 1]."""
+    fractions of the frame, in [0, 1], optionally followed by a score / evidence count."""
 
-    def detect(self, rgb: np.ndarray) -> list[tuple[float, float, float, float]]: ...
+    def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]: ...
 
 
 class NoRegionDetector:
-    def detect(self, rgb: np.ndarray) -> list[tuple[float, float, float, float]]:
+    def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]:
         return []
 
 
@@ -122,8 +132,8 @@ class YuNetFaceDetector:
         _, faces = self._detector.detect(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
         if faces is None:
             return []
-        boxes = [(float(f[0]) / w, float(f[1]) / h, float(f[2]) / w, float(f[3]) / h)
-                 for f in faces]
+        boxes = [(float(f[0]) / w, float(f[1]) / h, float(f[2]) / w, float(f[3]) / h,
+                  float(f[-1])) for f in faces]  # last column of YuNet's output is the score
         return [b for b in boxes if b[2] >= MIN_FACE_SHARE]
 
 
@@ -228,7 +238,7 @@ class RegionAnalyzer:
         dark = rows < np.median(rows) - LINE_ROW_DIP
         return int(np.count_nonzero(dark[1:] & ~dark[:-1]) + int(dark[0]))  # runs of dark rows
 
-    def analyze(self, rgb: np.ndarray) -> dict[str, list[tuple[float, float, float, float]]]:
+    def analyze(self, rgb: np.ndarray) -> dict[str, list[tuple[float, ...]]]:
         gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
         h, w = gray.shape
         polygons = self._text_boxes(rgb)
@@ -244,14 +254,19 @@ class RegionAnalyzer:
         documents = [r for r in self._rectangles(gray, bright=True)
                      if inside(r) >= MIN_TEXT_BOXES_IN_DOCUMENT
                      or self._line_rows(gray, r) >= MIN_LINE_ROWS]
-        screens = [r for r in self._rectangles(gray, bright=False) if inside(r) >= 1]
+        screens = [r for r in self._rectangles(gray, bright=False)
+                   if inside(r) >= 1 and r[2] * r[3] / (w * h) >= MIN_SCREEN_SHARE]
         for rect, level in self._flood_regions(gray, polygons):
             if level >= BRIGHT_MEAN and inside(rect) >= MIN_TEXT_BOXES_IN_DOCUMENT:
                 documents.append(rect)
-            elif level <= DARK_MEAN and inside(rect) >= 1:
+            elif (level <= DARK_MEAN and inside(rect) >= 1
+                  and rect[2] * rect[3] / (w * h) >= MIN_SCREEN_SHARE):
                 screens.append(rect)
-        return {"documents": [norm(r) for r in _unique(documents)],
-                "screens": [norm(r) for r in _unique(screens)]}
+
+        def scored(rects):  # evidence = text lines inside the rectangle
+            return [(*norm(r), float(inside(r))) for r in _unique(rects)]
+
+        return {"documents": scored(documents), "screens": scored(screens)}
 
 
 class _Cached:
@@ -261,7 +276,7 @@ class _Cached:
         self._analyzer, self._kind = analyzer, kind
         self._last: tuple[int, dict[str, list]] | None = None
 
-    def detect(self, rgb: np.ndarray) -> list[tuple[float, float, float, float]]:
+    def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]:
         key = id(rgb)
         if self._last is None or self._last[0] != key:
             self._last = (key, self._analyzer.analyze(rgb))
@@ -269,11 +284,59 @@ class _Cached:
 
 
 def _detections(frames, detector) -> list[dict[str, Any]]:
+    """Raw per-frame detections: {t_s, box, score?}."""
     out = []
     for f in frames:
-        for x, y, w, h in detector.detect(f.rgb):
-            out.append({"t_s": float(f.t_s), "box": [round(float(v), 4) for v in (x, y, w, h)]})
+        for det in detector.detect(f.rgb):
+            d: dict[str, Any] = {"t_s": float(f.t_s),
+                                 "box": [round(float(v), 4) for v in det[:4]]}
+            if len(det) > 4:
+                d["score"] = round(float(det[4]), 4)
+            out.append(d)
     return out
+
+
+def persistent(detections: list[dict[str, Any]], min_hits: int = PERSIST_MIN_HITS,
+               window_s: float = PERSIST_WINDOW_S) -> list[dict[str, Any]]:
+    """Keep detections that belong to a run of at least ``min_hits`` distinct sampled frames
+    within ``window_s`` seconds; a lone hit is a flicker."""
+    times = sorted({d["t_s"] for d in detections})
+    keep: set[float] = set()
+    for i, t in enumerate(times):
+        window = [u for u in times[i:] if u - t <= window_s]
+        if len(window) >= min_hits:
+            keep.update(window)
+    return [d for d in detections if d["t_s"] in keep]
+
+
+def _save_debug_frames(frames, kind: str, detections: list[dict[str, Any]], label: str) -> None:
+    """With QUELLIX_DEBUG_FRAMES_DIR set, write each reported detection as an annotated JPEG
+    (``<label>__<kind>__<t>.jpg``) so what is being flagged can be looked at (eval contact
+    sheet). Never part of the decision; failures are ignored."""
+    out_dir = os.environ.get("QUELLIX_DEBUG_FRAMES_DIR")
+    if not out_dir or not detections:
+        return
+    try:
+        by_t = {round(f.t_s, 3): f for f in frames}
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+        done: set[float] = set()
+        for d in detections:
+            f = by_t.get(round(d["t_s"], 3))
+            if f is None or d["t_s"] in done:
+                continue
+            done.add(d["t_s"])
+            img = cv2.cvtColor(f.rgb, cv2.COLOR_RGB2BGR)
+            h, w = img.shape[:2]
+            for dd in (x for x in detections if x["t_s"] == d["t_s"]):
+                x0, y0 = int(dd["box"][0] * w), int(dd["box"][1] * h)
+                x1, y1 = x0 + int(dd["box"][2] * w), y0 + int(dd["box"][3] * h)
+                cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
+                cv2.putText(img, f"{kind} {dd.get('score', '')}", (x0, max(12, y0 - 4)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1)
+            safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in label)
+            cv2.imwrite(str(Path(out_dir) / f"{safe}__{kind}__{d['t_s']:.1f}.jpg"), img)
+    except Exception:  # debugging aids must never break the check
+        return
 
 
 def run(
@@ -281,6 +344,7 @@ def run(
     faces: Any | None = None,
     documents: RegionDetector | None = None,
     screens: RegionDetector | None = None,
+    label: str = "video",
 ) -> CheckOutput:
     try:
         face_detector = faces or YuNetFaceDetector()
@@ -289,10 +353,12 @@ def run(
             documents = documents or _Cached(analyzer, "documents")
             screens = screens or _Cached(analyzer, "screens")
         result = {
-            "faces": _detections(video.frames, face_detector),
-            "documents": _detections(video.frames, documents),
-            "screens": _detections(video.frames, screens),
+            "faces": persistent(_detections(video.frames, face_detector)),
+            "documents": persistent(_detections(video.frames, documents)),
+            "screens": persistent(_detections(video.frames, screens)),
         }
+        for kind, found in result.items():
+            _save_debug_frames(video.frames, kind, found, label)
     except Exception as exc:  # missing weights, bad model: review, never silent pass
         return CheckOutput(error=f"privacy detector unavailable: {exc}")
     return CheckOutput(measurements=to_py(result), model=MODEL)

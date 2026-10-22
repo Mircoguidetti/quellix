@@ -93,7 +93,8 @@ def run_pipeline(
     else:
         outputs["originality"], fingerprints = timed("originality", lambda: originality.run(
             video, config.org_id, deps.fingerprints, video_id, deps.embedder))
-        outputs["privacy"] = timed("privacy", lambda: privacy.run(video, faces=deps.face_detector))
+        outputs["privacy"] = timed("privacy", lambda: privacy.run(
+            video, faces=deps.face_detector, label=video_id))
         outputs["framing"] = timed("framing", lambda: framing.run(video))
         outputs["hands_visible"] = timed("hands_visible",
                                          lambda: hands.run(video, deps.hands_model))
