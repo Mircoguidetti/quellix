@@ -1,0 +1,14 @@
+{
+  "id": "rub_benchmark_v2_tasks",
+  "version": 1,
+  "name": "Benchmark v2: task completion only",
+  "task": { "description": "Replaced per clip by the HoloAssist task and its steps." },
+  "checks": {
+    "task_completed": { "enabled": true, "critical": true, "min_confidence": 0.7 },
+    "hands_visible": { "enabled": false },
+    "framing": { "enabled": false },
+    "technical": { "enabled": false },
+    "privacy": { "enabled": false },
+    "originality": { "enabled": false }
+  }
+}
