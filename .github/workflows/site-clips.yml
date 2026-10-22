@@ -1,15 +1,20 @@
 name: Site clips
 
-# Real first-person clips for the website, analysed by Ormes itself (issue #60).
-# Streams candidates from Build AI Egocentric-10K, keeps the ones with no face, document or
-# screen and both hands clearly working, and writes the best few (MP4, WebM, poster, JSON
-# sidecar with the hands model's per-frame boxes and the worker's decision) to
-# apps/web/public/media/clips/. Run it from the Actions tab, or push eval/site-clips-request.json
-# to the agent/site-clips branch. On a branch other than main the result is committed back.
+# Clips for the website, analysed by Ormes itself (issue #60).
+# "pexels" (default): downloads the founder's hand-picked Pexels videos, runs the worker on each
+# (a clip it would reject is listed with its reason and not used), cuts the best window and
+# writes MP4, WebM, poster and a JSON sidecar (the hands model's per-frame boxes and the
+# worker's decision) to apps/web/public/media/clips/, plus two defective copies of the first clip.
+# "eval-datasets": the earlier Build AI Egocentric-10K / HoloAssist selection (eval only).
+# Run it from the Actions tab, or push eval/site-clips-request.json to the agent/site-clips
+# branch. On a branch other than main the result is committed back.
 
 on:
   workflow_dispatch:
     inputs:
+      source:
+        description: pexels (the landing page footage) or eval-datasets
+        default: pexels
       candidates:
         description: Candidate clips to stream from Egocentric-10K
         default: "30"
@@ -39,6 +44,7 @@ jobs:
         working-directory: eval
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -53,25 +59,35 @@ jobs:
       - name: Decide how many candidates
         id: n
         env:
+          INPUT_SOURCE: ${{ inputs.source }}
           INPUT_CANDIDATES: ${{ inputs.candidates }}
           INPUT_HOLOASSIST: ${{ inputs.holoassist }}
         run: |
+          src="${INPUT_SOURCE:-}"
           n="${INPUT_CANDIDATES:-}"
           h="${INPUT_HOLOASSIST:-}"
           if [ -z "$n" ] && [ -f site-clips-request.json ]; then
+            src="$(python3 -c "import json; print(json.load(open('site-clips-request.json')).get('source', ''))")"
             n="$(python3 -c "import json; print(json.load(open('site-clips-request.json')).get('candidates', ''))")"
             h="$(python3 -c "import json; print(json.load(open('site-clips-request.json')).get('holoassist', ''))")"
           fi
-          n="${n:-30}"; h="${h:-16}"
+          src="${src:-pexels}"; n="${n:-30}"; h="${h:-16}"
+          case "$src" in pexels|eval-datasets) ;; *) echo "source must be pexels or eval-datasets, got '$src'" >&2; exit 1;; esac
+          echo "src=$src" >> "$GITHUB_OUTPUT"
           case "$n$h" in ''|*[!0-9]*) echo "candidates and holoassist must be integers, got '$n' '$h'" >&2; exit 1;; esac
           echo "n=$n" >> "$GITHUB_OUTPUT"
           echo "h=$h" >> "$GITHUB_OUTPUT"
       - name: Pick and encode
         run: |
-          uv run python -m quellix_eval.site_clips \
-            --candidates "${{ steps.n.outputs.n }}" --holoassist "${{ steps.n.outputs.h }}" \
-            --picks 6 --min-picks 1 \
-            --out-dir out/site-clips --final-dir ../apps/web/public/media/clips
+          if [ "${{ steps.n.outputs.src }}" = "pexels" ]; then
+            uv run python -m quellix_eval.site_clips --pexels \
+              --out-dir out/site-clips --final-dir ../apps/web/public/media/clips
+          else
+            uv run python -m quellix_eval.site_clips \
+              --candidates "${{ steps.n.outputs.n }}" --holoassist "${{ steps.n.outputs.h }}" \
+              --picks 6 --min-picks 1 \
+              --out-dir out/site-clips --final-dir ../apps/web/public/media/clips
+          fi
       - name: Post the result on issue #60
         if: always()
         env:
@@ -84,18 +100,21 @@ jobs:
               python3 - <<'PY'
           import json
           m = json.load(open("../apps/web/public/media/clips/manifest.json"))
-          print(f"**{len(m['clips'])} clips, {m['total_bytes'] / 1e6:.2f} MB in total.**\n")
-          print("| clip | dataset | task | source recording | worker decision | mp4 | webm | poster |")
+          print(f"**{len(m['clips'])} files, {m['total_bytes'] / 1e6:.2f} MB in total.**\n")
+          print("| clip | source | task | author | worker decision | mp4 | webm | poster |")
           print("|---|---|---|---|---|---|---|---|")
           for c in m["clips"]:
               b = c["bytes"]
-              print(f"| {c['id']} | {c['dataset']} ({c['license']}) | {c['task']} | `{c['source_clip']}` | {c['decision']} | {b['mp4']/1e6:.2f} MB | {b['webm']/1e6:.2f} MB | {b['poster']/1e3:.0f} kB |")
+              kind = f"defective copy of {c['variant_of']} ({c['defect']['recipe']})" if c.get("variant_of") else c["task"]
+              page = c.get("page_url") or ""
+              src = f"[{c['dataset']}]({page})" if page else f"{c['dataset']} ({c['license']})"
+              print(f"| {c['id']} | {src} | {kind} | {c.get('author') or '-'} | {c['decision']} | {b['mp4']/1e6:.2f} MB | {b['webm']/1e6:.2f} MB | {b['poster']/1e3:.0f} kB |")
           PY
             else
               echo "No clips were produced."
             fi
             echo
-            cat out/site-clips/holoassist-status.txt 2>/dev/null || echo "HoloAssist: no status written."
+            cat out/site-clips/pexels-status.txt out/site-clips/holoassist-status.txt 2>/dev/null || echo "(no download status written)"
             echo
             echo "### Every candidate"
             echo

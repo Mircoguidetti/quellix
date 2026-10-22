@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  DEFECT_LABEL,
   STATE_COLOR,
   STATE_LABEL,
   boxRect,
   frameAt,
+  groupClips,
   sourcesLabel,
   stepAt,
   type ClipManifest,
@@ -44,9 +46,25 @@ export function ClipPreview() {
         {manifest.clips.length} clips from {sourcesLabel(manifest.sources ?? [])}, {(manifest.total_bytes / 1e6).toFixed(1)} MB in
         total. Boxes are the hands model&apos;s own output for each frame; the decision is the worker&apos;s verdict on the clip itself.
       </p>
-      <div className="grid gap-10 lg:grid-cols-2">
-        {manifest.clips.map((clip) => (
-          <ClipCard key={clip.id} id={clip.id} />
+      <div className="grid gap-14">
+        {groupClips(manifest.clips).map(({ clip, variants }) => (
+          <section key={clip.id} className="grid gap-6">
+            <div className="grid gap-10 lg:grid-cols-2">
+              <ClipCard id={clip.id} />
+            </div>
+            {variants.length > 0 ? (
+              <div className="grid gap-4">
+                <h2 className="text-lg font-medium">
+                  The same clip with a synthetic defect, as Ormes returns it
+                </h2>
+                <div className="grid gap-10 lg:grid-cols-2">
+                  {variants.map((v) => (
+                    <ClipCard key={v.id} id={v.id} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
         ))}
       </div>
     </div>
@@ -107,10 +125,13 @@ function ClipCard({ id }: { id: string }) {
   if (side === "missing") return <p className="text-sm text-destructive">Could not load {id}.json</p>;
   if (side === null) return <p className="text-sm text-muted-foreground">Loading {id}…</p>;
 
+  const portrait = side.video.height > side.video.width;
   const step = stepAt(side.steps, now);
+  const src = side.source;
+  const variant = side.variant ?? null;
   const decision = side.decision;
   return (
-    <figure className="grid gap-3">
+    <figure className={`grid gap-3 ${portrait ? "max-w-[390px]" : ""}`}>
       <div className="relative overflow-hidden rounded-lg bg-black">
         <video
           ref={video}
@@ -141,14 +162,39 @@ function ClipCard({ id }: { id: string }) {
         </div>
         <p className="flex flex-wrap gap-x-4 gap-y-1">
           <span>
-            <span className="text-muted-foreground">Source:</span> {side.source.dataset}{" "}
-            <span className="text-muted-foreground">({side.source.license})</span>
+            <span className="text-muted-foreground">Source:</span>{" "}
+            {src.page_url ? (
+              <a className="underline underline-offset-2" href={src.page_url} target="_blank" rel="noreferrer">
+                {src.dataset}
+              </a>
+            ) : (
+              src.dataset
+            )}{" "}
+            <span className="text-muted-foreground">({src.license})</span>
           </span>
+          {src.author ? (
+            <span>
+              <span className="text-muted-foreground">Author:</span>{" "}
+              {src.author_url ? (
+                <a className="underline underline-offset-2" href={src.author_url} target="_blank" rel="noreferrer">
+                  {src.author}
+                </a>
+              ) : (
+                src.author
+              )}
+            </span>
+          ) : null}
           <span>
-            <span className="text-muted-foreground">Task:</span> {side.source.task}
+            <span className="text-muted-foreground">Task:</span> {src.task}
           </span>
-          <span className="text-muted-foreground">{side.source.group}</span>
+          {src.orientation ? <span className="text-muted-foreground">{src.orientation}</span> : null}
         </p>
+        {variant ? (
+          <p>
+            <strong>Synthetic defect:</strong> {DEFECT_LABEL[variant.kind]} ({variant.recipe}, {variant.interval_s[0].toFixed(1)}
+            –{variant.interval_s[1].toFixed(1)} s of {variant.of}).
+          </p>
+        ) : null}
         <p>
           Ormes decision: <strong>{decision ? decision.decision : "not available"}</strong>
           {decision && decision.reasons.length === 0 ? " · no reasons to flag" : null}
@@ -156,7 +202,15 @@ function ClipCard({ id }: { id: string }) {
         {decision && decision.reasons.length > 0 ? (
           <ul className="list-disc pl-5 text-muted-foreground">
             {decision.reasons.map((r) => (
-              <li key={r.code}>{r.message}</li>
+              <li key={r.code}>
+                {r.message}
+                {r.hint ? <span className="block">Hint: {r.hint}</span> : null}
+                {r.segments && r.segments.length > 0 ? (
+                  <span className="block text-xs">
+                    at {r.segments.map((g) => `${g.start_s.toFixed(1)}–${g.end_s.toFixed(1)} s`).join(", ")}
+                  </span>
+                ) : null}
+              </li>
             ))}
           </ul>
         ) : null}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxRect, frameAt, sourcesLabel, stepAt, type FrameRow } from "./clip-overlay";
+import { boxRect, frameAt, groupClips, sourcesLabel, stepAt, type FrameRow, type ManifestClip } from "./clip-overlay";
 
 const row = (t: number): FrameRow => ({
   t,
@@ -69,5 +69,29 @@ describe("sourcesLabel", () => {
       "Build AI Egocentric-10K (Apache-2.0) and HoloAssist (CDLA-Permissive-2.0)",
     );
     expect(sourcesLabel([])).toBe("");
+  });
+});
+
+describe("groupClips", () => {
+  const clip = (id: string, variant_of?: string): ManifestClip => ({
+    id,
+    source_clip: id,
+    factory: "",
+    dataset: "Pexels",
+    license: "Pexels License",
+    task: "Folding laundry",
+    decision: "accept",
+    mp4: `${id}.mp4`,
+    webm: `${id}.webm`,
+    poster: `${id}.jpg`,
+    bytes: {},
+    variant_of,
+  });
+
+  it("puts each defective copy under the clean clip it was made from, keeping manifest order", () => {
+    const groups = groupClips([clip("clip-01"), clip("clip-01-hand", "clip-01"), clip("clip-01-dark", "clip-01"), clip("clip-02")]);
+    expect(groups.map((g) => g.clip.id)).toEqual(["clip-01", "clip-02"]);
+    expect(groups[0].variants.map((v) => v.id)).toEqual(["clip-01-hand", "clip-01-dark"]);
+    expect(groups[1].variants).toEqual([]);
   });
 });

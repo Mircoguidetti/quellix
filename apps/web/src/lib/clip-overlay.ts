@@ -6,19 +6,47 @@ export type FrameRow = { t: number; left: HandRow; right: HandRow };
 
 export type ClipDecision = {
   decision: "accept" | "reject" | "review";
-  reasons: { check: string; code: string; message: string; effect: string }[];
+  reasons: {
+    check: string;
+    code: string;
+    message: string;
+    effect: string;
+    hint?: string;
+    segments?: { start_s: number; end_s: number }[];
+  }[];
   checks?: Record<string, { status: string }>;
 } | null;
 
 export type ClipSidecar = {
   schema: string;
   id: string;
-  source: { dataset: string; license: string; task: string; clip_id: string; group: string; segment_in_source_s: [number, number] };
+  source: {
+    dataset: string;
+    license: string;
+    task: string;
+    clip_id: string;
+    group: string;
+    segment_in_source_s: [number, number];
+    page_url?: string;
+    author?: string;
+    author_url?: string;
+    orientation?: string;
+  };
+  /** Set on a synthetic defective copy of a clean clip. */
+  variant?: ClipVariant | null;
   video: { mp4: string; webm: string; poster: string; width: number; height: number; fps: number; duration_s: number };
   hands: { model: string; sample_fps: number; frames: FrameRow[] };
   steps: ClipStep[];
   decision: ClipDecision;
   selection: { both_hands_full: number; both_hands_working: number; mean_luminance: number; contrast: number };
+};
+
+export type ClipVariant = {
+  of: string;
+  kind: "hand" | "dark";
+  recipe: string;
+  interval_s: [number, number];
+  tried: { recipe: string; decision: string | null }[];
 };
 
 export type ClipStep = { name: string; t_s: number; end_s?: number; source?: string };
@@ -33,6 +61,11 @@ export type ClipManifest = {
     dataset: string;
     license: string;
     task: string;
+    page_url?: string;
+    author?: string;
+    author_url?: string;
+    orientation?: string;
+    variant_of?: string;
     decision: string | null;
     mp4: string;
     webm: string;
@@ -89,3 +122,17 @@ export function stepAt(steps: readonly ClipStep[], t: number): ClipStep | null {
 export function sourcesLabel(sources: readonly { dataset: string; license: string }[]): string {
   return sources.map((s) => `${s.dataset} (${s.license})`).join(" and ");
 }
+
+export type ManifestClip = ClipManifest["clips"][number];
+
+/** Clean clips in manifest order, each with the defective copies made from it. */
+export function groupClips(clips: readonly ManifestClip[]): { clip: ManifestClip; variants: ManifestClip[] }[] {
+  return clips
+    .filter((c) => !c.variant_of)
+    .map((clip) => ({ clip, variants: clips.filter((v) => v.variant_of === clip.id) }));
+}
+
+export const DEFECT_LABEL: Record<ClipVariant["kind"], string> = {
+  hand: "One hand leaves the frame for about 3 s",
+  dark: "About 3 s too dark",
+};
