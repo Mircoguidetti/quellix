@@ -34,6 +34,7 @@ from .datasets import egocentric10k
 from .datasets.manifest import ClipRecord, load_manifest, write_manifest
 from .defects.build import build_variants
 from .prices import gemini_models_by_price
+from .privacy_report import contact_sheet, privacy_breakdown
 from .run import (
     Engine,
     EngineResult,
@@ -297,6 +298,13 @@ def run_ci(
                 f"worker (same {len(subset)})", _replay(worker_results), subset, rubric))
         runs.append(evaluate_engine(f"{name} ({len(subset)} clips)", engine, subset, rubric))
     report = render_report(runs, manifest, notes, requested=clips)
+    if worker_results:
+        report += privacy_breakdown(worker_results, manifest)
+        frames = out_dir / "privacy_frames"
+        if frames.is_dir():
+            n = contact_sheet(frames, out_dir / "privacy_contact_sheet.jpg")
+            report += (f"\nContact sheet: {n} flagged original frames "
+                       "(`privacy_contact_sheet.jpg`).\n")
     (out_dir / "report.md").write_text(report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
@@ -370,6 +378,8 @@ def main(argv: Sequence[str] | None = None, env: Mapping[str, str] | None = None
     out_dir = a.out_dir.resolve()
     # One fingerprint store per run, shared by every worker call, so duplicates find originals.
     os.environ.setdefault("QUELLIX_FINGERPRINT_DB", str(out_dir / "fingerprints.json"))
+    # The worker saves an annotated frame for every privacy detection here (contact sheet).
+    os.environ.setdefault("QUELLIX_DEBUG_FRAMES_DIR", str(out_dir / "privacy_frames"))
     out_dir.mkdir(parents=True, exist_ok=True)
     engines, notes = build_engines(env, a.worker_cmd)
     report = run_ci(out_dir, a.clips, _hf_source, engines, a.rubric, notes=notes,
