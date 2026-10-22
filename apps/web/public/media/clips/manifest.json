@@ -6,7 +6,7 @@
       "license": "Pexels License"
     }
   ],
-  "total_bytes": 5641047,
+  "total_bytes": 5521828,
   "clips": [
     {
       "id": "clip-01",
@@ -53,28 +53,30 @@
       "variant_of": "clip-01",
       "variant_kind": "mobile_crop",
       "crop": {
-        "x0": 0.3418,
-        "width_frac": 0.3164,
-        "moved": false,
+        "aspect": "4:5",
+        "x0": 0.25,
+        "width_frac": 0.45,
+        "moved": true,
         "centre_crop_keeps_hands": false,
-        "both_hands_whole_share": 0.0
+        "keeps_hands": false,
+        "both_hands_whole_share": 0.029
       },
       "mp4": "clip-01-mobile.mp4",
       "webm": "clip-01-mobile.webm",
       "poster": "clip-01-mobile.jpg",
-      "width": 540,
-      "height": 960,
+      "width": 720,
+      "height": 900,
       "fps": 24.0,
       "duration_s": 8.46,
       "bytes": {
-        "mp4": 593805,
-        "webm": 400228,
-        "poster": 50896,
-        "json": 13143
+        "mp4": 504756,
+        "webm": 357174,
+        "poster": 63922,
+        "json": 13001
       },
       "crf": {
-        "mp4": 32,
-        "webm": 48
+        "mp4": 35,
+        "webm": 52
       }
     },
     {
