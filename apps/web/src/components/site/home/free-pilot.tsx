@@ -2,50 +2,48 @@ import { ArrowRight, CircleCheck, FileChartColumn, FolderUp, Ghost, Target } fro
 import { ButtonLink, Example, ICON } from "../primitives";
 
 const DAYS = [
-  { day: "Day 0", icon: Target, title: "Agree on success", text: "We write down what a good result means for you before anything runs." },
-  { day: "Day 0", icon: FolderUp, title: "Send about 50 videos", text: "Videos your reviewers already judged, with their decisions and the lab’s spec." },
-  { day: "Day 0–2", icon: Ghost, title: "Shadow mode", text: "Ormes decides each video next to your reviewers. No integration, nothing changes for your team." },
-  { day: "Day 2", icon: FileChartColumn, title: "Report in 48 h", text: "Where Ormes agreed, where it didn’t, and the review hours it would have saved." },
+  { day: "Day 0", icon: Target, title: "Agree on success", text: "What a good result means for you, written down first." },
+  { day: "Day 0", icon: FolderUp, title: "Send about 50 videos", text: "Already judged by your reviewers, with the lab’s spec." },
+  { day: "Day 0–2", icon: Ghost, title: "Shadow mode", text: "Ormes decides next to your reviewers. No integration." },
+  { day: "Day 2", icon: FileChartColumn, title: "Report in 48 h", text: "Where it agreed, where it didn’t, the hours it saves." },
 ];
 
-const CRITERIA = ["Review minutes down 40% or more", "No more false accepts than today", "Every reject comes with a reason your reviewers agree with"];
+const CRITERIA = ["Review minutes down 40% or more", "No more false accepts than today", "Every reject has a reason your reviewers agree with"];
 
-/** Home §8, "How do I try it?": the free pilot as a two-day track, with example success criteria. */
+/** Home §8, "How do I try it?": the four steps, then the example success criteria and the CTA. */
 export function FreePilot() {
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <ol className="relative flex flex-col gap-6 rounded-[22px] border border-hairline bg-panel p-5 sm:p-7">
-        <span aria-hidden className="absolute bottom-10 left-[39px] top-10 w-px bg-[linear-gradient(180deg,var(--color-brand),var(--color-hairline))] sm:left-[47px]" />
+    <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr] lg:gap-6">
+      <ol className="grid gap-x-6 gap-y-4 sm:grid-cols-2 sm:gap-y-6">
         {DAYS.map(({ day, icon: Icon, title, text }) => (
-          <li key={title} className="relative flex gap-4">
-            <span className="relative z-10 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-brand/40 bg-background text-brand">
+          <li key={title} className="flex gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-brand/40 text-brand sm:size-10">
               <Icon {...ICON} className="size-[18px]" />
             </span>
-            <div className="pt-0.5">
-              <p className="flex flex-wrap items-baseline gap-x-2.5">
-                <span className="text-[16.5px] font-medium">{title}</span>
+            <div>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[15.5px] font-medium sm:text-[16.5px]">{title}</span>
                 <span className="font-mono text-[12px] text-muted-foreground">{day}</span>
               </p>
-              <p className="mt-1 text-[14.5px] leading-relaxed text-muted-foreground">{text}</p>
+              <p className="mt-0.5 text-[14px] leading-snug text-muted-foreground">{text}</p>
             </div>
           </li>
         ))}
       </ol>
-      <div className="flex flex-col rounded-[22px] border border-hairline bg-panel p-5 sm:p-7">
+      <div className="flex flex-col rounded-[20px] border border-hairline bg-panel p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[16px] font-medium">Success criteria</p>
+          <p className="text-[15.5px] font-medium">Success criteria</p>
           <Example />
         </div>
-        <ul className="mt-4 flex flex-col gap-3">
+        <ul className="mt-3 flex flex-col gap-2">
           {CRITERIA.map((c) => (
-            <li key={c} className="flex gap-2.5 text-[14.5px]">
+            <li key={c} className="flex gap-2.5 text-[14px] leading-snug">
               <CircleCheck {...ICON} className="mt-0.5 size-4 shrink-0 text-ok" />
               {c}
             </li>
           ))}
         </ul>
-        <p className="mt-5 text-[13.5px] leading-relaxed text-muted-foreground">The pilot is free and needs no integration. You set the criteria with us; the report measures against them.</p>
-        <div className="mt-auto pt-8">
+        <div className="mt-4 pt-1 sm:mt-auto sm:pt-6">
           <ButtonLink href="/signup">
             Start a free pilot <ArrowRight {...ICON} className="size-4" />
           </ButtonLink>
