@@ -107,3 +107,15 @@ rate, base reject rate, each with a Wilson 95% CI. Gemini: full rubric + measure
 in the prompt, JSON-schema answer with per-check confidence (`prompts/benchmark_v2/`), cheap
 model on every clip, strong model on a label-balanced order; spend cap per run (input `cap_usd`,
 default 3) shared by the jobs (tasks 50%, hands 25%, synthetic 25%), checked before every call.
+
+## Landing hero candidates (#84)
+
+`python -m quellix_eval.hero` (workflow `Hero candidates`, started by `eval/hero-request.json`
+on `agent/hero-candidates` or from the Actions tab) searches Pixabay (`PIXABAY_API_KEY`;
+landscape, 10-60 s, largest rendition >= 1920 px) and the founder's two Pexels picks, keeps
+clips with both hands fully visible >= 60%, no confident face (YuNet), blur <= 10% and a
+viewpoint of first_person / uncertain (#79 check, run from the `agent/viewpoint` code until
+PR #80 merges), writes 2x2 contact sheets to `reports/hero-candidates/`, one line per candidate
+to `test_sets/hero_candidates.jsonl`, and runs the Pexels picks through the site-clips pipeline
+(9 s window; landscape: the steadiest good window) with the worker's verdict on the delivered
+cut. No video is committed; the encoded cuts are an artifact.

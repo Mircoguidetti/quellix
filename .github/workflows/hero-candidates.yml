@@ -1,0 +1,90 @@
+name: Hero candidates
+
+# Landing hero video candidates (#84): Pixabay search + the founder's two Pexels picks, through
+# the worker's own filters (hands, faces, blur, viewpoint from #79), contact sheets and the
+# site-clips pipeline for the Pexels picks. Commits the sheets, posters and
+# eval/test_sets/hero_candidates.jsonl back to the branch and posts one comment on #84 with the
+# images. No video is committed (the encoded Pexels cuts are an artifact).
+# Run it from the Actions tab, or push eval/hero-request.json to agent/hero-candidates.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/hero-candidates]
+    paths: ["eval/hero-request.json"]
+
+concurrency:
+  group: hero-candidates
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  hero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: System libraries for MediaPipe
+        working-directory: .
+        run: sudo apt-get update -q && sudo apt-get install -y -q libegl1 libgles2 libgl1
+      - run: uv sync --extra data --extra mediapipe
+      - name: Hands model weights
+        run: uv run python -m quellix_hands.weights download
+      - name: Viewpoint check code from #79 (PR #80, not merged yet), read-only
+        working-directory: .
+        run: |
+          if git fetch -q origin agent/viewpoint && git worktree add -q ../vp FETCH_HEAD; then
+            echo "QUELLIX_VIEWPOINT_SRC=$(cd ../vp/services/worker/src && pwd)" >> "$GITHUB_ENV"
+            echo "viewpoint code at $(git -C ../vp rev-parse --short HEAD)"
+          else
+            echo "agent/viewpoint not available: viewpoint will be 'not measured'"
+          fi
+      - name: Search, filter, sheets, site-clips
+        run: |
+          uv run python -m quellix_eval.hero --out out/hero --sheets reports/hero-candidates \
+            --jsonl test_sets/hero_candidates.jsonl --final-dir out/hero/final \
+            --image-base "__IMAGE_BASE__"
+      - name: Commit the sheets and the candidate list to this branch
+        id: commit
+        if: success() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A eval/reports/hero-candidates eval/test_sets/hero_candidates.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -q -m "eval: hero candidates, contact sheets and posters (run ${{ github.run_id }})"
+            git push -q origin "HEAD:${{ github.ref_name }}"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post the candidates on issue #84
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: https://github.com/${{ github.repository }}/raw/${{ steps.commit.outputs.sha || github.sha }}/eval/reports/hero-candidates
+        run: |
+          sed "s|__IMAGE_BASE__|$BASE|g" out/hero/comment.md > out/hero/comment-final.md
+          printf '\n\nRun %s.\n' "${{ github.run_id }}" >> out/hero/comment-final.md
+          head -c 64000 out/hero/comment-final.md > out/hero/comment-trimmed.md
+          gh issue comment 84 -R "${{ github.repository }}" --body-file out/hero/comment-trimmed.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hero-candidates
+          if-no-files-found: warn
+          path: |
+            eval/out/hero/final
+            eval/out/hero/comment.md
+            eval/test_sets/hero_candidates.jsonl
