@@ -15,7 +15,7 @@ from ..jsonable import to_py
 from ..media import DecodedVideo
 from ..rubric import CheckOutput
 
-MODEL = "privacy:yunet-2023mar+ppocrv3-regions"
+MODEL = "privacy:yunet-2023mar+scale-check+ppocrv3-regions"
 
 # Weights come from opencv_zoo, pinned to one commit and verified by sha256. They are stored in
 # Git LFS and fetched on first use into QUELLIX_MODEL_DIR (default ~/.cache/quellix), or read
@@ -54,6 +54,20 @@ FACE_CONFIDENT_SHARE = 0.04
 PRIVACY_STRIDE = 2
 PERSIST_MIN_HITS = 2
 PERSIST_WINDOW_S = 2.0
+
+# Second stage for faces (#83). YuNet also fires on round textured things seen from above (a bowl
+# of ground coffee with a spoon scored 0.86, as high as a real face). Such a "face" only exists at
+# the size it happens to have: redrawn at other sizes, YuNet no longer finds it, while a real face
+# is still found. A face that passes the score and size floors is *verified* when YuNet scores its
+# box, redrawn FACE_VERIFY_SIZES px wide, at least FACE_VERIFY_MIN at every one of those sizes
+# (`verify` = the lowest of those scores). An unverified face goes to `faces_possible`: recorded,
+# not used by the rubric. A face verified at FACE_SINGLE_FRAME_VERIFY or more counts even when
+# seen in a single analysed frame (a real face can be in view for less than a second).
+# Chosen on the dev half of eval/test_sets/privacy_faces.jsonl (eval/reports/privacy-score.md).
+FACE_VERIFY_SIZES = (40, 112)
+FACE_VERIFY_MIN = 0.6
+FACE_SINGLE_FRAME_VERIFY = 0.8
+FACE_VERIFY_CENTRE = 0.25  # the face found in the crop must be centred within this share
 
 # --- documents and screens ------------------------------------------------------------
 # HEURISTICS, validated on overlays over real photographs (scikit-image sample images) and
@@ -137,12 +151,51 @@ def text_model_path() -> Path:
     return model_path(TEXT_FILENAME, TEXT_SHA256, "QUELLIX_TEXT_MODEL_PATH")
 
 
+def face_crop(rgb: np.ndarray, box: tuple[float, ...] | list[float], face_px: int) -> np.ndarray:
+    """A square twice the size of ``box`` (fractions of the frame), centred on it, grey past the
+    frame edge, redrawn so the box is ``face_px`` wide."""
+    h, w = rgb.shape[:2]
+    bw, bh = box[2] * w, box[3] * h
+    side = max(1, int(round(max(bw, bh) * 2.0)))
+    x0 = int(round((box[0] + box[2] / 2) * w - side / 2))
+    y0 = int(round((box[1] + box[3] / 2) * h - side / 2))
+    padded = cv2.copyMakeBorder(rgb, side, side, side, side, cv2.BORDER_CONSTANT,
+                                value=(128, 128, 128))
+    crop = padded[y0 + side:y0 + 2 * side, x0 + side:x0 + 2 * side]
+    scale = face_px / max(bw, 1.0)
+    size = max(16, int(round(side * scale)))
+    return cv2.resize(crop, (size, size),
+                      interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC)
+
+
 class YuNetFaceDetector:
     def __init__(self, model_path: str | Path | None = None) -> None:
         self._path = str(model_path or yunet_path())
         self._detector: Any = None
+        self._crop_detector: Any = None
 
-    def detect(self, rgb: np.ndarray) -> list[tuple[float, float, float, float]]:
+    def crop_score(self, crop_rgb: np.ndarray) -> float:
+        """YuNet's best score for a face near the centre of a crop."""
+        h, w = crop_rgb.shape[:2]
+        if self._crop_detector is None:
+            self._crop_detector = cv2.FaceDetectorYN.create(self._path, "", (w, h), 0.05, 0.3, 50)
+        self._crop_detector.setInputSize((w, h))
+        _, faces = self._crop_detector.detect(cv2.cvtColor(crop_rgb, cv2.COLOR_RGB2BGR))
+        best = 0.0
+        for f in [] if faces is None else faces:
+            cx, cy = (f[0] + f[2] / 2) / w, (f[1] + f[3] / 2) / h
+            if abs(cx - 0.5) <= FACE_VERIFY_CENTRE and abs(cy - 0.5) <= FACE_VERIFY_CENTRE:
+                best = max(best, float(f[-1]))
+        return best
+
+    def verify(self, rgb: np.ndarray, box: tuple[float, ...]) -> float:
+        """The lowest crop score over FACE_VERIFY_SIZES: high only for a face that is still a
+        face at other sizes."""
+        return min(self.crop_score(face_crop(rgb, box, px)) for px in FACE_VERIFY_SIZES)
+
+    def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]:
+        """(x, y, w, h, score[, verify]) per face; ``verify`` only for faces above the
+        confident floors (the only ones it can change)."""
         h, w = rgb.shape[:2]
         if self._detector is None:
             self._detector = cv2.FaceDetectorYN.create(
@@ -154,7 +207,14 @@ class YuNetFaceDetector:
             return []
         boxes = [(float(f[0]) / w, float(f[1]) / h, float(f[2]) / w, float(f[3]) / h,
                   float(f[-1])) for f in faces]  # last column of YuNet's output is the score
-        return [b for b in boxes if b[2] >= FACE_MIN_SHARE]
+        out: list[tuple[float, ...]] = []
+        for b in boxes:
+            if b[2] < FACE_MIN_SHARE:
+                continue
+            if b[4] >= FACE_CONFIDENT_SCORE and b[2] >= FACE_CONFIDENT_SHARE:
+                b = (*b, self.verify(rgb, b))
+            out.append(b)
+        return out
 
 
 class RegionAnalyzer:
@@ -347,6 +407,8 @@ def _detections(frames, detector) -> list[dict[str, Any]]:
                                  "box": [round(float(v), 4) for v in det[:4]]}
             if len(det) > 4:
                 d["score"] = round(float(det[4]), 4)
+            if len(det) > 5 and det[5] is not None:
+                d["verify"] = round(float(det[5]), 4)
             out.append(d)
     return out
 
@@ -401,7 +463,8 @@ def _is_confident(kind: str, det: dict[str, Any]) -> bool:
     if score is None:
         return True
     if kind == "faces":
-        return score >= FACE_CONFIDENT_SCORE and det["box"][2] >= FACE_CONFIDENT_SHARE
+        return (score >= FACE_CONFIDENT_SCORE and det["box"][2] >= FACE_CONFIDENT_SHARE
+                and det.get("verify", 1.0) >= FACE_VERIFY_MIN)
     if kind == "documents":
         return score >= MIN_TEXT_LINES_IN_DOCUMENT
     return score >= 1.0  # screens: text found (0.5 = bright accents only)
@@ -425,7 +488,11 @@ def run(
         for kind, detector in (("faces", face_detector), ("documents", documents),
                                ("screens", screens)):
             raw = _detections(frames, detector)
-            result[kind] = persistent([d for d in raw if _is_confident(kind, d)])
+            confident = [d for d in raw if _is_confident(kind, d)]
+            kept = persistent(confident)
+            # a clearly verified face counts on a single frame (#83)
+            result[kind] = [d for d in confident if any(d is k for k in kept)
+                            or d.get("verify", 0.0) >= FACE_SINGLE_FRAME_VERIFY]
             result[f"{kind}_possible"] = persistent(
                 [d for d in raw if not _is_confident(kind, d)])
         for kind, found in result.items():
