@@ -4,7 +4,8 @@ name: Viewpoint features
 # (Egocentric-10K, HoloAssist, the founder's Pexels clips) and from Pexels search candidates, and
 # commits the small feature file + candidate contact sheets to eval/reports/viewpoint/ on the
 # branch it runs on. Posts the contact sheets on issue #79. Start it from the Actions tab, or
-# push a file under eval/requests/viewpoint/ to agent/viewpoint.
+# push a file under eval/requests/viewpoint/ to agent/viewpoint. The request read is the last
+# file in name order: name new ones YYYY-MM-DDTHHMM-<what>.json so they sort after older ones.
 
 on:
   workflow_dispatch:
