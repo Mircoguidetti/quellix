@@ -92,14 +92,14 @@ export function Landing() {
           <div className="stage-wrap">
             <div className="scene" aria-label="Ormes analysing a first-person video of someone cutting a lemon">
               <div className="portrait">
-                <video id="hv" muted autoPlay loop playsInline poster="/media/clips/hero-lemons.jpg">
+                <video muted autoPlay loop playsInline poster="/media/clips/hero-lemons.jpg" data-sidecar="/media/clips/hero-lemons.json" data-pos-y="0.88">
                   <source src="/media/clips/hero-lemons.webm" type="video/webm" />
                   <source src="/media/clips/hero-lemons.mp4" type="video/mp4" />
                 </video>
                 <div className="scan" />
-                <div className="box" id="bl" style={{ opacity: 0 }} />
-                <div className="box" id="br" style={{ opacity: 0 }} />
-                <span className="status" id="hs">analysing · 0:00 / 0:08</span>
+                <div className="box" data-side="left" style={{ opacity: 0 }} />
+                <div className="box" data-side="right" style={{ opacity: 0 }} />
+                <span className="status" data-clock>analysing · 0:00 / 0:08</span>
               </div>
             </div>
           </div>
