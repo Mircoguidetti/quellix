@@ -1,0 +1,99 @@
+name: Privacy fix
+
+# Issue #83: the privacy check reports faces that are not there (the pestle clip). Runs the
+# worker's own decode and face detector on the founder's Pexels clips (Pexels downloads only work
+# from Actions), saves every raw detection and annotated frames, commits them to
+# eval/reports/privacy-diagnosis/ on the branch it runs on and posts the report on issue #83.
+# Push a file under eval/requests/privacy/ to agent/privacy-fix, or start it from the Actions tab.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/privacy-fix]
+    paths: ["eval/requests/privacy/**"]
+
+concurrency:
+  group: privacy-fix-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  diagnose:
+    name: Privacy diagnosis
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --extra data
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/quellix/face_detection_yunet_2023mar.onnx
+          key: yunet-2023mar-8f2383e4
+      - name: Diagnose
+        run: |
+          mkdir -p out/privacy
+          set -o pipefail
+          uv run python -m quellix_eval.privacy_diagnosis --out out/privacy \
+            --report-dir reports/privacy-diagnosis \
+            --run "run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)" \
+            2>&1 | tee out/privacy/run.log
+      - name: Commit the report to this branch
+        id: commit
+        if: success() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A eval/reports/privacy-diagnosis
+          git rm -q --cached eval/reports/privacy-diagnosis/comment.md 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -q -m "eval: privacy diagnosis report (run ${{ github.run_id }})"
+            git pull -q --rebase origin "${{ github.ref_name }}" || true
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post the report on issue #83
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p out
+          python3 - <<'PY'
+          import os, pathlib
+          sha, repo = os.environ.get("SHA", ""), os.environ["REPO"]
+          p = pathlib.Path("reports/privacy-diagnosis/comment.md")
+          run = f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          if sha and p.exists():
+              base = f"https://github.com/{repo}/blob/{sha}/eval/reports/privacy-diagnosis/"
+              # ?raw=true makes GitHub serve the image itself (works on private repositories)
+              s = p.read_text().replace("{IMAGE_BASE}", base).replace(".jpg)", ".jpg?raw=true)")
+          else:
+              log = pathlib.Path("out/privacy/run.log")
+              lines = [x for x in (log.read_text().splitlines() if log.exists() else [])
+                       if not x.startswith(("W0000", "INFO:", "WARNING: Logging"))]
+              s = (f"Privacy diagnosis {run} **failed** and produced no report.\n\nLast lines:\n\n"
+                   "```\n" + "\n".join(lines[-40:]) + "\n```\n")
+          open("out/comment.md", "w").write(s[:60000])
+          PY
+          gh issue comment 83 -R "$REPO" --body-file out/comment.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: privacy-diagnosis
+          if-no-files-found: warn
+          path: |
+            eval/reports/privacy-diagnosis
+            eval/out/privacy/run.log
