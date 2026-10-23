@@ -9,11 +9,20 @@ from pathlib import Path
 from typing import Any
 
 from . import media
-from .checks import framing, hands, originality, privacy, task_baseline, task_local, technical
-from .contracts import validate_decision, validate_rubric
+from .checks import (
+    framing,
+    hands,
+    originality,
+    privacy,
+    task_baseline,
+    task_local,
+    technical,
+    viewpoint,
+)
+from .contracts import known_checks, validate_decision, validate_rubric
 from .feedback import annotate
 from .jsonable import to_py
-from .rubric import CheckOutput, evaluate
+from .rubric import CHECK_NAMES, CheckOutput, evaluate
 
 
 @dataclass
@@ -54,9 +63,15 @@ def _plain(out: CheckOutput) -> CheckOutput:
     return CheckOutput(measurements=to_py(out.measurements), model=out.model)
 
 
+def active_checks() -> tuple:
+    """The checks the worker runs: every check the loaded decision contract knows."""
+    known = known_checks()
+    return tuple(n for n in CHECK_NAMES if n in known)
+
+
 def _critical_reject(rubric: Mapping[str, Any], outputs: dict[str, CheckOutput]) -> bool:
     """Would the checks run so far already reject? Asked of the rubric, never decided here."""
-    partial = evaluate("-", rubric, outputs)
+    partial = evaluate("-", rubric, outputs, active_checks())
     return any(r["effect"] == "reject" and r["check"] in outputs for r in partial["reasons"])
 
 
@@ -90,7 +105,8 @@ def run_pipeline(
     if not video.info.decodable:
         # technical already rejects; the other checks are deliberately not run.
         why = "file is not decodable"
-        for name in ("originality", "privacy", "framing", "hands_visible", "task_completed"):
+        for name in ("originality", "privacy", "framing", "hands_visible", "task_completed",
+                     "viewpoint"):
             outputs[name] = CheckOutput(skipped=why)
     else:
         outputs["originality"], fingerprints = timed("originality", lambda: originality.run(
@@ -98,8 +114,12 @@ def run_pipeline(
         outputs["privacy"] = timed("privacy", lambda: privacy.run(
             video, faces=deps.face_detector, label=video_id))
         outputs["framing"] = timed("framing", lambda: framing.run(video))
-        outputs["hands_visible"] = timed("hands_visible",
-                                         lambda: hands.run(video, deps.hands_model))
+        outputs["hands_visible"], hand_states = timed(
+            "hands_visible", lambda: hands.run_with_frames(video, deps.hands_model))
+        if "viewpoint" in active_checks():
+            # Reuses the hands model's landmarks and the privacy check's faces (#79).
+            outputs["viewpoint"] = timed("viewpoint", lambda: viewpoint.run(
+                video, hand_states, outputs["privacy"], privacy.PRIVACY_STRIDE))
 
         # Expensive last, and only if nothing critical has already failed.
         if _critical_reject(rubric, outputs):
@@ -117,7 +137,8 @@ def run_pipeline(
                 rubric, video.path, video.info.duration_s, deps.task_judge))
 
     outputs = {n: _plain(o) for n, o in outputs.items()}  # numpy scalars never reach JSON
-    decision = annotate(evaluate(video_id, rubric, outputs), rubric, video.info.duration_s)
+    decision = annotate(evaluate(video_id, rubric, outputs, active_checks()), rubric,
+                        video.info.duration_s)
     validate_decision(decision)
     compute_cost = (time.monotonic() - started) * config.compute_usd_per_second
     cost = {"compute_usd": round(compute_cost, 6), "api_usd": round(api_cost, 6),
