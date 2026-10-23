@@ -15,8 +15,8 @@ Every rate has a Wilson 95% interval and its count.
 
 | model | clips | base reject rate | false reject rate | false accept rate | review rate |
 |---|---|---|---|---|---|
-| before (v0) | 70 | 0.43 [0.32-0.55] (30/70) | 0.80 [0.65-0.90] (32/40) | 0.07 [0.02-0.21] (2/30) | 0.27 [0.18-0.39] (19/70) |
-| after (v1@0.2) | 70 | 0.43 [0.32-0.55] (30/70) | 0.78 [0.62-0.88] (31/40) | 0.07 [0.02-0.21] (2/30) | 0.10 [0.05-0.19] (7/70) |
+| before (v0) | 0 | n/a | n/a | n/a | n/a |
+| after (v1@0.2) | 0 | n/a | n/a | n/a | n/a |
 
 ### Validation windows labelled pass, one by one
 
@@ -40,12 +40,31 @@ Label ratio = share of manipulation frames with both hands fully visible in Holo
 
 | model | clips | base reject rate | false reject rate | false accept rate | review rate |
 |---|---|---|---|---|---|
-| before (v0) | 56 | 0.93 [0.83-0.97] (52/56) | 1.00 [0.51-1.00] (4/4) | 0.02 [0.00-0.10] (1/52) | 0.09 [0.04-0.19] (5/56) |
-| v1, detector 0.5 | 56 | 0.93 [0.83-0.97] (52/56) | 0.50 [0.15-0.85] (2/4) | 0.06 [0.02-0.16] (3/52) | 0.09 [0.04-0.19] (5/56) |
-| v1, detector 0.3 | 56 | 0.93 [0.83-0.97] (52/56) | 0.50 [0.15-0.85] (2/4) | 0.04 [0.01-0.13] (2/52) | 0.05 [0.02-0.15] (3/56) |
-| v1, detector 0.2 | 56 | 0.93 [0.83-0.97] (52/56) | 0.25 [0.05-0.70] (1/4) | 0.06 [0.02-0.16] (3/52) | 0.04 [0.01-0.12] (2/56) |
+| before (v0) | 287 | 0.95 [0.92-0.97] (274/287) | 1.00 [0.77-1.00] (13/13) | 0.00 [0.00-0.02] (1/274) | 0.06 [0.04-0.09] (17/287) |
+| v1, detector 0.2 | 287 | 0.95 [0.92-0.97] (274/287) | 0.38 [0.18-0.64] (5/13) | 0.01 [0.01-0.04] (4/274) | 0.02 [0.01-0.04] (6/287) |
 
 Rule: lowest false reject rate + false accept rate; ties go to the higher threshold. Picked **0.2**.
+
+## Proposed "uncertain" band (not in the worker yet: needs the rubric change on #4)
+
+A `fail` whose ratio is within the band below the minimum (0.8) becomes `uncertain` (review). The band was chosen on the dev slice with this rule: the smallest band whose dev false reject rate is at most 0.1, else the one with the lowest; picked **0.2**.
+
+Dev slice:
+
+| model | clips | base reject rate | false reject rate | false accept rate | review rate |
+|---|---|---|---|---|---|
+| after, band 0.0 | 287 | 0.95 [0.92-0.97] (274/287) | 0.38 [0.18-0.64] (5/13) | 0.01 [0.01-0.04] (4/274) | 0.02 [0.01-0.04] (6/287) |
+| after, band 0.1 | 287 | 0.95 [0.92-0.97] (274/287) | 0.23 [0.08-0.50] (3/13) | 0.01 [0.01-0.04] (4/274) | 0.05 [0.03-0.08] (13/287) |
+| after, band 0.2 | 287 | 0.95 [0.92-0.97] (274/287) | 0.08 [0.01-0.33] (1/13) | 0.01 [0.01-0.04] (4/274) | 0.11 [0.08-0.15] (31/287) |
+| after, band 0.3 | 287 | 0.95 [0.92-0.97] (274/287) | 0.00 [0.00-0.23] (0/13) | 0.01 [0.01-0.04] (4/274) | 0.17 [0.13-0.22] (49/287) |
+
+Validation windows, scored once with the chosen band:
+
+| model | clips | base reject rate | false reject rate | false accept rate | review rate |
+|---|---|---|---|---|---|
+| before (v0) | 124 | 0.91 [0.85-0.95] (113/124) | 1.00 [0.74-1.00] (11/11) | 0.01 [0.00-0.05] (1/113) | 0.05 [0.02-0.10] (6/124) |
+| after (v1@0.2) | 124 | 0.91 [0.85-0.95] (113/124) | 0.91 [0.62-0.98] (10/11) | 0.04 [0.02-0.10] (5/113) | 0.01 [0.00-0.04] (1/124) |
+| after + band 0.2 | 124 | 0.91 [0.85-0.95] (113/124) | 0.18 [0.05-0.48] (2/11) | 0.04 [0.02-0.10] (5/113) | 0.15 [0.09-0.22] (18/124) |
 
 ## Clips without labels (measured values only)
 
@@ -71,10 +90,11 @@ Rule: lowest false reject rate + false accept rate; ties go to the higher thresh
   "val_sessions_annotated": 1466,
   "split": "train",
   "skipped": {
-   "hands ratio between 0.75 and 0.85 (ambiguous label)": 4
+   "hands ratio between 0.75 and 0.85 (ambiguous label)": 13
   },
   "overlays": 12
  },
+ "band": 0.2,
  "val": {
   "val_sessions_annotated": 207,
   "split": "val",
@@ -83,6 +103,6 @@ Rule: lowest false reject rate + false accept rate; ties go to the higher thresh
   },
   "overlays": 12
  },
- "minutes": 61.4
+ "minutes": 96.4
 }
 ```

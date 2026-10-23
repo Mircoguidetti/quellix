@@ -6,20 +6,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0278
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0125
    },
    "source": "holoassist-train",
@@ -30,20 +24,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -54,20 +42,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.25
    },
    "detected": {
     "v0": 0.025,
-    "v1@0.5": 0.025,
-    "v1@0.3": 0.0375,
     "v1@0.2": 0.0625
    },
    "source": "holoassist-train",
@@ -78,20 +60,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.1707,
-    "v1@0.3": 0.2333,
     "v1@0.2": 0.1912
    },
    "detected": {
     "v0": 0.0375,
-    "v1@0.5": 0.1125,
-    "v1@0.3": 0.1875,
     "v1@0.2": 0.1625
    },
    "source": "holoassist-train",
@@ -102,20 +78,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -126,20 +96,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.2353,
-    "v1@0.5": 0.2727,
-    "v1@0.3": 0.2714,
     "v1@0.2": 0.3143
    },
    "detected": {
     "v0": 0.2125,
-    "v1@0.5": 0.2375,
-    "v1@0.3": 0.25,
     "v1@0.2": 0.2875
    },
    "source": "holoassist-train",
@@ -150,20 +114,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.2143,
-    "v1@0.5": 0.3333,
-    "v1@0.3": 0.4333,
     "v1@0.2": 0.6167
    },
    "detected": {
     "v0": 0.1625,
-    "v1@0.5": 0.25,
-    "v1@0.3": 0.325,
     "v1@0.2": 0.4625
    },
    "source": "holoassist-train",
@@ -174,20 +132,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.1786,
-    "v1@0.3": 0.1944,
     "v1@0.2": 0.2
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0625,
-    "v1@0.3": 0.0875,
     "v1@0.2": 0.1
    },
    "source": "holoassist-train",
@@ -198,20 +150,14 @@
    "expected": "pass",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.4203,
-    "v1@0.5": 0.6377,
-    "v1@0.3": 0.7571,
     "v1@0.2": 0.8143
    },
    "detected": {
     "v0": 0.3625,
-    "v1@0.5": 0.5625,
-    "v1@0.3": 0.6875,
     "v1@0.2": 0.725
    },
    "source": "holoassist-train",
@@ -222,20 +168,14 @@
    "expected": "pass",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.375,
-    "v1@0.5": 0.55,
-    "v1@0.3": 0.65,
     "v1@0.2": 0.6625
    },
    "detected": {
     "v0": 0.375,
-    "v1@0.5": 0.55,
-    "v1@0.3": 0.65,
     "v1@0.2": 0.6625
    },
    "source": "holoassist-train",
@@ -246,20 +186,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0172,
-    "v1@0.5": 0.069,
-    "v1@0.3": 0.1333,
     "v1@0.2": 0.1562
    },
    "detected": {
     "v0": 0.0125,
-    "v1@0.5": 0.05,
-    "v1@0.3": 0.1,
     "v1@0.2": 0.125
    },
    "source": "holoassist-train",
@@ -270,20 +204,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0968
    },
    "detected": {
     "v0": 0.0375,
-    "v1@0.5": 0.0625,
-    "v1@0.3": 0.0625,
     "v1@0.2": 0.0875
    },
    "source": "holoassist-train",
@@ -294,20 +222,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1429,
-    "v1@0.5": 0.25,
-    "v1@0.3": 0.2766,
     "v1@0.2": 0.2708
    },
    "detected": {
     "v0": 0.0875,
-    "v1@0.5": 0.15,
-    "v1@0.3": 0.175,
     "v1@0.2": 0.1875
    },
    "source": "holoassist-train",
@@ -318,20 +240,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0333,
-    "v1@0.5": 0.05,
-    "v1@0.3": 0.125,
     "v1@0.2": 0.1449
    },
    "detected": {
     "v0": 0.025,
-    "v1@0.5": 0.0375,
-    "v1@0.3": 0.1,
     "v1@0.2": 0.125
    },
    "source": "holoassist-train",
@@ -342,20 +258,14 @@
    "expected": "fail",
    "status": {
     "v0": "error",
-    "v1@0.5": "error",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -366,20 +276,14 @@
    "expected": "pass",
    "status": {
     "v0": "fail",
-    "v1@0.5": "pass",
-    "v1@0.3": "pass",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.726,
-    "v1@0.5": 0.9726,
-    "v1@0.3": 0.9726,
     "v1@0.2": 0.9726
    },
    "detected": {
     "v0": 0.6625,
-    "v1@0.5": 0.8875,
-    "v1@0.3": 0.8875,
     "v1@0.2": 0.8875
    },
    "source": "holoassist-train",
@@ -390,20 +294,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0667,
-    "v1@0.3": 0.2647,
     "v1@0.2": 0.2857
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0303,
-    "v1@0.3": 0.1364,
     "v1@0.2": 0.1515
    },
    "source": "holoassist-train",
@@ -414,20 +312,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.254,
-    "v1@0.5": 0.375,
-    "v1@0.3": 0.5231,
     "v1@0.2": 0.6
    },
    "detected": {
     "v0": 0.2,
-    "v1@0.5": 0.3,
-    "v1@0.3": 0.425,
     "v1@0.2": 0.4875
    },
    "source": "holoassist-train",
@@ -438,20 +330,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.2059,
-    "v1@0.5": 0.32,
-    "v1@0.3": 0.3875,
     "v1@0.2": 0.4
    },
    "detected": {
     "v0": 0.175,
-    "v1@0.5": 0.3,
-    "v1@0.3": 0.3875,
     "v1@0.2": 0.4
    },
    "source": "holoassist-train",
@@ -462,20 +348,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1026,
-    "v1@0.5": 0.1026,
-    "v1@0.3": 0.1702,
     "v1@0.2": 0.2093
    },
    "detected": {
     "v0": 0.05,
-    "v1@0.5": 0.05,
-    "v1@0.3": 0.1125,
     "v1@0.2": 0.1625
    },
    "source": "holoassist-train",
@@ -486,20 +366,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1667,
-    "v1@0.5": 0.2368,
-    "v1@0.3": 0.3243,
     "v1@0.2": 0.2593
    },
    "detected": {
     "v0": 0.075,
-    "v1@0.5": 0.1125,
-    "v1@0.3": 0.15,
     "v1@0.2": 0.175
    },
    "source": "holoassist-train",
@@ -510,20 +384,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0278
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0125
    },
    "source": "holoassist-train",
@@ -534,20 +402,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1311,
-    "v1@0.5": 0.2857,
-    "v1@0.3": 0.3649,
     "v1@0.2": 0.4054
    },
    "detected": {
     "v0": 0.1125,
-    "v1@0.5": 0.2625,
-    "v1@0.3": 0.3375,
     "v1@0.2": 0.375
    },
    "source": "holoassist-train",
@@ -558,20 +420,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0488,
-    "v1@0.5": 0.2308,
-    "v1@0.3": 0.2889,
     "v1@0.2": 0.3478
    },
    "detected": {
     "v0": 0.025,
-    "v1@0.5": 0.1125,
-    "v1@0.3": 0.1625,
     "v1@0.2": 0.2
    },
    "source": "holoassist-train",
@@ -582,20 +438,14 @@
    "expected": "fail",
    "status": {
     "v0": "pass",
-    "v1@0.5": "pass",
-    "v1@0.3": "pass",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.8,
-    "v1@0.5": 0.8444,
-    "v1@0.3": 0.8889,
     "v1@0.2": 0.8889
    },
    "detected": {
     "v0": 0.45,
-    "v1@0.5": 0.475,
-    "v1@0.3": 0.5,
     "v1@0.2": 0.5
    },
    "source": "holoassist-train",
@@ -606,20 +456,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1273,
-    "v1@0.5": 0.3519,
-    "v1@0.3": 0.3382,
     "v1@0.2": 0.4167
    },
    "detected": {
     "v0": 0.0875,
-    "v1@0.5": 0.2375,
-    "v1@0.3": 0.2875,
     "v1@0.2": 0.375
    },
    "source": "holoassist-train",
@@ -630,20 +474,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.3243,
-    "v1@0.5": 0.4459,
-    "v1@0.3": 0.7027,
     "v1@0.2": 0.7662
    },
    "detected": {
     "v0": 0.3,
-    "v1@0.5": 0.4125,
-    "v1@0.3": 0.65,
     "v1@0.2": 0.75
    },
    "source": "holoassist-train",
@@ -654,20 +492,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "pass",
-    "v1@0.3": "fail",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.6897,
-    "v1@0.5": 0.8,
-    "v1@0.3": 0.7857,
     "v1@0.2": 0.8125
    },
    "detected": {
     "v0": 0.275,
-    "v1@0.5": 0.325,
-    "v1@0.3": 0.425,
     "v1@0.2": 0.5
    },
    "source": "holoassist-train",
@@ -678,20 +510,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0833,
     "v1@0.2": 0.0968
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0625,
     "v1@0.2": 0.075
    },
    "source": "holoassist-train",
@@ -702,20 +528,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.45,
-    "v1@0.5": 0.5641,
-    "v1@0.3": 0.5957,
     "v1@0.2": 0.5741
    },
    "detected": {
     "v0": 0.3125,
-    "v1@0.5": 0.3625,
-    "v1@0.3": 0.425,
     "v1@0.2": 0.4375
    },
    "source": "holoassist-train",
@@ -726,20 +546,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1167,
-    "v1@0.5": 0.3,
-    "v1@0.3": 0.3676,
     "v1@0.2": 0.4211
    },
    "detected": {
     "v0": 0.0875,
-    "v1@0.5": 0.225,
-    "v1@0.3": 0.3125,
     "v1@0.2": 0.4
    },
    "source": "holoassist-train",
@@ -750,20 +564,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0222,
     "v1@0.2": 0.04
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0125,
     "v1@0.2": 0.025
    },
    "source": "holoassist-train",
@@ -774,20 +582,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1579,
-    "v1@0.5": 0.3846,
-    "v1@0.3": 0.619,
     "v1@0.2": 0.5909
    },
    "detected": {
     "v0": 0.0625,
-    "v1@0.5": 0.15,
-    "v1@0.3": 0.375,
     "v1@0.2": 0.4
    },
    "source": "holoassist-train",
@@ -798,20 +600,14 @@
    "expected": "fail",
    "status": {
     "v0": "error",
-    "v1@0.5": "error",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -822,20 +618,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1778,
-    "v1@0.5": 0.1852,
-    "v1@0.3": 0.2258,
     "v1@0.2": 0.2727
    },
    "detected": {
     "v0": 0.1,
-    "v1@0.5": 0.125,
-    "v1@0.3": 0.175,
     "v1@0.2": 0.225
    },
    "source": "holoassist-train",
@@ -846,20 +636,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -870,20 +654,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -894,20 +672,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.3385,
-    "v1@0.5": 0.4478,
-    "v1@0.3": 0.4658,
     "v1@0.2": 0.5342
    },
    "detected": {
     "v0": 0.275,
-    "v1@0.5": 0.375,
-    "v1@0.3": 0.425,
     "v1@0.2": 0.4875
    },
    "source": "holoassist-train",
@@ -918,20 +690,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.3117,
-    "v1@0.5": 0.6125,
-    "v1@0.3": 0.7,
     "v1@0.2": 0.725
    },
    "detected": {
     "v0": 0.3,
-    "v1@0.5": 0.6125,
-    "v1@0.3": 0.7,
     "v1@0.2": 0.725
    },
    "source": "holoassist-train",
@@ -942,20 +708,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0408,
-    "v1@0.5": 0.1087,
-    "v1@0.3": 0.102,
     "v1@0.2": 0.102
    },
    "detected": {
     "v0": 0.025,
-    "v1@0.5": 0.0625,
-    "v1@0.3": 0.0625,
     "v1@0.2": 0.0625
    },
    "source": "holoassist-train",
@@ -966,20 +726,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0909,
-    "v1@0.5": 0.0769,
-    "v1@0.3": 0.1111,
     "v1@0.2": 0.1212
    },
    "detected": {
     "v0": 0.025,
-    "v1@0.5": 0.025,
-    "v1@0.3": 0.0375,
     "v1@0.2": 0.05
    },
    "source": "holoassist-train",
@@ -990,20 +744,14 @@
    "expected": "fail",
    "status": {
     "v0": "error",
-    "v1@0.5": "error",
-    "v1@0.3": "error",
     "v1@0.2": "error"
    },
    "ratio": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": null
    },
    "detected": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": null
    },
    "source": "holoassist-train",
@@ -1014,20 +762,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.04,
-    "v1@0.5": 0.0645,
-    "v1@0.3": 0.0588,
     "v1@0.2": 0.0727
    },
    "detected": {
     "v0": 0.0125,
-    "v1@0.5": 0.025,
-    "v1@0.3": 0.0375,
     "v1@0.2": 0.0625
    },
    "source": "holoassist-train",
@@ -1038,20 +780,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.2881,
-    "v1@0.5": 0.3485,
-    "v1@0.3": 0.4348,
     "v1@0.2": 0.4306
    },
    "detected": {
     "v0": 0.2125,
-    "v1@0.5": 0.2875,
-    "v1@0.3": 0.375,
     "v1@0.2": 0.3875
    },
    "source": "holoassist-train",
@@ -1062,20 +798,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "pass",
-    "v1@0.3": "pass",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.5,
-    "v1@0.5": 0.8472,
-    "v1@0.3": 0.8243,
     "v1@0.2": 0.8784
    },
    "detected": {
     "v0": 0.45,
-    "v1@0.5": 0.7625,
-    "v1@0.3": 0.7625,
     "v1@0.2": 0.8125
    },
    "source": "holoassist-train",
@@ -1086,20 +816,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.119,
-    "v1@0.5": 0.3889,
-    "v1@0.3": 0.4,
     "v1@0.2": 0.4524
    },
    "detected": {
     "v0": 0.0625,
-    "v1@0.5": 0.175,
-    "v1@0.3": 0.2,
     "v1@0.2": 0.2375
    },
    "source": "holoassist-train",
@@ -1110,20 +834,14 @@
    "expected": "pass",
    "status": {
     "v0": "fail",
-    "v1@0.5": "pass",
-    "v1@0.3": "pass",
     "v1@0.2": "pass"
    },
    "ratio": {
     "v0": 0.6,
-    "v1@0.5": 0.9125,
-    "v1@0.3": 0.975,
     "v1@0.2": 0.9875
    },
    "detected": {
     "v0": 0.6,
-    "v1@0.5": 0.9125,
-    "v1@0.3": 0.975,
     "v1@0.2": 0.9875
    },
    "source": "holoassist-train",
@@ -1134,20 +852,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.1167,
-    "v1@0.5": 0.2903,
-    "v1@0.3": 0.2879,
     "v1@0.2": 0.3182
    },
    "detected": {
     "v0": 0.0875,
-    "v1@0.5": 0.225,
-    "v1@0.3": 0.2375,
     "v1@0.2": 0.2625
    },
    "source": "holoassist-train",
@@ -1158,20 +870,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0484,
-    "v1@0.5": 0.0455,
-    "v1@0.3": 0.1268,
     "v1@0.2": 0.1408
    },
    "detected": {
     "v0": 0.0375,
-    "v1@0.5": 0.0375,
-    "v1@0.3": 0.1125,
     "v1@0.2": 0.125
    },
    "source": "holoassist-train",
@@ -1182,20 +888,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0909,
-    "v1@0.5": 0.25,
-    "v1@0.3": 0.25,
     "v1@0.2": 0.2222
    },
    "detected": {
     "v0": 0.0125,
-    "v1@0.5": 0.0125,
-    "v1@0.3": 0.0125,
     "v1@0.2": 0.025
    },
    "source": "holoassist-train",
@@ -1206,20 +906,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.2222,
-    "v1@0.5": 0.275,
-    "v1@0.3": 0.2045,
     "v1@0.2": 0.2917
    },
    "detected": {
     "v0": 0.1176,
-    "v1@0.5": 0.1618,
-    "v1@0.3": 0.1324,
     "v1@0.2": 0.2059
    },
    "source": "holoassist-train",
@@ -1230,20 +924,14 @@
    "expected": "fail",
    "status": {
     "v0": "error",
-    "v1@0.5": "error",
-    "v1@0.3": "error",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": 0.0
    },
    "detected": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": 0.0
    },
    "source": "holoassist-train",
@@ -1254,20 +942,14 @@
    "expected": "fail",
    "status": {
     "v0": "error",
-    "v1@0.5": "error",
-    "v1@0.3": "error",
     "v1@0.2": "error"
    },
    "ratio": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": null
    },
    "detected": {
     "v0": null,
-    "v1@0.5": null,
-    "v1@0.3": null,
     "v1@0.2": null
    },
    "source": "holoassist-train",
@@ -1278,20 +960,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0357,
     "v1@0.2": 0.0781
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.025,
-    "v1@0.3": 0.025,
     "v1@0.2": 0.075
    },
    "source": "holoassist-train",
@@ -1302,20 +978,14 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.0435,
     "v1@0.2": 0.1525
    },
    "detected": {
     "v0": 0.0,
-    "v1@0.5": 0.0,
-    "v1@0.3": 0.025,
     "v1@0.2": 0.1125
    },
    "source": "holoassist-train",
@@ -1326,24 +996,4176 @@
    "expected": "fail",
    "status": {
     "v0": "fail",
-    "v1@0.5": "fail",
-    "v1@0.3": "fail",
     "v1@0.2": "fail"
    },
    "ratio": {
     "v0": 0.0759,
-    "v1@0.5": 0.2083,
-    "v1@0.3": 0.2405,
     "v1@0.2": 0.4125
    },
    "detected": {
     "v0": 0.075,
-    "v1@0.5": 0.1875,
-    "v1@0.3": 0.2375,
     "v1@0.2": 0.4125
    },
    "source": "holoassist-train",
    "label_ratio": 0.3746958637469586
+  },
+  {
+   "clip_id": "holo_hands_R201-7Nov-ATV-part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0244,
+    "v1@0.2": 0.2143
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3835920177383592
+  },
+  {
+   "clip_id": "holo_hands_R061-15July-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2857,
+    "v1@0.2": 0.3636
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.1
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.178125
+  },
+  {
+   "clip_id": "holo_hands_R101-2Aug-Coffee",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.186,
+    "v1@0.2": 0.4107
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.2875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4540901502504174
+  },
+  {
+   "clip_id": "holo_hands_z090-july-08-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.169
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3359580052493438
+  },
+  {
+   "clip_id": "holo_hands_z084-july-06-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0556
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z112-aug-03-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1724,
+    "v1@0.2": 0.4091
+   },
+   "detected": {
+    "v0": 0.125,
+    "v1@0.2": 0.3375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4
+  },
+  {
+   "clip_id": "holo_hands_z020-june-20-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.4444,
+    "v1@0.2": 0.4545
+   },
+   "detected": {
+    "v0": 0.15,
+    "v1@0.2": 0.275
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4742014742014742
+  },
+  {
+   "clip_id": "holo_hands_z146-aug-19-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3538,
+    "v1@0.2": 0.7
+   },
+   "detected": {
+    "v0": 0.3,
+    "v1@0.2": 0.6125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.5608365019011406
+  },
+  {
+   "clip_id": "holo_hands_z200-sep-22-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0244
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z109-july-27-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.2182
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.030405405405405407
+  },
+  {
+   "clip_id": "holo_hands_z095-july-11-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0606
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.002232142857142857
+  },
+  {
+   "clip_id": "holo_hands_z119-aug-08-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R119-11Aug-Navvis-Part1",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z171-sep-03-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "error"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R175-10Oct-RAM",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1818,
+    "v1@0.2": 0.2462
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3858093126385809
+  },
+  {
+   "clip_id": "holo_hands_z081-july-06-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1852,
+    "v1@0.2": 0.2683
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.1625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2766726943942134
+  },
+  {
+   "clip_id": "holo_hands_z112-aug-03-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z187-sep-09-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z077-july-01-22-rashult_disassemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.325,
+    "v1@0.2": 0.5125
+   },
+   "detected": {
+    "v0": 0.325,
+    "v1@0.2": 0.5125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9489795918367347
+  },
+  {
+   "clip_id": "holo_hands_z164-aug-31-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3016,
+    "v1@0.2": 0.5875
+   },
+   "detected": {
+    "v0": 0.25,
+    "v1@0.2": 0.5875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.671875
+  },
+  {
+   "clip_id": "holo_hands_R190-24Oct-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R207-11Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.009541984732824428
+  },
+  {
+   "clip_id": "holo_hands_z066-june-29-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.029,
+    "v1@0.2": 0.3875
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.3875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.20698254364089774
+  },
+  {
+   "clip_id": "holo_hands_z164-aug-31-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2593,
+    "v1@0.2": 0.4651
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.25
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.24312896405919662
+  },
+  {
+   "clip_id": "holo_hands_z141-aug-16-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0182,
+    "v1@0.2": 0.0484
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z009-june-15-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3385,
+    "v1@0.2": 0.5797
+   },
+   "detected": {
+    "v0": 0.275,
+    "v1@0.2": 0.5
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4856175972927242
+  },
+  {
+   "clip_id": "holo_hands_R074-20July-GoPro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0923,
+    "v1@0.2": 0.3947
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3784722222222222
+  },
+  {
+   "clip_id": "holo_hands_z025-june-21-22-knarrevik_assemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5441,
+    "v1@0.2": 0.7703
+   },
+   "detected": {
+    "v0": 0.4625,
+    "v1@0.2": 0.7125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.8688524590163934
+  },
+  {
+   "clip_id": "holo_hands_z098-july-12-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0889
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z046-june-24-22-marius_assemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.5652,
+    "v1@0.2": 0.8375
+   },
+   "detected": {
+    "v0": 0.5125,
+    "v1@0.2": 0.8375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9505119453924915
+  },
+  {
+   "clip_id": "holo_hands_z131-aug-11-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0732,
+    "v1@0.2": 0.2239
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.1875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.22452504317789293
+  },
+  {
+   "clip_id": "holo_hands_R055-13July-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "error"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z124-aug-10-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R134-26Aug-RAM",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1455,
+    "v1@0.2": 0.2069
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3992248062015504
+  },
+  {
+   "clip_id": "holo_hands_z181-sep-07-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z157-aug-27-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1429,
+    "v1@0.2": 0.4
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13694267515923567
+  },
+  {
+   "clip_id": "holo_hands_z196-sep-17-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5111,
+    "v1@0.2": 0.6071
+   },
+   "detected": {
+    "v0": 0.35,
+    "v1@0.2": 0.425
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4181494661921708
+  },
+  {
+   "clip_id": "holo_hands_z172-sep-03-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1803,
+    "v1@0.2": 0.3636
+   },
+   "detected": {
+    "v0": 0.1375,
+    "v1@0.2": 0.35
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4457593688362919
+  },
+  {
+   "clip_id": "holo_hands_z020-june-20-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.3462
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.22402597402597402
+  },
+  {
+   "clip_id": "holo_hands_R096-28July-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R204-11Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1463,
+    "v1@0.2": 0.2195
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.1125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2582278481012658
+  },
+  {
+   "clip_id": "holo_hands_z014-june-17-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1039,
+    "v1@0.2": 0.475
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.475
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.25
+  },
+  {
+   "clip_id": "holo_hands_z111-aug-02-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3333,
+    "v1@0.2": 0.5
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.1375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.26365795724465557
+  },
+  {
+   "clip_id": "holo_hands_z053-june-27-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0923,
+    "v1@0.2": 0.2424
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.2
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09133489461358314
+  },
+  {
+   "clip_id": "holo_hands_z201-sep-22-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0698
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R086-27July-GoPro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1,
+    "v1@0.2": 0.4091
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z176-sep-05-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1587,
+    "v1@0.2": 0.4324
+   },
+   "detected": {
+    "v0": 0.125,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3230769230769231
+  },
+  {
+   "clip_id": "holo_hands_z101-july-13-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3818,
+    "v1@0.2": 0.4412
+   },
+   "detected": {
+    "v0": 0.2625,
+    "v1@0.2": 0.3875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3925549915397631
+  },
+  {
+   "clip_id": "holo_hands_z034-june-23-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0577,
+    "v1@0.2": 0.1558
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.27335640138408307
+  },
+  {
+   "clip_id": "holo_hands_z042-june-24-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1591,
+    "v1@0.2": 0.3429
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.3125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6459143968871596
+  },
+  {
+   "clip_id": "holo_hands_R056-13July-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3462,
+    "v1@0.2": 0.2955
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.1625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.29591836734693877
+  },
+  {
+   "clip_id": "holo_hands_z013-june-16-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0526,
+    "v1@0.2": 0.4
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.175
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.007317073170731708
+  },
+  {
+   "clip_id": "holo_hands_R091-28July-Circuit-Breaker",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.4333
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.1625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.032520325203252036
+  },
+  {
+   "clip_id": "holo_hands_z204-sep-25-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1429,
+    "v1@0.2": 0.2
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.07161803713527852
+  },
+  {
+   "clip_id": "holo_hands_z096-july-12-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2923,
+    "v1@0.2": 0.3944
+   },
+   "detected": {
+    "v0": 0.2375,
+    "v1@0.2": 0.35
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3172541743970315
+  },
+  {
+   "clip_id": "holo_hands_z110-aug-02-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z113-aug-03-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1667
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z153-aug-25-22-switch",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.5375,
+    "v1@0.2": 0.8875
+   },
+   "detected": {
+    "v0": 0.5375,
+    "v1@0.2": 0.8875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 1.0
+  },
+  {
+   "clip_id": "holo_hands_R188-24Oct-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R208-11Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1923
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0704
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.07788944723618091
+  },
+  {
+   "clip_id": "holo_hands_z140-aug-16-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.1724
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.1375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.006048387096774193
+  },
+  {
+   "clip_id": "holo_hands_z050-june-27-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.005802707930367505
+  },
+  {
+   "clip_id": "holo_hands_z047-june-25-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0125,
+    "v1@0.2": 0.4
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3031578947368421
+  },
+  {
+   "clip_id": "holo_hands_z047-june-25-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1667
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06881720430107527
+  },
+  {
+   "clip_id": "holo_hands_z198-sep-18-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1558,
+    "v1@0.2": 0.525
+   },
+   "detected": {
+    "v0": 0.15,
+    "v1@0.2": 0.525
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09367088607594937
+  },
+  {
+   "clip_id": "holo_hands_z031-june-22-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.122,
+    "v1@0.2": 0.3137
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.225
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.08235294117647059
+  },
+  {
+   "clip_id": "holo_hands_z092-july-11-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0417
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z058-june-28-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1094,
+    "v1@0.2": 0.2394
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.1815126050420168
+  },
+  {
+   "clip_id": "holo_hands_z198-sep-18-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2895,
+    "v1@0.2": 0.6447
+   },
+   "detected": {
+    "v0": 0.275,
+    "v1@0.2": 0.6125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.7386934673366834
+  },
+  {
+   "clip_id": "holo_hands_R097-29July-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0625
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.003236245954692557
+  },
+  {
+   "clip_id": "holo_hands_z175-sep-05-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1667,
+    "v1@0.2": 0.2326
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.24735729386892177
+  },
+  {
+   "clip_id": "holo_hands_R198-1Nov-RAM",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0182,
+    "v1@0.2": 0.027
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.553072625698324
+  },
+  {
+   "clip_id": "holo_hands_z156-aug-26-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z082-july-06-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.009933774834437087
+  },
+  {
+   "clip_id": "holo_hands_z060-june-28-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1389,
+    "v1@0.2": 0.2308
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.2
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06756756756756757
+  },
+  {
+   "clip_id": "holo_hands_z009-june-15-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2,
+    "v1@0.2": 0.4789
+   },
+   "detected": {
+    "v0": 0.125,
+    "v1@0.2": 0.425
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.5472027972027972
+  },
+  {
+   "clip_id": "holo_hands_z149-aug-22-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.6,
+    "v1@0.2": 0.6129
+   },
+   "detected": {
+    "v0": 0.15,
+    "v1@0.2": 0.2625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.25
+  },
+  {
+   "clip_id": "holo_hands_R205-11Nov-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R206-11Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R100-1Aug-DSLR",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.4062,
+    "v1@0.2": 0.8095
+   },
+   "detected": {
+    "v0": 0.2125,
+    "v1@0.2": 0.7
+   },
+   "source": "holoassist-train",
+   "label_ratio": 1.0
+  },
+  {
+   "clip_id": "holo_hands_z090-july-08-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3191,
+    "v1@0.2": 0.3857
+   },
+   "detected": {
+    "v0": 0.2125,
+    "v1@0.2": 0.3375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2626641651031895
+  },
+  {
+   "clip_id": "holo_hands_z014-june-17-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3151,
+    "v1@0.2": 0.6795
+   },
+   "detected": {
+    "v0": 0.2875,
+    "v1@0.2": 0.6625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6081632653061224
+  },
+  {
+   "clip_id": "holo_hands_z068-june-29-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.322,
+    "v1@0.2": 0.5217
+   },
+   "detected": {
+    "v0": 0.2625,
+    "v1@0.2": 0.475
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2698961937716263
+  },
+  {
+   "clip_id": "holo_hands_z123-aug-09-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1207,
+    "v1@0.2": 0.3438
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.275
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4528301886792453
+  },
+  {
+   "clip_id": "holo_hands_z187-sep-09-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2807,
+    "v1@0.2": 0.5167
+   },
+   "detected": {
+    "v0": 0.2319,
+    "v1@0.2": 0.4493
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6458333333333334
+  },
+  {
+   "clip_id": "holo_hands_z098-july-12-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1509,
+    "v1@0.2": 0.3
+   },
+   "detected": {
+    "v0": 0.1,
+    "v1@0.2": 0.2625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13379073756432247
+  },
+  {
+   "clip_id": "holo_hands_z057-june-28-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0455,
+    "v1@0.2": 0.24
+   },
+   "detected": {
+    "v0": 0.029,
+    "v1@0.2": 0.1884
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.414985590778098
+  },
+  {
+   "clip_id": "holo_hands_R120-12Aug-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0312,
+    "v1@0.2": 0.1132
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06387225548902195
+  },
+  {
+   "clip_id": "holo_hands_R060-14July-Nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0933
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.030726256983240222
+  },
+  {
+   "clip_id": "holo_hands_R192-24Oct-CircuitBreaker",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.04092071611253197
+  },
+  {
+   "clip_id": "holo_hands_z035-june-23-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0476,
+    "v1@0.2": 0.16
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.035794183445190156
+  },
+  {
+   "clip_id": "holo_hands_z100-july-13-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.012232415902140673
+  },
+  {
+   "clip_id": "holo_hands_z191-sep-11-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0635,
+    "v1@0.2": 0.4603
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.3625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06513409961685823
+  },
+  {
+   "clip_id": "holo_hands_z051-june-27-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1905,
+    "v1@0.2": 0.3846
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.16156462585034015
+  },
+  {
+   "clip_id": "holo_hands_z106-july-14-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R200-7Nov-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R092-28July-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z098-july-12-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0667
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.075
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.022222222222222223
+  },
+  {
+   "clip_id": "holo_hands_z093-july-11-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1026
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13063063063063063
+  },
+  {
+   "clip_id": "holo_hands_z023-june-21-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2286,
+    "v1@0.2": 0.5
+   },
+   "detected": {
+    "v0": 0.2,
+    "v1@0.2": 0.4625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2558922558922559
+  },
+  {
+   "clip_id": "holo_hands_z156-aug-26-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.55,
+    "v1@0.2": 0.775
+   },
+   "detected": {
+    "v0": 0.55,
+    "v1@0.2": 0.775
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6845637583892618
+  },
+  {
+   "clip_id": "holo_hands_R089-28July-GoPro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.2727
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.1125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.060526315789473685
+  },
+  {
+   "clip_id": "holo_hands_z153-aug-25-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3553,
+    "v1@0.2": 0.4625
+   },
+   "detected": {
+    "v0": 0.3375,
+    "v1@0.2": 0.4625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.49575551782682514
+  },
+  {
+   "clip_id": "holo_hands_z067-june-29-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5349,
+    "v1@0.2": 0.4615
+   },
+   "detected": {
+    "v0": 0.2875,
+    "v1@0.2": 0.3
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.1952941176470588
+  },
+  {
+   "clip_id": "holo_hands_R119-11Aug-Navvis-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "error"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z201-sep-22-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0667
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3206997084548105
+  },
+  {
+   "clip_id": "holo_hands_R198-1Nov-Graphicscard",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z074-july-01-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z026-june-22-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1591,
+    "v1@0.2": 0.6667
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.55
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3253493013972056
+  },
+  {
+   "clip_id": "holo_hands_z112-aug-03-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0909
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.04044117647058824
+  },
+  {
+   "clip_id": "holo_hands_z146-aug-19-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.25,
+    "v1@0.2": 0.122
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.11428571428571428
+  },
+  {
+   "clip_id": "holo_hands_z165-aug-31-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3103,
+    "v1@0.2": 0.55
+   },
+   "detected": {
+    "v0": 0.125,
+    "v1@0.2": 0.3125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3442622950819672
+  },
+  {
+   "clip_id": "holo_hands_R066-15July-ATV-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R202-7Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0513
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09965034965034965
+  },
+  {
+   "clip_id": "holo_hands_R074-20July-DSLR",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1064
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.075
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.018711018711018712
+  },
+  {
+   "clip_id": "holo_hands_z029-june-22-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.013582342954159592
+  },
+  {
+   "clip_id": "holo_hands_z164-aug-31-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1429,
+    "v1@0.2": 0.5625
+   },
+   "detected": {
+    "v0": 0.1375,
+    "v1@0.2": 0.5625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.660472972972973
+  },
+  {
+   "clip_id": "holo_hands_z019-june-20-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3714,
+    "v1@0.2": 0.6857
+   },
+   "detected": {
+    "v0": 0.325,
+    "v1@0.2": 0.6
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.7427101200686106
+  },
+  {
+   "clip_id": "holo_hands_z071-june-29-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.6545,
+    "v1@0.2": 0.6935
+   },
+   "detected": {
+    "v0": 0.45,
+    "v1@0.2": 0.5375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.5795918367346938
+  },
+  {
+   "clip_id": "holo_hands_z086-july-07-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5192,
+    "v1@0.2": 0.7895
+   },
+   "detected": {
+    "v0": 0.3375,
+    "v1@0.2": 0.5625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.46459412780656306
+  },
+  {
+   "clip_id": "holo_hands_z121-aug-09-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09705372616984402
+  },
+  {
+   "clip_id": "holo_hands_z210-sep-29-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1667,
+    "v1@0.2": 0.193
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.1375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13833333333333334
+  },
+  {
+   "clip_id": "holo_hands_R117-11Aug-Navvis-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z098-july-12-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1111
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.05043859649122807
+  },
+  {
+   "clip_id": "holo_hands_R133-26Aug-Ram",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0476
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.04975124378109453
+  },
+  {
+   "clip_id": "holo_hands_z136-aug-13-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.04,
+    "v1@0.2": 0.0333
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.009784735812133072
+  },
+  {
+   "clip_id": "holo_hands_z085-july-06-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0943
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z102-july-13-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z191-sep-11-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1207
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.1125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.036395147313691506
+  },
+  {
+   "clip_id": "holo_hands_z073-july-01-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0392
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R091-28July-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0556,
+    "v1@0.2": 0.1842
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2519480519480519
+  },
+  {
+   "clip_id": "holo_hands_R200-7Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z027-june-22-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0909
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.03188405797101449
+  },
+  {
+   "clip_id": "holo_hands_z204-sep-25-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0333,
+    "v1@0.2": 0.4242
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.175
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.11707317073170732
+  },
+  {
+   "clip_id": "holo_hands_z050-june-27-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.032423208191126277
+  },
+  {
+   "clip_id": "holo_hands_z176-sep-05-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5167,
+    "v1@0.2": 0.6618
+   },
+   "detected": {
+    "v0": 0.3875,
+    "v1@0.2": 0.5625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6678082191780822
+  },
+  {
+   "clip_id": "holo_hands_z131-aug-11-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3214,
+    "v1@0.2": 0.4915
+   },
+   "detected": {
+    "v0": 0.225,
+    "v1@0.2": 0.375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13666666666666666
+  },
+  {
+   "clip_id": "holo_hands_z111-aug-02-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1972,
+    "v1@0.2": 0.4474
+   },
+   "detected": {
+    "v0": 0.175,
+    "v1@0.2": 0.425
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.20408163265306123
+  },
+  {
+   "clip_id": "holo_hands_z195-sep-17-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3448,
+    "v1@0.2": 0.6111
+   },
+   "detected": {
+    "v0": 0.25,
+    "v1@0.2": 0.55
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.35517241379310344
+  },
+  {
+   "clip_id": "holo_hands_z157-aug-27-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0377
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z184-sep-08-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0169
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R076-21July-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3333,
+    "v1@0.2": 0.3478
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.1125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.20125786163522014
+  },
+  {
+   "clip_id": "holo_hands_R089-29July-Nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R200-7Nov-CircuitBreaker-part1",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0312
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0625
+  },
+  {
+   "clip_id": "holo_hands_z152-aug-25-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z073-july-01-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.25
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z048-june-25-22-rashult_assemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2895,
+    "v1@0.2": 0.6375
+   },
+   "detected": {
+    "v0": 0.275,
+    "v1@0.2": 0.6375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9168110918544194
+  },
+  {
+   "clip_id": "holo_hands_z013-june-16-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0455,
+    "v1@0.2": 0.3485
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.2875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.19133574007220217
+  },
+  {
+   "clip_id": "holo_hands_z021-june-20-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0588,
+    "v1@0.2": 0.2
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.015151515151515152
+  },
+  {
+   "clip_id": "holo_hands_R090-28July-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1579,
+    "v1@0.2": 0.4318
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.5650224215246636
+  },
+  {
+   "clip_id": "holo_hands_R096-28July-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2549,
+    "v1@0.2": 0.3704
+   },
+   "detected": {
+    "v0": 0.1875,
+    "v1@0.2": 0.2625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4185606060606061
+  },
+  {
+   "clip_id": "holo_hands_z187-sep-09-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0588
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z039-june-23-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2667,
+    "v1@0.2": 0.4925
+   },
+   "detected": {
+    "v0": 0.2,
+    "v1@0.2": 0.4125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.41064638783269963
+  },
+  {
+   "clip_id": "holo_hands_z184-sep-08-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2553,
+    "v1@0.2": 0.6154
+   },
+   "detected": {
+    "v0": 0.15,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.3860232945091514
+  },
+  {
+   "clip_id": "holo_hands_z188-sep-10-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0833,
+    "v1@0.2": 0.2545
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.175
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.08813559322033898
+  },
+  {
+   "clip_id": "holo_hands_R076-21July-GoPro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0833
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.12984822934232715
+  },
+  {
+   "clip_id": "holo_hands_z088-july-07-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1622
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.02385008517887564
+  },
+  {
+   "clip_id": "holo_hands_z135-aug-13-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "error"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": null
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R126-18Aug-Navvis-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0714,
+    "v1@0.2": 0.3036
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.01580135440180587
+  },
+  {
+   "clip_id": "holo_hands_z085-july-06-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0204
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06142506142506143
+  },
+  {
+   "clip_id": "holo_hands_R205-11Nov-CircuitBreaker",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z029-june-22-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5,
+    "v1@0.2": 0.4
+   },
+   "detected": {
+    "v0": 0.15,
+    "v1@0.2": 0.2
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.18114602587800369
+  },
+  {
+   "clip_id": "holo_hands_R086-27July-SmallPrinter",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2759,
+    "v1@0.2": 0.6486
+   },
+   "detected": {
+    "v0": 0.1625,
+    "v1@0.2": 0.3875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z035-june-23-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0545
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z083-july-06-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0152
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z134-aug-13-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0678,
+    "v1@0.2": 0.4
+   },
+   "detected": {
+    "v0": 0.05,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.14869888475836432
+  },
+  {
+   "clip_id": "holo_hands_R066-15July-ATV-Part1",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R066-15July-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z046-june-24-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2609,
+    "v1@0.2": 0.375
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.07493540051679587
+  },
+  {
+   "clip_id": "holo_hands_z094-july-11-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.5,
+    "v1@0.2": 0.6154
+   },
+   "detected": {
+    "v0": 0.0857,
+    "v1@0.2": 0.1143
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.15047021943573669
+  },
+  {
+   "clip_id": "holo_hands_z116-aug-05-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0816
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.18137254901960784
+  },
+  {
+   "clip_id": "holo_hands_z108-july-26-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0526
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z182-sep-08-22-knarrevik_assemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.675,
+    "v1@0.2": 0.9625
+   },
+   "detected": {
+    "v0": 0.675,
+    "v1@0.2": 0.9625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9745331069609507
+  },
+  {
+   "clip_id": "holo_hands_z199-sep-21-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.02,
+    "v1@0.2": 0.0769
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z023-june-21-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2075,
+    "v1@0.2": 0.5143
+   },
+   "detected": {
+    "v0": 0.1375,
+    "v1@0.2": 0.45
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6018306636155606
+  },
+  {
+   "clip_id": "holo_hands_z164-aug-31-22-marius_disassemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3377,
+    "v1@0.2": 0.7125
+   },
+   "detected": {
+    "v0": 0.325,
+    "v1@0.2": 0.7125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9050847457627119
+  },
+  {
+   "clip_id": "holo_hands_R026-11July-Navvis",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1795
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09251101321585903
+  },
+  {
+   "clip_id": "holo_hands_z206-sep-26-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1333,
+    "v1@0.2": 0.4717
+   },
+   "detected": {
+    "v0": 0.075,
+    "v1@0.2": 0.3125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.445
+  },
+  {
+   "clip_id": "holo_hands_R066-15July-Circuit-Breaker-Part1",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z057-june-28-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.4638,
+    "v1@0.2": 0.6197
+   },
+   "detected": {
+    "v0": 0.4,
+    "v1@0.2": 0.55
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2621359223300971
+  },
+  {
+   "clip_id": "holo_hands_z086-july-07-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2264,
+    "v1@0.2": 0.5088
+   },
+   "detected": {
+    "v0": 0.175,
+    "v1@0.2": 0.3625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6277372262773723
+  },
+  {
+   "clip_id": "holo_hands_z051-june-27-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.037,
+    "v1@0.2": 0.1296
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.25742574257425743
+  },
+  {
+   "clip_id": "holo_hands_z076-july-01-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.6129,
+    "v1@0.2": 0.3214
+   },
+   "detected": {
+    "v0": 0.2375,
+    "v1@0.2": 0.225
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z189-sep-10-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1268,
+    "v1@0.2": 0.2603
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.2375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.15223880597014924
+  },
+  {
+   "clip_id": "holo_hands_R090-29July-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.033628318584070796
+  },
+  {
+   "clip_id": "holo_hands_R106-4Aug-DSLR",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2,
+    "v1@0.2": 0.2143
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.1125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2529411764705882
+  },
+  {
+   "clip_id": "holo_hands_z165-aug-31-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0476,
+    "v1@0.2": 0.4138
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.2625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.26744186046511625
+  },
+  {
+   "clip_id": "holo_hands_z208-sep-27-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2,
+    "v1@0.2": 0.3333
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.02264808362369338
+  },
+  {
+   "clip_id": "holo_hands_z205-sep-25-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0746,
+    "v1@0.2": 0.25
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.24439918533604887
+  },
+  {
+   "clip_id": "holo_hands_z023-june-21-22-gopro",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1111,
+    "v1@0.2": 0.3261
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.1875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.028428093645484948
+  },
+  {
+   "clip_id": "holo_hands_z151-aug-25-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0426,
+    "v1@0.2": 0.0469
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z143-aug-17-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.3469
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.2125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z092-july-11-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0735,
+    "v1@0.2": 0.3333
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.3
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.49072512647554806
+  },
+  {
+   "clip_id": "holo_hands_z074-july-01-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1375,
+    "v1@0.2": 0.325
+   },
+   "detected": {
+    "v0": 0.1375,
+    "v1@0.2": 0.325
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6897163120567376
+  },
+  {
+   "clip_id": "holo_hands_R113-9Aug-Navvis-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.125,
+    "v1@0.2": 0.1538
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.025
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z197-sep-18-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1111,
+    "v1@0.2": 0.4762
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.275
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.23760330578512398
+  },
+  {
+   "clip_id": "holo_hands_R149-02Sep-RAM",
+   "expected": "fail",
+   "status": {
+    "v0": "error",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": null,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.006134969325153374
+  },
+  {
+   "clip_id": "holo_hands_z098-july-12-22-printer_big",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0769
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R045-13July-SmallPrinter",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0714,
+    "v1@0.2": 0.1404
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.1375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.13958333333333334
+  },
+  {
+   "clip_id": "holo_hands_z096-july-12-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0476,
+    "v1@0.2": 0.0213
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.023679417122040074
+  },
+  {
+   "clip_id": "holo_hands_z205-sep-25-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z013-june-16-22-switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0179,
+    "v1@0.2": 0.1558
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.12549019607843137
+  },
+  {
+   "clip_id": "holo_hands_R123-15Aug-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0909,
+    "v1@0.2": 0.2949
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.2875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.35813148788927335
+  },
+  {
+   "clip_id": "holo_hands_R190-24Oct-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z177-sep-05-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.3623
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.3125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.19329896907216496
+  },
+  {
+   "clip_id": "holo_hands_z193-sep-16-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0645,
+    "v1@0.2": 0.2
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.0875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09416195856873823
+  },
+  {
+   "clip_id": "holo_hands_z204-sep-25-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z172-sep-03-22-gladom_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0714,
+    "v1@0.2": 0.4026
+   },
+   "detected": {
+    "v0": 0.0625,
+    "v1@0.2": 0.3875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.19439579684763572
+  },
+  {
+   "clip_id": "holo_hands_z092-july-11-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z164-aug-31-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3077,
+    "v1@0.2": 0.6711
+   },
+   "detected": {
+    "v0": 0.25,
+    "v1@0.2": 0.6375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.6991452991452991
+  },
+  {
+   "clip_id": "holo_hands_z111-aug-02-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.1429
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.075
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.10623946037099494
+  },
+  {
+   "clip_id": "holo_hands_z091-july-08-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1818,
+    "v1@0.2": 0.5818
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.5101351351351351
+  },
+  {
+   "clip_id": "holo_hands_R114-9Aug-Navvis-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.6129,
+    "v1@0.2": 0.5
+   },
+   "detected": {
+    "v0": 0.25,
+    "v1@0.2": 0.35
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.38823529411764707
+  },
+  {
+   "clip_id": "holo_hands_z023-june-21-22-nespresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1064,
+    "v1@0.2": 0.2308
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.2
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2563380281690141
+  },
+  {
+   "clip_id": "holo_hands_R128-25Aug-GraphicsCard",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0256
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.11555555555555555
+  },
+  {
+   "clip_id": "holo_hands_R044-13July-BigPrinter",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0294
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.024299065420560748
+  },
+  {
+   "clip_id": "holo_hands_z174-sep-04-22-printer_small",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1731,
+    "v1@0.2": 0.4412
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.28433734939759037
+  },
+  {
+   "clip_id": "holo_hands_z108-july-26-22-rashult_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0345,
+    "v1@0.2": 0.075
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.0375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.06573705179282868
+  },
+  {
+   "clip_id": "holo_hands_z183-sep-08-22-rashult_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.025,
+    "v1@0.2": 0.2037
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.1625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09868421052631579
+  },
+  {
+   "clip_id": "holo_hands_R067-15July-Switch",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1429,
+    "v1@0.2": 0.0857
+   },
+   "detected": {
+    "v0": 0.0375,
+    "v1@0.2": 0.05
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.05737704918032787
+  },
+  {
+   "clip_id": "holo_hands_R204-11Nov-ATV",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "detected": {
+    "v0": 0.0,
+    "v1@0.2": 0.0
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_R203-7Nov-Belt",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0351,
+    "v1@0.2": 0.2419
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.1875
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0
+  },
+  {
+   "clip_id": "holo_hands_z038-june-23-22-dslr",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.6,
+    "v1@0.2": 0.8625
+   },
+   "detected": {
+    "v0": 0.6,
+    "v1@0.2": 0.8625
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.7474332648870636
+  },
+  {
+   "clip_id": "holo_hands_z176-sep-05-22-espresso",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.3095,
+    "v1@0.2": 0.4262
+   },
+   "detected": {
+    "v0": 0.1625,
+    "v1@0.2": 0.325
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.25618374558303886
+  },
+  {
+   "clip_id": "holo_hands_z181-sep-07-22-gladom_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1818,
+    "v1@0.2": 0.2586
+   },
+   "detected": {
+    "v0": 0.1125,
+    "v1@0.2": 0.2
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.2222222222222222
+  },
+  {
+   "clip_id": "holo_hands_z074-july-01-22-gladom_disassemble",
+   "expected": "pass",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "pass"
+   },
+   "ratio": {
+    "v0": 0.4872,
+    "v1@0.2": 0.8125
+   },
+   "detected": {
+    "v0": 0.475,
+    "v1@0.2": 0.8125
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.9461279461279462
+  },
+  {
+   "clip_id": "holo_hands_R087-27July-GoPro-Part2",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2619,
+    "v1@0.2": 0.5333
+   },
+   "detected": {
+    "v0": 0.1375,
+    "v1@0.2": 0.4
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4638949671772429
+  },
+  {
+   "clip_id": "holo_hands_z036-june-23-22-knarrevik_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.1321,
+    "v1@0.2": 0.2951
+   },
+   "detected": {
+    "v0": 0.0875,
+    "v1@0.2": 0.225
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.1465076660988075
+  },
+  {
+   "clip_id": "holo_hands_z119-aug-08-22-knarrevik_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0351,
+    "v1@0.2": 0.0882
+   },
+   "detected": {
+    "v0": 0.025,
+    "v1@0.2": 0.075
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.09411764705882353
+  },
+  {
+   "clip_id": "holo_hands_z108-july-26-22-marius_assemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.0161,
+    "v1@0.2": 0.1579
+   },
+   "detected": {
+    "v0": 0.0125,
+    "v1@0.2": 0.15
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.0907563025210084
+  },
+  {
+   "clip_id": "holo_hands_z090-july-08-22-marius_disassemble",
+   "expected": "fail",
+   "status": {
+    "v0": "fail",
+    "v1@0.2": "fail"
+   },
+   "ratio": {
+    "v0": 0.2466,
+    "v1@0.2": 0.411
+   },
+   "detected": {
+    "v0": 0.225,
+    "v1@0.2": 0.375
+   },
+   "source": "holoassist-train",
+   "label_ratio": 0.4114285714285714
   }
  ],
  "val": [
@@ -3580,1268 +7402,7 @@
    "label_ratio": 0.0
   }
  ],
- "synthetic": [
-  {
-   "clip_id": "ego10k_factory001_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.1333
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.075
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory001_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.1026
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.0875
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory002_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2,
-    "v1@0.2": 0.5
-   },
-   "detected": {
-    "v0": 0.1625,
-    "v1@0.2": 0.375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory003_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2812,
-    "v1@0.2": 0.4773
-   },
-   "detected": {
-    "v0": 0.1625,
-    "v1@0.2": 0.275
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory004_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2917,
-    "v1@0.2": 0.4655
-   },
-   "detected": {
-    "v0": 0.2,
-    "v1@0.2": 0.375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory005_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory006_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory007_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "pass",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.8333,
-    "v1@0.2": 0.5
-   },
-   "detected": {
-    "v0": 0.0875,
-    "v1@0.2": 0.2125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory008_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.5,
-    "v1@0.2": 0.5385
-   },
-   "detected": {
-    "v0": 0.1125,
-    "v1@0.2": 0.45
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory009_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.2353
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.1375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory010_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory010_worker001_00003",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0333,
-    "v1@0.2": 0.2125
-   },
-   "detected": {
-    "v0": 0.025,
-    "v1@0.2": 0.2125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory011_worker001_00002",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1818,
-    "v1@0.2": 0.3
-   },
-   "detected": {
-    "v0": 0.0375,
-    "v1@0.2": 0.2
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory011_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0714,
-    "v1@0.2": 0.36
-   },
-   "detected": {
-    "v0": 0.0125,
-    "v1@0.2": 0.15
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory012_worker001_00003",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.3529,
-    "v1@0.2": 0.8
-   },
-   "detected": {
-    "v0": 0.45,
-    "v1@0.2": 0.7625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory012_worker001_00009",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.44,
-    "v1@0.2": 0.7812
-   },
-   "detected": {
-    "v0": 0.4375,
-    "v1@0.2": 0.7
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory013_worker001_00008",
-   "expected": "pass",
-   "status": {
-    "v0": "pass",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.9167,
-    "v1@0.2": 0.5957
-   },
-   "detected": {
-    "v0": 0.2875,
-    "v1@0.2": 0.3625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory013_worker001_00006",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.4615,
-    "v1@0.2": 0.7308
-   },
-   "detected": {
-    "v0": 0.2875,
-    "v1@0.2": 0.475
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory014_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.425,
-    "v1@0.2": 0.549
-   },
-   "detected": {
-    "v0": 0.2125,
-    "v1@0.2": 0.35
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory014_worker001_00007",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.5867,
-    "v1@0.2": 0.9079
-   },
-   "detected": {
-    "v0": 0.55,
-    "v1@0.2": 0.8625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory015_worker001_00006",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0806,
-    "v1@0.2": 0.1714
-   },
-   "detected": {
-    "v0": 0.0625,
-    "v1@0.2": 0.15
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory015_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0465,
-    "v1@0.2": 0.0678
-   },
-   "detected": {
-    "v0": 0.025,
-    "v1@0.2": 0.05
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory016_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0769,
-    "v1@0.2": 0.2632
-   },
-   "detected": {
-    "v0": 0.025,
-    "v1@0.2": 0.0625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory017_worker001_00002",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2353,
-    "v1@0.2": 0.3913
-   },
-   "detected": {
-    "v0": 0.1,
-    "v1@0.2": 0.35
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory017_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.4737,
-    "v1@0.2": 0.8088
-   },
-   "detected": {
-    "v0": 0.35,
-    "v1@0.2": 0.7
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory018_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.1923
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory018_worker001_00002",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1176,
-    "v1@0.2": 0.2581
-   },
-   "detected": {
-    "v0": 0.05,
-    "v1@0.2": 0.125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory019_worker001_00005",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.1125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory019_worker001_00006",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.6
-   },
-   "detected": {
-    "v0": 0.0875,
-    "v1@0.2": 0.3125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory020_worker001_00000",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1429,
-    "v1@0.2": 0.3778
-   },
-   "detected": {
-    "v0": 0.075,
-    "v1@0.2": 0.2375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory020_worker001_00004",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.6184,
-    "v1@0.2": 0.8625
-   },
-   "detected": {
-    "v0": 0.5875,
-    "v1@0.2": 0.8625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory021_worker001_00005",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0417,
-    "v1@0.2": 0.2
-   },
-   "detected": {
-    "v0": 0.0125,
-    "v1@0.2": 0.1125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory021_worker001_00009",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.3
-   },
-   "detected": {
-    "v0": 0.0125,
-    "v1@0.2": 0.1625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory022_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2157,
-    "v1@0.2": 0.4032
-   },
-   "detected": {
-    "v0": 0.15,
-    "v1@0.2": 0.3375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory022_worker001_00004",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.411,
-    "v1@0.2": 0.5789
-   },
-   "detected": {
-    "v0": 0.375,
-    "v1@0.2": 0.55
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory023_worker001_00002",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.525,
-    "v1@0.2": 0.8056
-   },
-   "detected": {
-    "v0": 0.425,
-    "v1@0.2": 0.775
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory023_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": 0.6176,
-    "v1@0.2": 0.8148
-   },
-   "detected": {
-    "v0": 0.5,
-    "v1@0.2": 0.8125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory024_worker001_00002",
-   "expected": "pass",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory024_worker001_00006",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1429,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": 0.1125,
-    "v1@0.2": 0.475
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory025_worker001_00001",
-   "expected": "pass",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.25,
-    "v1@0.2": 0.3
-   },
-   "detected": {
-    "v0": 0.0875,
-    "v1@0.2": 0.125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory001_worker001_00000__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory001_worker001_00001__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.25
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory002_worker001_00000__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.4,
-    "v1@0.2": 0.1333
-   },
-   "detected": {
-    "v0": 0.15,
-    "v1@0.2": 0.3
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory004_worker001_00000__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1429,
-    "v1@0.2": 0.25
-   },
-   "detected": {
-    "v0": 0.05,
-    "v1@0.2": 0.0875
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory005_worker001_00000__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.2
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.025
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory006_worker001_00000__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory008_worker001_00000__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 1.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory009_worker001_00000__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory010_worker001_00001__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory011_worker001_00002__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory011_worker001_00001__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.1875
-   },
-   "detected": {
-    "v0": 0.0125,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory012_worker001_00003__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.4583,
-    "v1@0.2": 0.7302
-   },
-   "detected": {
-    "v0": 0.4,
-    "v1@0.2": 0.6875
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory013_worker001_00008__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "pass",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 1.0,
-    "v1@0.2": 0.7
-   },
-   "detected": {
-    "v0": 0.0625,
-    "v1@0.2": 0.1125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory013_worker001_00006__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.375
-   },
-   "detected": {
-    "v0": 0.075,
-    "v1@0.2": 0.125
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory014_worker001_00000__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "pass",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.875,
-    "v1@0.2": 0.4
-   },
-   "detected": {
-    "v0": 0.0875,
-    "v1@0.2": 0.1
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory015_worker001_00006__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.037,
-    "v1@0.2": 0.1143
-   },
-   "detected": {
-    "v0": 0.0125,
-    "v1@0.2": 0.05
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory015_worker001_00000__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.0938
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory016_worker001_00000__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.0375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory017_worker001_00001__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1333,
-    "v1@0.2": 0.3
-   },
-   "detected": {
-    "v0": 0.0625,
-    "v1@0.2": 0.1625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory018_worker001_00001__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.0
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.0
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory018_worker001_00002__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.3333,
-    "v1@0.2": 0.4706
-   },
-   "detected": {
-    "v0": 0.0375,
-    "v1@0.2": 0.1
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory019_worker001_00006__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.3636
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.1625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory020_worker001_00000__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.0,
-    "v1@0.2": 0.3333
-   },
-   "detected": {
-    "v0": 0.0,
-    "v1@0.2": 0.0625
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory020_worker001_00004__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.4688,
-    "v1@0.2": 0.5
-   },
-   "detected": {
-    "v0": 0.1875,
-    "v1@0.2": 0.2875
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory021_worker001_00009__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.25
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.025
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory022_worker001_00001__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.1765,
-    "v1@0.2": 0.3158
-   },
-   "detected": {
-    "v0": 0.0375,
-    "v1@0.2": 0.075
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory022_worker001_00004__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.2364,
-    "v1@0.2": 0.3793
-   },
-   "detected": {
-    "v0": 0.1625,
-    "v1@0.2": 0.275
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory023_worker001_00001__hand_out_one",
-   "expected": "fail",
-   "status": {
-    "v0": "fail",
-    "v1@0.2": "fail"
-   },
-   "ratio": {
-    "v0": 0.7727,
-    "v1@0.2": 0.7097
-   },
-   "detected": {
-    "v0": 0.25,
-    "v1@0.2": 0.3375
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory024_worker001_00002__hands_out_both",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "error"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": null
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  },
-  {
-   "clip_id": "ego10k_factory024_worker001_00006__hand_truncated",
-   "expected": "fail",
-   "status": {
-    "v0": "error",
-    "v1@0.2": "pass"
-   },
-   "ratio": {
-    "v0": null,
-    "v1@0.2": 0.8462
-   },
-   "detected": {
-    "v0": null,
-    "v1@0.2": 0.175
-   },
-   "source": "synthetic",
-   "label_ratio": null
-  }
- ],
+ "synthetic": [],
  "free": [
   {
    "clip_id": "pexels_7204592 (Washing up in the sink, first-person)",
