@@ -97,7 +97,7 @@ class Fake:
 OFF = {"enabled": False}
 RUBRIC_BODY = {"name": "t", "task": {"description": "d"}, "checks": {
     "technical": {}, "task_completed": OFF, "hands_visible": OFF, "framing": OFF,
-    "privacy": OFF, "originality": OFF}}
+    "privacy": OFF, "originality": OFF, "viewpoint": OFF}}  # viewpoint: test_viewpoint.py
 HANDS_ON = {**RUBRIC_BODY, "checks": {**RUBRIC_BODY["checks"], "hands_visible": {}}}
 
 
