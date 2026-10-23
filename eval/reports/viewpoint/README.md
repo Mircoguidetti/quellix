@@ -2,6 +2,8 @@
 
 run 39935528828 on `agent/viewpoint` (commit `d2e9d14`) · worker `viewpoint@0.3.0` applied to the stored features. Labels come from the sources (Egocentric-10K and HoloAssist are head-mounted; the Pexels clips are the founder's picks; Pixabay clips are labelled by eye from their contact sheets, founder veto on #79), never from Ormes. Constants fitted on `dev` only; `held_out` was not looked at while fitting. For now both a wrong viewpoint and `uncertain` send the video to review (the check cannot reject yet).
 
+**First-person side:** after the veto only 1 Pixabay first-person clip is left, so the first-person numbers rely on HoloAssist and Egocentric-10K (head-mounted) and the founder's 4 Pexels picks; the third-person side is mostly Pixabay.
+
 **Before:** Ormes had no viewpoint check: every third-person video went through as if first-person (third-person caught: 0%).
 
 | split | first-person clips | called third-person (costly error) | uncertain (review) | third-person clips | called first-person (missed) | uncertain (review) | caught |
@@ -185,19 +187,17 @@ Every labelled clip:
 
 Green arrow: a hand pointing up the frame (wrist -> middle knuckle); red: not. Confident faces (as the privacy check counts them) are boxed.
 
-![pexels_7204592](overlays/pexels_7204592.jpg)
-![pexels_7418650](overlays/pexels_7418650.jpg)
-![pexels_37443407](overlays/pexels_37443407.jpg)
-![pexels_7658012](overlays/pexels_7658012.jpg)
-![pexels_7308220](overlays/pexels_7308220.jpg)
-![pexels_4520150](overlays/pexels_4520150.jpg)
 ![pexels_11102752](overlays/pexels_11102752.jpg)
-![pexels_5592524](overlays/pexels_5592524.jpg)
+![pexels_37443407](overlays/pexels_37443407.jpg)
 ![pexels_4440711](overlays/pexels_4440711.jpg)
+![pexels_4520150](overlays/pexels_4520150.jpg)
+![pexels_5592524](overlays/pexels_5592524.jpg)
+![pexels_7204592](overlays/pexels_7204592.jpg)
+![pexels_7308220](overlays/pexels_7308220.jpg)
+![pexels_7418650](overlays/pexels_7418650.jpg)
 ![pexels_7641501](overlays/pexels_7641501.jpg)
+![pexels_7658012](overlays/pexels_7658012.jpg)
 ![pexels_9141844](overlays/pexels_9141844.jpg)
-![pixabay_7376](overlays/pixabay_7376.jpg)
-![pixabay_9520](overlays/pixabay_9520.jpg)
 ![pixabay_10822](overlays/pixabay_10822.jpg)
 ![pixabay_11290](overlays/pixabay_11290.jpg)
 ![pixabay_11291](overlays/pixabay_11291.jpg)
@@ -210,3 +210,7 @@ Green arrow: a hand pointing up the frame (wrist -> middle knuckle); red: not. C
 ![pixabay_150346](overlays/pixabay_150346.jpg)
 ![pixabay_150362](overlays/pixabay_150362.jpg)
 ![pixabay_150365](overlays/pixabay_150365.jpg)
+![pixabay_150367](overlays/pixabay_150367.jpg)
+![pixabay_35007](overlays/pixabay_35007.jpg)
+![pixabay_7376](overlays/pixabay_7376.jpg)
+![pixabay_9520](overlays/pixabay_9520.jpg)

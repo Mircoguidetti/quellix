@@ -102,6 +102,9 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
          "founder veto on #79), never from Ormes. Constants fitted on `dev` only; `held_out` was "
          "not looked at while fitting. For now both a wrong viewpoint and `uncertain` send the "
          "video to review (the check cannot reject yet).",
+         "", "**First-person side:** after the veto only 1 Pixabay first-person clip is left, so "
+         "the first-person numbers rely on HoloAssist and Egocentric-10K (head-mounted) and "
+         "the founder's 4 Pexels picks; the third-person side is mostly Pixabay.",
          "", "**Before:** Ormes had no viewpoint check: every third-person video went through "
          "as if first-person (third-person caught: 0%).", "",
          "| split | first-person clips | called third-person (costly error) | uncertain "
