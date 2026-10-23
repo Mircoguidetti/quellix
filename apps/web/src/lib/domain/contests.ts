@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { errors } from "@/lib/api/errors";
 import { contestFeedback, type FeedbackItem } from "@/lib/feedback";
 import { isUuid } from "./ids";
+import { pilotsEnabled } from "@/lib/pilots/flag";
 
 export type PublicContestInfo = { videoId: string; orgId: string; contributorRef: string | null; feedback: FeedbackItem[] };
 
@@ -10,10 +11,11 @@ export async function getContestInfo(db: SupabaseClient, videoId: string): Promi
   if (!isUuid(videoId)) return null;
   const { data: video } = await db
     .from("videos")
-    .select("id, org_id, contributor_ref")
+    .select(pilotsEnabled() ? "id, org_id, contributor_ref, shadow" : "id, org_id, contributor_ref")
     .eq("id", videoId)
-    .maybeSingle();
-  if (!video) return null;
+    .maybeSingle<{ id: string; org_id: string; contributor_ref: string | null; shadow?: boolean }>();
+  // Shadow pilot videos never reach a contributor (issue #65).
+  if (!video || video.shadow) return null;
 
   const [{ data: decision }, { data: review }] = await Promise.all([
     db.from("decisions").select("decision, reasons").eq("video_id", videoId).order("created_at", { ascending: false }).limit(1).maybeSingle(),

@@ -3,7 +3,7 @@
 import sys
 import types
 
-import numpy as np
+import cv2
 import pytest
 from quellix_hands.model import HandsModel as RealHandsModel
 from quellix_hands.types import RawHand
@@ -266,7 +266,7 @@ def test_task_model_is_skipped_after_a_critical_reject(clip):
     m = FakeTaskModel()
     rub = {**TASK_ON, "checks": {**TASK_ON["checks"], "technical": {"max_blur_ratio": 0.0}}}
     blurry = write_clip(clip.parent / "blur.mp4",
-                        [np.full((120, 160, 3), 128, np.uint8)] * 30, fps=15)
+                        [cv2.GaussianBlur(f, (0, 0), 6) for f in scene(2, 30)], fps=15)
     r = run_pipeline(blurry, rub, "v1", PipelineConfig(), Dependencies(task_model=m))
     assert m.seen is None and task_status(r) == "skipped"
 

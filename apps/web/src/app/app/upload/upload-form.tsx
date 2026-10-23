@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { putToSignedUrl } from "@/lib/storage-upload";
 import { finishUpload, startUpload } from "./actions";
 
 type Rubric = { id: string; name: string; version: number };
@@ -17,23 +18,7 @@ type Item = { key: string; file: File; state: "waiting" | "uploading" | "queued"
 const TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 const MAX_BYTES = 5 * 1024 ** 3;
 
-function put(url: string, file: File, onProgress: (p: number) => void): Promise<void> {
-  // Same wire format as supabase-js uploadToSignedUrl: PUT multipart straight to Storage.
-  return new Promise((resolve, reject) => {
-    const body = new FormData();
-    body.append("cacheControl", "3600");
-    body.append("", file);
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("x-upsert", "false");
-    xhr.timeout = 30 * 60 * 1000;
-    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
-    xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error("The storage service refused the file. Try again.")));
-    xhr.onerror = () => reject(new Error("The connection dropped during the upload."));
-    xhr.ontimeout = () => reject(new Error("The upload took too long."));
-    xhr.send(body);
-  });
-}
+const put = putToSignedUrl;
 
 function size(bytes: number) {
   return bytes > 1e9 ? `${(bytes / 1e9).toFixed(1)} GB` : `${Math.max(1, Math.round(bytes / 1e6))} MB`;
