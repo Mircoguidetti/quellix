@@ -1,11 +1,11 @@
 import { ArrowRight, Lock, MessageSquareWarning, Scale } from "lucide-react";
 import { ICON } from "../primitives";
 
-/** Product §5: the contributor contests from a link; a person on your team resolves it. */
+/** Product §Contests: the contributor contests from a link; a person on your team resolves it. Below `lg` the two steps sit in a row you swipe. */
 export function ContestFlow() {
   return (
-    <div className="grid items-center gap-6 lg:grid-cols-[1fr_auto_1.15fr]">
-      <figure className="mx-auto w-full max-w-[340px]">
+    <div className="-mx-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-[1fr_auto_1.15fr] lg:items-center lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0">
+      <figure className="w-[86%] max-w-[340px] shrink-0 snap-start lg:mx-auto lg:w-full">
         <figcaption className="mb-3 text-[14px] text-muted-foreground">1 · The contributor, from a link</figcaption>
         <div className="overflow-hidden rounded-[22px] border border-foreground/15 bg-[#f4f5f7] text-[#0b0c0e]">
           <div className="flex items-center gap-2 bg-[#e9ebee] px-3 py-2.5">
@@ -30,9 +30,9 @@ export function ContestFlow() {
         </div>
       </figure>
 
-      <ArrowRight aria-hidden strokeWidth={1.5} className="mx-auto size-6 rotate-90 text-muted-foreground lg:rotate-0" />
+      <ArrowRight aria-hidden strokeWidth={1.5} className="mx-auto hidden size-6 text-muted-foreground lg:block" />
 
-      <figure className="w-full">
+      <figure className="w-[86%] shrink-0 snap-start lg:w-full">
         <figcaption className="mb-3 text-[14px] text-muted-foreground">2 · A person on your team</figcaption>
         <div className="rounded-[22px] border border-hairline bg-panel p-5">
           <div className="flex items-center justify-between">

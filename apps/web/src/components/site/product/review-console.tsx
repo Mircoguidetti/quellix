@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Check, Film, Inbox, LayoutGrid, ListChecks, Scale, Settings, X } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import { ICON } from "../primitives";
-import { usePlayback } from "../use-playback";
 
 type Verdict = "accept" | "reject";
 type Reason = { tag: "review" | "pass" | "fail"; text: string; at: string };
@@ -95,7 +93,6 @@ const NAV = [
 type Lit = Verdict | "J" | "Enter" | null;
 type State = { index: number; lit: Lit; decided: Record<string, Verdict>; head: number };
 
-const STEP_MS = 3800;
 // Still frame: the second video, playhead on its first flagged moment.
 const REST: State = { index: 1, lit: null, decided: {}, head: 14 };
 
@@ -113,50 +110,17 @@ function Key({ children, lit }: { children: React.ReactNode; lit?: boolean }) {
 }
 
 /**
- * Product, Review: the app's review screen running on its own. For each video the reviewer presses
- * J to reach the flagged moment, Enter to replay it, then A or R; the queue moves on.
+ * Product, Review: the app's review screen, as a still frame: the second video in the queue with the
+ * playhead on its first flagged moment. The shortcut legend beside it lists the real keys.
  */
 export function ReviewConsole() {
-  const ref = useRef<HTMLDivElement>(null);
-  const playing = usePlayback(ref);
-  const [state, setState] = useState<State>(REST);
-
-  useEffect(() => {
-    if (!playing) return;
-    let i = 0;
-    const timers: number[] = [];
-    const run = () => {
-      const item = QUEUE[i];
-      const mark = item.marks[0];
-      const at = (ms: number, f: (st: State) => State) => timers.push(window.setTimeout(() => setState(f), ms));
-      at(600, (st) => ({ ...st, lit: "J", head: mark.left }));
-      at(900, (st) => ({ ...st, lit: null }));
-      at(1000, (st) => ({ ...st, head: mark.left + mark.width }));
-      at(1700, (st) => ({ ...st, lit: "Enter", head: mark.left }));
-      at(2000, (st) => ({ ...st, lit: null }));
-      at(2500, (st) => ({ ...st, lit: item.verdict }));
-      at(2950, (st) => ({ ...st, lit: null, decided: { ...st.decided, [item.id]: item.verdict } }));
-      timers.push(
-        window.setTimeout(() => {
-          i = (i + 1) % QUEUE.length;
-          setState((st) => ({ index: i, lit: null, decided: i === 0 ? {} : st.decided, head: 2 }));
-          run();
-        }, STEP_MS),
-      );
-    };
-    timers.push(window.setTimeout(() => setState({ index: 0, lit: null, decided: {}, head: 2 }), 0));
-    run();
-    return () => timers.forEach(clearTimeout);
-  }, [playing]);
-
-  // At rest (off screen, reduced motion, server) the console shows its still frame.
-  const { index, lit, decided, head } = playing ? state : REST;
+  // Static (issue #85: animation only in the Home hero and How it works): one still frame.
+  const { index, lit, decided, head } = REST;
   const item = QUEUE[index];
   const waiting = 11 - Object.keys(decided).length;
 
   return (
     <div
-      ref={ref}
       role="img"
       aria-label="The Ormes review screen: a queue of doubtful videos, the selected video with its flagged moments, and Accept and Reject keys"
       className="overflow-hidden rounded-[22px] border border-hairline bg-white text-[#0b0c0e] shadow-[0_40px_120px_-40px_rgba(143,180,255,0.25)]"
@@ -183,7 +147,7 @@ export function ReviewConsole() {
             </span>
           </div>
           <div className="grid lg:grid-cols-[250px_minmax(0,1fr)]">
-            <ul className="flex gap-2 overflow-hidden border-b border-[#e6e8eb] p-3 lg:flex-col lg:gap-0 lg:border-b-0 lg:border-r lg:p-2">
+            <ul className="hidden gap-2 overflow-hidden border-b border-[#e6e8eb] p-3 sm:flex lg:flex-col lg:gap-0 lg:border-b-0 lg:border-r lg:p-2">
               {QUEUE.map((q, i) => {
                 const verdict = decided[q.id];
                 return (
@@ -212,12 +176,12 @@ export function ReviewConsole() {
               })}
             </ul>
             <div className="min-w-0 p-4 sm:p-5">
-              <div className="relative aspect-video overflow-hidden rounded-xl bg-[linear-gradient(160deg,#2a2f38,#15181d_60%,#1d2027)]">
+              <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-[linear-gradient(160deg,#2a2f38,#15181d_60%,#1d2027)]">
                 <div className="absolute inset-x-[10%] bottom-0 h-[38%] rounded-t-[30%] bg-white/[0.06]" />
                 <div className="absolute bottom-[18%] left-[30%] h-[22%] w-[18%] rounded-full bg-[#c7a98d]/25" />
                 <div
                   key={item.id}
-                  className="absolute rounded-md border-[1.5px] border-[#8fb4ff] transition-all duration-500 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95"
+                  className="absolute rounded-md border-[1.5px] border-[#8fb4ff]"
                   style={{ left: item.box.left, top: item.box.top, width: item.box.w, height: item.box.h }}
                 >
                   <span className="absolute -top-5 left-0 whitespace-nowrap rounded bg-[#8fb4ff] px-1.5 font-mono text-[10.5px] text-black">{item.box.label}</span>
@@ -250,7 +214,7 @@ export function ReviewConsole() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-5 flex flex-wrap gap-2 text-[13px]">
+              <div className="mt-5 hidden flex-wrap gap-2 text-[13px] sm:flex">
                 <span className={cn("inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors", lit === "accept" ? "border-[#7ed6a8] bg-[#e8f7ef]" : "border-[#e6e8eb]")}>
                   Accept <Key lit={lit === "accept"}>A</Key>
                 </span>
