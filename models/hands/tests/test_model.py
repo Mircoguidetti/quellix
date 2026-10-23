@@ -36,7 +36,7 @@ def test_measure_returns_the_worker_contract():
     frames, ts = _clip()
     m = model.measure(frames, ts)
     assert m.keys() >= CONTRACT
-    assert model.model_id == "hands@0.1.0" == model.name
+    assert model.model_id == "hands@0.2.0" == model.name
     assert m["ratio_both_whole"] == 0.5
     assert m["ratio_any_whole"] == 1.0
     assert m["manipulation_segments"] == [[0.0, 0.75]]
@@ -79,3 +79,11 @@ def test_without_nulls_drops_missing_manipulation_ratios():
 def test_length_mismatch():
     with pytest.raises(ValueError):
         HandsModel(detector=ColorBlobDetector()).measure([draw_frame({})], [0.0, 1.0])
+
+
+def test_v0_is_the_first_version_for_before_after_scoring():
+    model = HandsModel.v0(detector=ColorBlobDetector())
+    assert model.model_id == "hands@0.1.0" == model.name
+    assert model.smooth_gap_s == 0.0
+    assert model.config.wrist_slack is None and not model.config.assign_by_position
+    assert model.config.min_confidence == 0.5
