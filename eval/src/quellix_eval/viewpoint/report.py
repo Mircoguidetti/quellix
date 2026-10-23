@@ -45,9 +45,17 @@ def shifts_of(clip: ClipFeatures) -> list[float | None]:
     return [float((dx * dx + dy * dy) ** 0.5) if r >= 0.02 else None for dx, dy, r in clip.motion]
 
 
+def heads_of(clip: ClipFeatures) -> float | None:
+    """The worker's head share: hair on every analysed (2nd) frame; None for old features."""
+    hair = [f.hair for f in clip.frames[::privacy.PRIVACY_STRIDE]]
+    if not hair or any(h is None for h in hair):
+        return None
+    return vp.head_share([float(h) for h in hair if h is not None])
+
+
 def measure(clip: ClipFeatures) -> dict[str, Any]:
     aspect = (clip.width or 16) / (clip.height or 9)
-    return vp.measure(hands_of(clip), aspect, face_share(clip), shifts_of(clip))
+    return vp.measure(hands_of(clip), aspect, face_share(clip), shifts_of(clip), heads_of(clip))
 
 
 def _rate(k: int, n: int) -> str:
@@ -104,14 +112,15 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
     L += ["", "By source (all splits):", ""] + per_source(rows)
     L += ["", "Every labelled clip:", "",
           "| clip | split | label | verdict | first_person_ratio | hand frames | pointing up "
-          "(median) | hand scale | face share | still share |",
-          "|---|---|---|---|---|---|---|---|---|---|"]
+          "(median) | hand scale | face share | head share | still share |",
+          "|---|---|---|---|---|---|---|---|---|---|---|"]
     order = {"first_person": 0, "third_person": 1}
     for c, m in sorted(labelled, key=lambda x: (order.get(x[0].label or "", 2), x[0].clip_id)):
         mark = "" if m["viewpoint"] in (c.label, "uncertain") else " **x**"
         L.append(f"| {c.clip_id} | {c.split} | {c.label} | {m['viewpoint']}{mark} | "
                  f"{m['first_person_ratio']} | {m['hand_frames']} | {m['pointing_up_median']} | "
-                 f"{m['hand_scale_median']} | {m['face_share']} | {m['still_share']} |")
+                 f"{m['hand_scale_median']} | {m['face_share']} | {m['head_share']} | "
+                 f"{m['still_share']} |")
     errors = [c for c in clips if c.error]
     if errors:
         L += ["", f"Not scored ({len(errors)}): " + ", ".join(

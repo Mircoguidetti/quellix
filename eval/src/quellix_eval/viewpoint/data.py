@@ -84,6 +84,7 @@ class FrameFeat:
     t: float
     hands: list[HandFeat] = field(default_factory=list)
     faces: list[list[float]] = field(default_factory=list)   # x, y, w, h, score (normalised)
+    hair: float | None = None   # share of the frame the person-parts segmenter calls hair
 
 
 @dataclass
@@ -106,8 +107,8 @@ class ClipFeatures:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> ClipFeatures:
-        frames = [FrameFeat(f["t"], [HandFeat(**h) for h in f["hands"]], f["faces"])
-                  for f in d.get("frames", [])]
+        frames = [FrameFeat(f["t"], [HandFeat(**h) for h in f["hands"]], f["faces"],
+                            f.get("hair")) for f in d.get("frames", [])]
         return cls(**{**d, "frames": frames})
 
 

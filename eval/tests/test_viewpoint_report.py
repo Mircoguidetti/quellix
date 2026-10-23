@@ -32,3 +32,12 @@ def test_render_tables():
     assert "| held_out | 0 | n/a | n/a | 1 | 0.00 [0.00-0.79] (0/1) |" in md
     assert "| pexels | unlabelled | 1 | 1 | 0 | 0 |" in md
     assert "`d` (HTTP 403)" in md and "![a]({IMAGE_BASE}overlays/a.jpg)" in md
+
+
+def test_head_share_from_stored_hair_on_analysed_frames():
+    c = clip("h", "third_person", "dev", up=True)
+    assert report.heads_of(c) is None                      # features without the segmenter
+    for i, f in enumerate(c.frames):
+        f.hair = (0.1 if i % 4 == 0 else 0.0) if i % 2 == 0 else None
+    assert report.heads_of(c) == 0.5
+    assert report.measure(c)["viewpoint"] == "uncertain"   # head in half the frames

@@ -52,9 +52,11 @@ class Extractor:  # pragma: no cover - needs the real models
     def __init__(self) -> None:
         from quellix_hands.model import HandsModel
         from quellix_worker.checks.privacy import YuNetFaceDetector
+        from quellix_worker.checks.viewpoint import MediaPipeParts
 
         self.hands = HandsModel()
         self.faces = YuNetFaceDetector()
+        self.parts = MediaPipeParts()
 
     def __call__(self, path: Path, clip: ClipFeatures) -> ClipFeatures:
         from quellix_worker import media
@@ -65,9 +67,11 @@ class Extractor:  # pragma: no cover - needs the real models
             return clip
         clip.width, clip.height, clip.duration_s = v.info.width, v.info.height, v.info.duration_s
         per_frame = self.hands.frames([f.rgb for f in v.frames], [f.t_s for f in v.frames])
-        for f, fh in zip(v.frames, per_frame, strict=True):
+        for i, (f, fh) in enumerate(zip(v.frames, per_frame, strict=True)):
             faces = [[round(x, 3) for x in b] for b in self.faces.detect(f.rgb)]
-            clip.frames.append(FrameFeat(round(f.t_s, 2), hand_feats(fh), faces))
+            # the worker segments every 2nd frame (the privacy stride): store those only
+            hair = round(self.parts.hair_share(f.rgb), 4) if i % 2 == 0 else None
+            clip.frames.append(FrameFeat(round(f.t_s, 2), hand_feats(fh), faces, hair))
         clip.motion = motion_of(v.motion_pairs)
         return clip
 
@@ -247,6 +251,35 @@ def pixabay_clips(net, key: str, work: Path, sheets: Path, extract, per_third: i
     return clips, rows
 
 
+def pixabay_labelled(net, key: str, work: Path, extract) -> list[ClipFeatures]:  # pragma: no cover
+    """The Pixabay clips that carry a usable hand label, fetched again by id."""
+    import json
+
+    from ..datasets import pixabay as pb
+    from .data import PIXABAY_LABELS
+
+    out = []
+    for line in PIXABAY_LABELS.read_text().splitlines():
+        row = json.loads(line)
+        if row.get("vetoed") or row.get("label") not in ("first_person", "third_person"):
+            continue
+        clip = ClipFeatures(row["clip_id"], "pixabay:candidate", row["clip_id"], None,
+                            split_of(row["clip_id"]), note=row.get("query", ""))
+        try:
+            hit = pb.by_id(net, key, int(row["clip_id"].split("_")[1]))
+            if hit is None:
+                raise RuntimeError("no longer on Pixabay")
+            path = pb.download(net, hit, work)
+            extract(path, clip)
+            path.unlink(missing_ok=True)
+        except Exception as e:  # noqa: BLE001
+            clip.error = f"{type(e).__name__}: {e}"[:300].replace(key, "***") if key else str(e)
+        print(f"{clip.clip_id} frames={len(clip.frames)} {clip.error or ''}")
+        out.append(clip)
+        time.sleep(0.7)
+    return out
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--out", type=Path, required=True)
@@ -257,6 +290,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--candidates", type=int, default=30)
     ap.add_argument("--pixabay-third", type=int, default=0, help="hits per third-person query")
     ap.add_argument("--pixabay-first", type=int, default=0, help="hits per first-person query")
+    ap.add_argument("--pixabay-labelled", action="store_true",
+                    help="also re-extract the hand-labelled Pixabay clips (by id)")
     ap.add_argument("--candidates-out", type=Path, default=None,
                     help="JSONL of the Pixabay candidates (ids, queries, tags)")
     a = ap.parse_args(argv)
@@ -287,6 +322,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     known = {lab.pexels_id for lab in (*PEXELS_FOUNDER, *PEXELS_EXTRA)}
     if a.candidates:
         clips += candidate_clips(net, a.candidates, known, a.out / "cand", a.sheets, key, extract)
+    if a.pixabay_labelled:
+        clips += pixabay_labelled(net, os.environ["PIXABAY_API_KEY"], a.out / "pixabay",
+                                  extract)
     save(a.features, clips)       # partial results survive a later failure
     for name, n, fn in (("holoassist", a.holoassist, holoassist_clips),
                         ("egocentric10k", a.ego10k, ego10k_clips)):

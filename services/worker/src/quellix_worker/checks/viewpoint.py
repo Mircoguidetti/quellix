@@ -6,7 +6,10 @@ Evidence, all from what the worker already computes:
   first-person footage the hands point *up* the frame (wrist below the knuckles, the forearm
   coming in from the bottom edge); filmed from outside, they point down, across, or at the camera;
 - the privacy check's confident faces: a face in view is someone being filmed;
-- the camera motion between frames 0.1 s apart: a head is never perfectly still, a tripod is.
+- the camera motion between frames 0.1 s apart (reported only: see the constants);
+- a person-parts segmenter (MediaPipe selfie multiclass, Apache-2.0): *hair* in view is
+  someone's head, which a camera on your own head or chest never sees. It catches the
+  over-the-shoulder shots whose hands point away from the camera like first-person ones.
 
 Output: ``first_person_ratio`` (share of the frames with a hand whose hands point the
 first-person way), ``viewpoint`` (``first_person`` / ``third_person`` / ``uncertain``),
@@ -15,9 +18,15 @@ first-person way), ``viewpoint`` (``first_person`` / ``third_person`` / ``uncert
 
 from __future__ import annotations
 
+import hashlib
+import logging
+import os
+import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Protocol
 
 import cv2
 import numpy as np
@@ -26,7 +35,16 @@ from ..jsonable import to_py
 from ..media import DecodedVideo
 from ..rubric import CheckOutput
 
-MODEL = "viewpoint@0.2.0"
+MODEL = "viewpoint@0.3.0"
+log = logging.getLogger(__name__)
+
+# MediaPipe selfie multiclass segmenter (Apache-2.0), pinned by version and sha256. Classes:
+# 0 background, 1 hair, 2 body skin, 3 face skin, 4 clothes, 5 others.
+SEGMENTER_URL = ("https://storage.googleapis.com/mediapipe-models/image_segmenter/"
+                 "selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite")
+SEGMENTER_SHA256 = "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0"
+SEGMENTER_FILENAME = "selfie_multiclass_256x256.tflite"
+HAIR = 1
 
 WRIST, MIDDLE_MCP = 0, 9
 
@@ -49,6 +67,8 @@ FIRST_PERSON_MIN = 0.6      # first_person_ratio at or above (and no face): firs
 THIRD_PERSON_MAX = 0.4      # at or below: third-person, unless the hands point straight down
 INVERTED_UP_MAX = -0.7      # median pointing-up at or below: down from the top (ambiguous)
 FACE_SHARE_MAX = 0.2        # a face in more than this share of the analysed frames
+HAIR_MIN = 0.02             # hair covering at least this share of a frame: a head is in view
+HEAD_SHARE_MAX = 0.2        # a head in more than this share of the analysed frames
 STILL_SHIFT = 0.0015        # a 0.1 s pair moving less than this share of the width is "still"
 
 
@@ -99,9 +119,18 @@ def face_share(faces: Sequence[Mapping[str, Any]], analysed_times: Sequence[floa
     return sum(round(t, 3) in with_face for t in analysed_times) / len(analysed_times)
 
 
+def head_share(hair_per_frame: Sequence[float]) -> float | None:
+    """Share of the analysed frames with a head in view (hair over HAIR_MIN of the frame)."""
+    if not hair_per_frame:
+        return None
+    return sum(h >= HAIR_MIN for h in hair_per_frame) / len(hair_per_frame)
+
+
 def measure(hands_per_frame: Sequence[Sequence[HandView]], aspect: float,
-            faces: float, shifts: Sequence[float | None]) -> dict[str, Any]:
-    """Video-level evidence and verdict from per-frame hands, face share and camera shifts."""
+            faces: float, shifts: Sequence[float | None],
+            heads: float | None = None) -> dict[str, Any]:
+    """Video-level evidence and verdict from per-frame hands, face share, camera shifts and
+    the share of frames with a head in view (None: segmenter not available)."""
     ups, scales, votes = [], [], []
     for hands in hands_per_frame:
         frame_ups = [u for h in hands if (u := pointing_up(h, aspect)) is not None]
@@ -118,6 +147,7 @@ def measure(hands_per_frame: Sequence[Sequence[HandView]], aspect: float,
         "hand_scale_median": round(float(np.median(scales)), 3) if scales else None,
         "face_share": round(faces, 3),
         "still_share": round(still, 3) if still is not None else None,
+        "head_share": round(heads, 3) if heads is not None else None,
     }
     m.update(verdict(m))
     return m
@@ -127,6 +157,7 @@ def verdict(m: Mapping[str, Any]) -> dict[str, Any]:
     """``viewpoint``, ``confidence`` and, when uncertain, ``uncertain_why`` (constants above)."""
     ratio = m.get("first_person_ratio")
     face = (m.get("face_share") or 0.0) > FACE_SHARE_MAX
+    head = (m.get("head_share") or 0.0) > HEAD_SHARE_MAX
 
     def unsure(why: str) -> dict[str, Any]:
         return {"viewpoint": "uncertain", "confidence": 0.0, "uncertain_why": why}
@@ -136,6 +167,9 @@ def verdict(m: Mapping[str, Any]) -> dict[str, Any]:
     if ratio >= FIRST_PERSON_MIN:
         if face:
             return unsure("hands seen first-person, but a face is in view")
+        if head:
+            return unsure("hands seen first-person, but a person's head is in view "
+                          "(filmed over the shoulder?)")
         return {"viewpoint": "first_person", "confidence": round(min(1.0, ratio), 2)}
     if ratio <= THIRD_PERSON_MAX:
         up = m.get("pointing_up_median")
@@ -161,8 +195,60 @@ def hands_from_states(per_frame: Sequence[Any]) -> list[list[HandView]]:
     return out
 
 
+class PartsSegmenter(Protocol):
+    def hair_share(self, rgb: np.ndarray) -> float: ...
+
+
+def segmenter_path() -> Path:
+    explicit = os.environ.get("QUELLIX_SEGMENTER_PATH")
+    if explicit:
+        return Path(explicit)
+    cache = Path(os.environ.get("QUELLIX_MODEL_DIR", Path.home() / ".cache" / "quellix"))
+    target = cache / SEGMENTER_FILENAME
+    if not target.exists():
+        cache.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".part")
+        urllib.request.urlretrieve(SEGMENTER_URL, tmp)  # noqa: S310 (fixed https URL)
+        digest = hashlib.sha256(tmp.read_bytes()).hexdigest()
+        if digest != SEGMENTER_SHA256:
+            tmp.unlink()
+            raise RuntimeError(f"{SEGMENTER_FILENAME} has an unexpected sha256 ({digest})")
+        tmp.rename(target)
+    return target
+
+
+class MediaPipeParts:  # pragma: no cover - needs mediapipe and the weights
+    def __init__(self, path: Path | None = None) -> None:
+        from mediapipe.tasks.python import BaseOptions, vision
+
+        self._seg = vision.ImageSegmenter.create_from_options(vision.ImageSegmenterOptions(
+            base_options=BaseOptions(model_asset_path=str(path or segmenter_path())),
+            output_category_mask=True))
+
+    def hair_share(self, rgb: np.ndarray) -> float:
+        import mediapipe as mp
+
+        image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
+        mask = self._seg.segment(image).category_mask.numpy_view()
+        return float((mask == HAIR).mean())
+
+
+@lru_cache(maxsize=1)
+def configured_segmenter() -> PartsSegmenter | None:
+    """The segmenter if mediapipe and the weights are available, else None (the check then
+    works without the head evidence and says so)."""
+    if os.environ.get("QUELLIX_SEGMENTER", "").lower() == "off":
+        return None
+    try:
+        return MediaPipeParts()
+    except Exception:  # missing mediapipe / weights: degrade, never crash the job
+        log.exception("person-parts segmenter unavailable; viewpoint runs without it")
+        return None
+
+
 def run(video: DecodedVideo, hands_per_frame: Sequence[Any] | None,
-        privacy: CheckOutput | None, privacy_stride: int = 2) -> CheckOutput:
+        privacy: CheckOutput | None, privacy_stride: int = 2,
+        segmenter: PartsSegmenter | None = None) -> CheckOutput:
     if not video.frames:
         return CheckOutput(error="no frames to analyse", model=MODEL)
     if hands_per_frame is None:
@@ -172,6 +258,12 @@ def run(video: DecodedVideo, hands_per_frame: Sequence[Any] | None,
     if privacy is not None and privacy.measurements is not None:
         analysed = [f.t_s for f in video.frames[::privacy_stride]]
         faces = face_share(privacy.measurements.get("faces") or [], analysed)
+    seg = segmenter or configured_segmenter()
+    heads = None
+    if seg is not None:
+        heads = head_share([seg.hair_share(f.rgb) for f in video.frames[::privacy_stride]])
     m = measure(hands_from_states(hands_per_frame), w / h, faces,
-                camera_shifts(video.motion_pairs))
+                camera_shifts(video.motion_pairs), heads)
+    if seg is None:
+        m["head_evidence"] = "segmenter not available"
     return CheckOutput(measurements=to_py(m), model=MODEL)

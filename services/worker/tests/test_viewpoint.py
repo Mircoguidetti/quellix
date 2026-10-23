@@ -191,3 +191,59 @@ def test_pipeline_runs_the_check_once_the_contract_knows_it(monkeypatch, tmp_pat
     v = r.decision["checks"]["viewpoint"]
     assert v["status"] == "pass" and v["measurements"]["viewpoint"] == "first_person"
     assert r.models["viewpoint"] == vp.MODEL and "viewpoint" in r.timings_ms
+
+
+# --- head in view (over-the-shoulder shots) ------------------------------------------------
+
+
+def test_head_share_counts_frames_with_enough_hair():
+    assert vp.head_share([]) is None
+    assert vp.head_share([0.0, 0.05, 0.01, 0.10]) == 0.5
+
+
+def test_a_head_in_view_blocks_first_person():
+    m = vp.measure([[UP]] * 20, 1.5, faces=0.0, shifts=[0.01] * 20, heads=0.6)
+    assert m["viewpoint"] == "uncertain" and "over the shoulder" in m["uncertain_why"]
+    m = vp.measure([[UP]] * 20, 1.5, faces=0.0, shifts=[0.01] * 20, heads=0.0)
+    assert m["viewpoint"] == "first_person" and m["head_share"] == 0.0
+
+
+def _video(n=20):
+    class F:
+        def __init__(self, t):
+            self.t_s, self.rgb = t, np.zeros((36, 64, 3), np.uint8)
+
+    class V:
+        frames = [F(i * 0.25) for i in range(n)]
+        motion_pairs: list = []
+
+    return V()
+
+
+def _states(n=20):
+    from quellix_hands.types import FrameHands, HandObservation
+
+    kp = np.zeros((21, 2))
+    kp[vp.WRIST], kp[vp.MIDDLE_MCP] = (0.5, 0.9), (0.5, 0.7)
+    return [FrameHands(i * 0.25, HandObservation("left", "full", 0.9, kp),
+                       HandObservation("right", "absent")) for i in range(n)]
+
+
+def test_run_uses_the_segmenter_on_every_analysed_frame():
+    class Seg:
+        calls = 0
+
+        def hair_share(self, rgb):
+            Seg.calls += 1
+            return 0.3
+
+    out = vp.run(_video(), _states(), None, 2, Seg())
+    assert Seg.calls == 10 and out.measurements["head_share"] == 1.0
+    assert out.measurements["viewpoint"] == "uncertain"
+
+
+def test_run_without_a_segmenter_says_so(monkeypatch):
+    monkeypatch.setattr(vp, "configured_segmenter", lambda: None)
+    m = vp.run(_video(), _states(), None).measurements
+    assert m["viewpoint"] == "first_person" and m["head_share"] is None
+    assert m["head_evidence"] == "segmenter not available"

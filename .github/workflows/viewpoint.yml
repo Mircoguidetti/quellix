@@ -57,7 +57,7 @@ jobs:
           uv run python -m quellix_eval.viewpoint.extract --out out/viewpoint \
             --features reports/viewpoint/features.jsonl.gz --sheets reports/viewpoint/candidates \
             --ego10k "${{ steps.req.outputs.ego10k }}" --holoassist "${{ steps.req.outputs.holoassist }}" \
-            --candidates "${{ steps.req.outputs.candidates }}"
+            --candidates "${{ steps.req.outputs.candidates }}" --pixabay-labelled
       - name: Pixabay candidates
         if: steps.req.outputs.mode == 'pixabay'
         run: |

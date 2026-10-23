@@ -26,7 +26,7 @@
 {"clip_id": "pixabay_11597", "label": "third_person", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-11597/", "group": "pixabay_chop"}
 {"clip_id": "pixabay_11606", "label": "third_person", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-11606/", "group": "pixabay_chop"}
 {"clip_id": "pixabay_192743", "label": "third_person", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-192743/"}
-{"clip_id": "pixabay_11605", "label": "third_person", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-11605/", "group": "pixabay_chop"}
+{"clip_id": "pixabay_11605", "label": "third_person", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-11605/", "group": "pixabay_chop", "vetoed": true, "note": "coordinator veto: top-down wok, camera position unclear"}
 {"clip_id": "pixabay_11644", "label": "exclude", "labelled_by": "agent-eye", "query": "woman chopping vegetables", "page_url": "https://pixabay.com/videos/id-11644/", "note": "hands from the bottom, unclear"}
 {"clip_id": "pixabay_11291", "label": "third_person", "labelled_by": "agent-eye", "query": "man cooking", "page_url": "https://pixabay.com/videos/id-11291/", "group": "pixabay_kitchen_1129x"}
 {"clip_id": "pixabay_11290", "label": "third_person", "labelled_by": "agent-eye", "query": "man cooking", "page_url": "https://pixabay.com/videos/id-11290/", "group": "pixabay_kitchen_1129x"}
@@ -66,7 +66,7 @@
 {"clip_id": "pixabay_1111", "label": "third_person", "labelled_by": "agent-eye", "query": "woman sewing", "page_url": "https://pixabay.com/videos/id-1111/"}
 {"clip_id": "pixabay_15483", "label": "exclude", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-15483/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_177164", "label": "third_person", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-177164/"}
-{"clip_id": "pixabay_47245", "label": "third_person", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-47245/"}
+{"clip_id": "pixabay_47245", "label": "third_person", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-47245/", "vetoed": true, "note": "coordinator veto: no hands working"}
 {"clip_id": "pixabay_126805", "label": "exclude", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-126805/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_51326", "label": "exclude", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-51326/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_51212", "label": "exclude", "labelled_by": "agent-eye", "query": "barista making coffee", "page_url": "https://pixabay.com/videos/id-51212/", "note": "no person working with the hands, or not a viewpoint example"}
@@ -99,14 +99,14 @@
 {"clip_id": "pixabay_11620", "label": "exclude", "labelled_by": "agent-eye", "query": "pov hands cooking", "page_url": "https://pixabay.com/videos/id-11620/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_297028", "label": "exclude", "labelled_by": "agent-eye", "query": "pov hands cooking", "page_url": "https://pixabay.com/videos/id-297028/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_175152", "label": "third_person", "labelled_by": "agent-eye", "query": "pov cooking", "page_url": "https://pixabay.com/videos/id-175152/"}
-{"clip_id": "pixabay_211185", "label": "third_person", "labelled_by": "agent-eye", "query": "pov cooking", "page_url": "https://pixabay.com/videos/id-211185/"}
+{"clip_id": "pixabay_211185", "label": "third_person", "labelled_by": "agent-eye", "query": "pov cooking", "page_url": "https://pixabay.com/videos/id-211185/", "vetoed": true, "note": "coordinator veto: no hands working"}
 {"clip_id": "pixabay_169349", "label": "exclude", "labelled_by": "agent-eye", "query": "pov cooking", "page_url": "https://pixabay.com/videos/id-169349/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_129497", "label": "exclude", "labelled_by": "agent-eye", "query": "pov cooking", "page_url": "https://pixabay.com/videos/id-129497/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_12801", "label": "exclude", "labelled_by": "agent-eye", "query": "first person view hands", "page_url": "https://pixabay.com/videos/id-12801/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_10822", "label": "first_person", "labelled_by": "agent-eye", "query": "first person view hands", "page_url": "https://pixabay.com/videos/id-10822/"}
 {"clip_id": "pixabay_38971", "label": "exclude", "labelled_by": "agent-eye", "query": "first person view hands", "page_url": "https://pixabay.com/videos/id-38971/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_143416", "label": "exclude", "labelled_by": "agent-eye", "query": "first person view hands", "page_url": "https://pixabay.com/videos/id-143416/", "note": "no person working with the hands, or not a viewpoint example"}
-{"clip_id": "pixabay_31654", "label": "first_person", "labelled_by": "agent-eye", "query": "pov hands", "page_url": "https://pixabay.com/videos/id-31654/"}
+{"clip_id": "pixabay_31654", "label": "first_person", "labelled_by": "agent-eye", "query": "pov hands", "page_url": "https://pixabay.com/videos/id-31654/", "vetoed": true, "note": "coordinator veto (08:17 UTC on #79): dress and body visible, arm from the side; not first-person"}
 {"clip_id": "pixabay_38079", "label": "exclude", "labelled_by": "agent-eye", "query": "pov hands", "page_url": "https://pixabay.com/videos/id-38079/", "note": "unclear"}
 {"clip_id": "pixabay_960", "label": "exclude", "labelled_by": "agent-eye", "query": "pov hands", "page_url": "https://pixabay.com/videos/id-960/", "note": "no person working with the hands, or not a viewpoint example"}
 {"clip_id": "pixabay_19600", "label": "third_person", "labelled_by": "agent-eye", "query": "pov hands", "page_url": "https://pixabay.com/videos/id-19600/"}
