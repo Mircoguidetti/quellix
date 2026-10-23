@@ -1,1 +1,1 @@
-{"note": "#84 run 2: 32 queries, up to 10 per query, at most 240 clips; near misses shown; viewpoint from main (#80)"}
+{"note": "#84 run 3: as run 2, with main merged so the viewpoint check (#80) is present"}
