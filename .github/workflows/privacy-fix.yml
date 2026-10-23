@@ -4,11 +4,13 @@ name: Privacy fix
 # worker's own decode and face detector on the founder's Pexels clips (Pexels downloads only work
 # from Actions), saves every raw detection and annotated frames, commits them to
 # eval/reports/privacy-diagnosis/ on the branch it runs on and posts the report on issue #83.
-# Push eval/requests/privacy/request.json ({"stage": "diagnose" | "collect", "batch": N,
+# Push eval/requests/privacy/request.json ({"stage": "diagnose" | "collect" | "score", "batch": N,
 # "holoassist": N, "egocentric": N}) to agent/privacy-fix.
 # - diagnose: every raw face detection on the Pexels clips (eval/reports/privacy-diagnosis/).
 # - collect: the real-face test set (Pixabay, Pexels, HoloAssist, Egocentric-10K), contact sheets
 #   for the labels and per-detection features (eval/reports/privacy-faces/).
+# - score: the worker's privacy check before / after the faces' second stage on the labelled set
+#   (eval/reports/privacy-faces/score.md).
 
 on:
   workflow_dispatch:
@@ -57,18 +59,19 @@ jobs:
         id: stage
         run: |
           s="$(python3 -c "import json; print(json.load(open('requests/privacy/request.json')).get('stage', 'diagnose'))" 2>/dev/null || echo diagnose)"
-          case "$s" in diagnose) d=privacy-diagnosis;; collect) d=privacy-faces;; *) echo "unknown stage $s" >&2; exit 1;; esac
+          case "$s" in diagnose) d=privacy-diagnosis;; collect|score) d=privacy-faces;; *) echo "unknown stage $s" >&2; exit 1;; esac
           echo "stage=$s" >> "$GITHUB_OUTPUT"; echo "dir=$d" >> "$GITHUB_OUTPUT"
       - name: Run
         run: |
           mkdir -p out/privacy
           set -o pipefail
           label="run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)"
-          if [ "${{ steps.stage.outputs.stage }}" = collect ]; then
+          st="${{ steps.stage.outputs.stage }}"
+          if [ "$st" = collect ] || [ "$st" = score ]; then
             get() { python3 -c "import json,sys; print(json.load(open('requests/privacy/request.json')).get(sys.argv[1], sys.argv[2]))" "$1" "$2"; }
             b="$(get batch 1)"; h="$(get holoassist 12)"; e="$(get egocentric 16)"
             case "$b$h$e" in ''|*[!0-9]*) echo "batch/holoassist/egocentric must be integers" >&2; exit 1;; esac
-            uv run python -m quellix_eval.privacy_faces collect --out out/privacy \
+            uv run python -m quellix_eval.privacy_faces "$st" --out out/privacy \
               --report-dir reports/privacy-faces --batch "$b" --holoassist "$h" --egocentric "$e" \
               --run "$label" 2>&1 | tee out/privacy/run.log
           else

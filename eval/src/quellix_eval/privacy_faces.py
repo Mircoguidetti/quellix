@@ -428,9 +428,116 @@ def render_sheets(clips: Sequence[FaceClip], image_base: str, run_label: str,
     return "\n".join(L) + "\n"
 
 
+# --- score: the worker's own privacy check, before and after (#83) -----------------------
+
+
+class WithoutVerify:
+    """The worker's face detector with the second stage removed: exactly the rule before #83
+    (no `verify`, so no unverified faces moved out and no single-frame faces)."""
+
+    def __init__(self, inner: Any) -> None:
+        self.inner = inner
+
+    def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]:
+        return [tuple(b[:5]) for b in self.inner.detect(rgb)]
+
+
+@dataclass
+class ScoreRow:
+    clip_id: str
+    split: str
+    group: str
+    label: str
+    before: bool | None = None       # the privacy check reports a face (faces non-empty)
+    after: bool | None = None
+    before_first_s: float | None = None
+    after_first_s: float | None = None
+    error: str | None = None
+
+
+def score_video(video: media.DecodedVideo, row: ScoreRow, detector: Any) -> ScoreRow:
+    for name, det in (("before", WithoutVerify(detector)), ("after", detector)):
+        out = privacy.run(video, faces=det, documents=privacy.NoRegionDetector(),
+                          screens=privacy.NoRegionDetector(), label=row.clip_id)
+        if out.error:
+            raise RuntimeError(out.error)
+        faces = out.measurements.get("faces") or []
+        setattr(row, name, bool(faces))
+        setattr(row, f"{name}_first_s", faces[0]["t_s"] if faces else None)
+    return row
+
+
+def rates(rows: Sequence[ScoreRow], which: str) -> tuple[str, str]:
+    """(false reject rate, false accept rate) at clip level: a face reported on a clip without
+    one, a real face not reported."""
+    from .benchmark.stats import wilson
+
+    def rate(k: int, n: int) -> str:
+        if n == 0:
+            return "n/a"
+        lo, hi = wilson(k, n) or (0.0, 0.0)
+        return f"{k / n:.2f} [{lo:.2f}-{hi:.2f}] ({k}/{n})"
+
+    ok = [r for r in rows if not r.error]
+    neg = [r for r in ok if r.label == "no_face"]
+    pos = [r for r in ok if r.label == "face"]
+    return (rate(sum(bool(getattr(r, which)) for r in neg), len(neg)),
+            rate(sum(not getattr(r, which) for r in pos), len(pos)))
+
+
+def render_score(rows: Sequence[ScoreRow], run_label: str, crops_base: str = "") -> str:
+    L = ["# Privacy faces: before / after (#83)", "",
+         f"{run_label} · the worker's own privacy check (`{privacy.MODEL}`), faces only, on the "
+         "labelled clips of `test_sets/privacy_faces.jsonl` (labels: source + eye check, "
+         "`test_sets/privacy_faces_labels.json`). Before = the same detector without the second "
+         f"stage. After = a face must score at least {privacy.FACE_VERIFY_MIN} when its box is "
+         f"redrawn {', '.join(map(str, privacy.FACE_VERIFY_SIZES))} px wide, and one verified at "
+         f"{privacy.FACE_SINGLE_FRAME_VERIFY} or more counts on a single frame. Clip level: false "
+         "reject = a face reported on a clip without one; false accept = a real face never "
+         "reported. Wilson 95% intervals.", "",
+         "| split | rule | false reject rate | false accept rate |", "|---|---|---|---|"]
+    for split in ("dev", "heldout"):
+        part = [r for r in rows if r.split == split]
+        for which in ("before", "after"):
+            fr, fa = rates(part, which)
+            L.append(f"| {split} | {which} | {fr} | {fa} |")
+    L += ["", "By group (both splits, before → after; errors / clips):", "",
+          "| group | label | clips | before: errors | after: errors |", "|---|---|---|---|---|"]
+    ok = [r for r in rows if not r.error]
+    for g, lab in sorted({(r.group, r.label) for r in ok}):
+        part = [r for r in ok if r.group == g and r.label == lab]
+        wrong = (lambda r, w: getattr(r, w)) if lab == "no_face" else (
+            lambda r, w: not getattr(r, w))
+        L.append(f"| {g} | {lab} | {len(part)} | {sum(wrong(r, 'before') for r in part)} | "
+                 f"{sum(wrong(r, 'after') for r in part)} |")
+    named = {"pexels_6693828": "pestle (founder's clip)",
+             "pexels_5592524": "countertop (real face, profile at the edge)"}
+    L += ["", "| clip | label | before | after |", "|---|---|---|---|"]
+    for cid, what in named.items():
+        r = next((x for x in ok if x.clip_id == cid), None)
+        if r:
+            L.append(f"| {cid}, {what} | {r.label} | {_said(r, 'before')} | {_said(r, 'after')} |")
+    errs = [r for r in ok if (r.after if r.label == "no_face" else not r.after)]
+    L += ["", f"Errors after the change ({len(errs)}):", ""]
+    for r in errs:
+        kind = "face reported" if r.label == "no_face" else "face missed"
+        L.append(f"- {r.clip_id} ({r.split}, {r.group}): {kind}"
+                 + (f" ![crops]({crops_base}crops/{r.clip_id}.jpg)" if crops_base else ""))
+    failed = [r for r in rows if r.error]
+    if failed:
+        L += ["", f"{len(failed)} clips failed: " + "; ".join(
+            f"{r.clip_id} ({(r.error or '')[:80]})" for r in failed)]
+    return "\n".join(L) + "\n"
+
+
+def _said(r: ScoreRow, which: str) -> str:
+    first = getattr(r, f"{which}_first_s")
+    return f"face at {first:.1f} s" if getattr(r, which) else "no face"
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("stage", choices=["collect"])
+    ap.add_argument("stage", choices=["collect", "score"])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--report-dir", type=Path, required=True)
     ap.add_argument("--per-query", type=int, default=PER_QUERY)
@@ -445,24 +552,23 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
 
     a.out.mkdir(parents=True, exist_ok=True)
     a.report_dir.mkdir(parents=True, exist_ok=True)
-    for old in [*a.report_dir.glob("sheet-*.jpg"), *a.report_dir.glob("crops/*.jpg")]:
-        old.unlink()
-    items: list[tuple[FaceClip, Any]] = []
     key = os.environ.get("PIXABAY_API_KEY", "")
     pnet = pb.UrllibNet()
+    xnet = px.UrllibNet()
+    pkey = os.environ.get("PEXELS_API_KEY", "")
     known = ([json.loads(x) for x in MANIFEST_PATH.read_text().splitlines() if x.strip()]
-             if MANIFEST_PATH.exists() and a.batch > 1 else [])
+             if MANIFEST_PATH.exists() and (a.batch > 1 or a.stage == "score") else [])
+    items: list[tuple[FaceClip, Any]] = []
     if key:
         items += pixabay_known(pnet, key, known)
-        seen = [int(c.clip_id.removeprefix("pixabay_")) for c, _ in items]
-        for b in range(1 if a.batch == 1 else 2, a.batch + 1):
-            items += pixabay_clips(pnet, key, a.per_query, BATCHES[b], exclude=seen)
+        if a.stage == "collect":
+            seen = [int(c.clip_id.removeprefix("pixabay_")) for c, _ in items]
+            for b in range(1 if a.batch == 1 else 2, a.batch + 1):
+                items += pixabay_clips(pnet, key, a.per_query, BATCHES[b], exclude=seen)
     else:
         print("PIXABAY_API_KEY is not set: no Pixabay clips", flush=True)
     items += pexels_face_clips()
     items += [(c, Path(c.path)) for c in local_sources(a.out, a.holoassist, a.egocentric)]
-    xnet = px.UrllibNet()
-    pkey = os.environ.get("PEXELS_API_KEY", "")
 
     def fetch(clip: FaceClip, src: Any) -> Path:
         if clip.source == "pixabay":
@@ -471,6 +577,10 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
             return px.fetch_pick(xnet, src, a.out, pkey)[0]
         return Path(src)
 
+    if a.stage == "score":
+        return score_main(items, fetch, a)
+    for old in [*a.report_dir.glob("sheet-*.jpg"), *a.report_dir.glob("crops/*.jpg")]:
+        old.unlink()
     clips = run(items, fetch, a.report_dir)
     (a.report_dir / "features.json").write_text(json.dumps(features_dump(clips)))
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -479,6 +589,37 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     (a.report_dir / "README.md").write_text(render_sheets(clips, "", a.run))
     (a.report_dir / "comment.md").write_text(render_sheets(clips, "{IMAGE_BASE}", a.run, new))
     print((a.report_dir / "README.md").read_text())
+    return 0
+
+
+def score_rows(items: Sequence[tuple[FaceClip, Any]], fetch: Callable[[FaceClip, Any], Path],
+               detector: Any, overrides: dict[str, str]) -> list[ScoreRow]:
+    rows = []
+    for clip, src in items:
+        label = final_label(clip, overrides)
+        if label == "drop":
+            continue
+        row = ScoreRow(clip.clip_id, clip.split, clip.group, label)
+        try:
+            video = media.decode(fetch(clip, src))
+            if not video.info.decodable:
+                raise RuntimeError("not decodable")
+            score_video(video, row, detector)
+        except Exception as e:  # noqa: BLE001 - reported
+            row.error = f"{type(e).__name__}: {e}"
+        print(f"{row.clip_id} [{row.split}] {row.label}: before {row.before} after {row.after} "
+              f"{row.error or ''}", flush=True)
+        rows.append(row)
+    return rows
+
+
+def score_main(items: Sequence[tuple[FaceClip, Any]], fetch: Callable[[FaceClip, Any], Path],
+               a: argparse.Namespace) -> int:  # pragma: no cover - network
+    rows = score_rows(items, fetch, privacy.YuNetFaceDetector(), labels())
+    (a.report_dir / "score.json").write_text(json.dumps([asdict(r) for r in rows], indent=1))
+    (a.report_dir / "score.md").write_text(render_score(rows, a.run))
+    (a.report_dir / "comment.md").write_text(render_score(rows, a.run, "{IMAGE_BASE}"))
+    print((a.report_dir / "score.md").read_text())
     return 0
 
 

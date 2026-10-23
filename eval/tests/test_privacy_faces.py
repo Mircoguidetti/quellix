@@ -99,3 +99,42 @@ def test_run_records_features_sheets_and_manifest(tmp_path):
     dump = pf.features_dump(out)
     assert all(d["score"] >= 0.45 for d in dump[0]["detections"])
     assert dump[0]["n_detections_below"] == len(weak)
+
+
+class VerifyFaces:
+    """A confident face on every frame; its scale-check value depends on the clip."""
+
+    def __init__(self, verify):
+        self.verify = verify
+
+    def detect(self, rgb):
+        return [(0.1, 0.1, 0.15, 0.2, 0.86, self.verify)]
+
+
+def test_without_verify_is_the_old_rule():
+    w = pf.WithoutVerify(VerifyFaces(0.2))
+    assert w.detect(None) == [(0.1, 0.1, 0.15, 0.2, 0.86)]
+
+
+def test_score_rows_before_after_and_report(tmp_path):
+    clip = tmp_path / "c.mp4"
+    write_video(clip, shot(), 8)
+    bowl = pf.FaceClip("pexels_6693828", "pexels", "Pexels License", "u", "no_face",
+                       "first-person", "pestle", split="heldout")
+    face = pf.FaceClip("pexels_5592524", "pexels", "Pexels License", "u", "face", "turned",
+                       "countertop", split="dev")
+    gone = pf.FaceClip("pixabay_9", "pixabay", "Pixabay Content License", "u", "face",
+                       "frontal", split="dev")
+    rows = []
+    for c, v in ((bowl, 0.3), (face, 0.9)):
+        rows += pf.score_rows([(c, None)], lambda c, s: clip, VerifyFaces(v), {})
+    rows += pf.score_rows([(gone, None)], lambda c, s: clip, VerifyFaces(0.9),
+                          {"pixabay_9": "drop"})
+    assert [(r.clip_id, r.before, r.after) for r in rows] == [
+        ("pexels_6693828", True, False), ("pexels_5592524", True, True)]
+    assert rows[0].before_first_s == 0.0 and rows[0].after_first_s is None
+    assert pf.rates(rows, "before") == ("1.00 [0.21-1.00] (1/1)", "0.00 [0.00-0.79] (0/1)")
+    md = pf.render_score(rows, "test", "{IMAGE_BASE}")
+    assert "| heldout | after | 0.00 [0.00-0.79] (0/1) | n/a |" in md
+    assert "| pexels_6693828, pestle (founder's clip) | no_face | face at 0.0 s | no face |" in md
+    assert "Errors after the change (0)" in md
