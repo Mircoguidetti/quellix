@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { FileInput, GitCommitHorizontal, Library, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ICON, Soon } from "../primitives";
+import { ICON } from "../primitives";
 
 /** Hand-visibility ratios of recent decisions near the threshold (example data); the other 156 are far from it. */
 const NEAR = [0.58, 0.63, 0.66, 0.69, 0.71, 0.73, 0.74, 0.76, 0.77, 0.785, 0.795, 0.805, 0.826, 0.834, 0.842, 0.851, 0.858, 0.866, 0.874, 0.881, 0.889, 0.896];
@@ -65,7 +65,7 @@ export function RubricEditor() {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-      <div className="overflow-hidden rounded-[22px] bg-white text-[#0b0c0e]">
+      <div className="overflow-hidden rounded-[22px] border border-hairline bg-white text-[#0b0c0e] shadow-[0_20px_60px_-30px_rgba(11,13,18,0.25)]">
         <div className="flex items-center justify-between border-b border-[#e6e8eb] px-5 py-3.5">
           <p className="font-mono text-[12.5px] text-[#5c626b]">rubric · load the dishwasher · v3</p>
           <span className="rounded-full bg-[#f4f5f7] px-2 py-0.5 text-[12px] text-[#5c626b]">Example</span>
@@ -126,7 +126,7 @@ export function RubricEditor() {
           <span aria-hidden className="absolute bottom-3 left-[7px] top-2 w-px bg-hairline" />
           {VERSIONS.map((v) => (
             <li key={v.v} className="relative">
-              <span aria-hidden className="absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel bg-white/30 ring-1 ring-white/20" />
+              <span aria-hidden className="absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel bg-foreground/30 ring-1 ring-foreground/20" />
               <p className="flex items-baseline gap-2">
                 <span className="font-mono text-[13px]">v{v.v}</span>
                 <span className="font-mono text-[11.5px] text-muted-foreground">{v.date}</span>
@@ -135,7 +135,7 @@ export function RubricEditor() {
             </li>
           ))}
           <li className="relative">
-            <span aria-hidden className={cn("absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel ring-1", dirty ? "bg-brand ring-brand motion-safe:animate-pulse" : "bg-panel ring-white/20")} />
+            <span aria-hidden className={cn("absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel ring-1", dirty ? "bg-brand ring-brand motion-safe:animate-pulse" : "bg-panel ring-foreground/20")} />
             <p className="flex items-baseline gap-2">
               <span className="font-mono text-[13px] text-brand">v4</span>
               <span className="font-mono text-[11.5px] text-muted-foreground">draft</span>
@@ -151,27 +151,27 @@ export function RubricEditor() {
             </p>
           </li>
         </ol>
-        <span className="mt-6 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-white px-4 text-[14px] font-medium text-black">
+        <span className="mt-6 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-foreground px-4 text-[14px] font-medium text-background">
           <Save {...ICON} className="size-4" /> Save as v4
         </span>
         <p className="mt-3 text-[12.5px] text-muted-foreground">Old decisions keep the version they used. Move the hands slider to preview the effect.</p>
       </div>
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-        <li className="flex gap-3.5 rounded-2xl border border-dashed border-hairline p-5">
+        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
           <FileInput {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
           <div>
             <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              From the lab’s spec <Soon />
+              From the lab’s spec
             </h3>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Paste the lab’s guidelines and Ormes drafts the rubric, each value tied to the line it came from.</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Paste the lab’s guidelines or drop a PDF: Ormes drafts the rubric, each value tied to the line it came from.</p>
           </div>
         </li>
-        <li className="flex gap-3.5 rounded-2xl border border-dashed border-hairline p-5">
+        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
           <Library {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
           <div>
             <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              A library of specs <Soon />
+              A library of specs
             </h3>
             <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Ready rubrics for common task families: kitchen, laundry, factory assembly.</p>
           </div>

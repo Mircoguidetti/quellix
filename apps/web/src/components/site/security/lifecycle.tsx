@@ -29,9 +29,9 @@ function NodeIcon({ node, small }: { node: Node; small?: boolean }) {
   return (
     <span
       className={cn(
-        "relative z-10 inline-flex shrink-0 items-center justify-center rounded-full border bg-black",
+        "relative z-10 inline-flex shrink-0 items-center justify-center rounded-full border bg-background",
         small ? "size-12" : "size-14",
-        node.tone === "end" ? "border-white/25 text-muted-foreground" : node.tone === "wait" ? "border-brand/50 text-brand" : "border-white/30 text-foreground",
+        node.tone === "end" ? "border-foreground/25 text-muted-foreground" : node.tone === "wait" ? "border-brand/50 text-brand" : "border-foreground/30 text-foreground",
       )}
     >
       <node.icon {...ICON} className="size-[22px]" />
@@ -47,10 +47,10 @@ export function Lifecycle() {
     <div ref={ref} data-play={playing ? "" : undefined} className="rounded-[24px] border border-hairline bg-panel p-5 sm:p-8">
       {/* Desktop */}
       <div className="relative hidden h-[400px] md:block" style={{ "--row1": `${ROW1}px`, "--row2": `${ROW2}px` } as React.CSSProperties}>
-        <span aria-hidden className="absolute h-px bg-white/15" style={{ top: ROW1, left: COLS[0], right: "12.5%" }} />
+        <span aria-hidden className="absolute h-px bg-foreground/15" style={{ top: ROW1, left: COLS[0], right: "12.5%" }} />
         <span aria-hidden className="absolute w-px border-l border-dashed border-brand/50" style={{ left: COLS[2], top: ROW1, height: ROW2 - ROW1 }} />
         <span aria-hidden className="absolute h-px border-t border-dashed border-brand/50" style={{ top: ROW2, left: COLS[2], width: "25%" }} />
-        <span aria-hidden className={cn(s.dot, "absolute z-[5] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.15)]")} style={{ top: ROW1 }} />
+        <span aria-hidden className={cn(s.dot, "absolute z-[5] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-[0_0_0_4px_color-mix(in_oklab,var(--foreground)_15%,transparent)]")} style={{ top: ROW1 }} />
         <span aria-hidden className={cn(s.branchDot, "absolute z-[5] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand shadow-[0_0_0_4px_rgba(143,180,255,0.2)]")} />
         <ol>
           {MAIN.map((n, i) => (
@@ -63,7 +63,7 @@ export function Lifecycle() {
             </li>
           ))}
         </ol>
-        <p className="absolute -translate-x-1/2 rounded-full border border-brand/30 bg-black px-2.5 py-0.5 font-mono text-[11.5px] text-brand" style={{ left: COLS[2], top: 168 }}>
+        <p className="absolute -translate-x-1/2 rounded-full border border-brand/30 bg-background px-2.5 py-0.5 font-mono text-[11.5px] text-brand" style={{ left: COLS[2], top: 168 }}>
           if review
         </p>
         <ol>
@@ -85,9 +85,9 @@ export function Lifecycle() {
       {/* Mobile */}
       <div className="md:hidden">
         <div className="relative">
-          <span aria-hidden className="absolute bottom-[104px] left-6 top-6 w-px bg-white/15" />
+          <span aria-hidden className="absolute bottom-[104px] left-6 top-6 w-px bg-foreground/15" />
           <span aria-hidden className="absolute bottom-[104px] left-6 top-6 w-0">
-            <span className={cn(s.vdot, "absolute left-0 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white")} />
+            <span className={cn(s.vdot, "absolute left-0 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground")} />
           </span>
           <ol className="flex flex-col">
             {MAIN.map((n) => (

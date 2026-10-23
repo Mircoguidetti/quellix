@@ -11,7 +11,7 @@ const LINKS = [
 
 export function DocsFooter() {
   return (
-    <footer className="border-t border-border bg-subtle">
+    <footer className="surface-dark">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 text-foreground">
           <Logo className="text-[13px]" />

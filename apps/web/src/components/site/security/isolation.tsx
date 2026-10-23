@@ -13,7 +13,7 @@ function Wall({ blocked }: { blocked?: boolean }) {
     <div aria-hidden className="relative flex items-center justify-center md:w-10 md:flex-col">
       <span className="h-3 w-full rounded-sm bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.16)_0_4px,transparent_4px_9px)] md:h-full md:w-3" />
       {blocked ? (
-        <span className="absolute inline-flex size-7 items-center justify-center rounded-full border border-no/50 bg-black text-no">
+        <span className="absolute inline-flex size-7 items-center justify-center rounded-full border border-no/50 bg-background text-no">
           <Ban {...ICON} className="size-3.5" />
         </span>
       ) : null}
@@ -48,7 +48,7 @@ export function Isolation() {
                   </dt>
                   <dd aria-hidden className="mt-2.5 flex flex-wrap gap-1.5">
                     {Array.from({ length: org.prints }, (_, k) => (
-                      <i key={k} className={cn("size-2 rounded-full", org.you ? "bg-brand/70" : "bg-white/25")} style={{ opacity: 0.45 + ((k * 37) % 55) / 100 }} />
+                      <i key={k} className={cn("size-2 rounded-full", org.you ? "bg-brand/70" : "bg-foreground/25")} style={{ opacity: 0.45 + ((k * 37) % 55) / 100 }} />
                     ))}
                   </dd>
                 </div>

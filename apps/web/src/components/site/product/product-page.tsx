@@ -19,7 +19,7 @@ import {
 import { ButtonLink, H2, ICON, Lead, PageIntro, Section, Soon } from "../primitives";
 import { ContestFlow } from "./contest-flow";
 import { DecisionDiagram } from "./decision-diagram";
-import { Keycaps } from "./keycaps";
+import { ReviewConsole } from "./review-console";
 import { LabChart } from "./lab-chart";
 import { RubricEditor } from "./rubric-editor";
 
@@ -65,6 +65,16 @@ const CHECKS: { icon: LucideIcon; name: string; measures: string; set: string; e
     effect: "reject",
     note: "critical",
   },
+];
+
+// The real shortcuts of the review screen (app/app/review/review-workspace.tsx).
+const SHORTCUTS: [string[], string][] = [
+  [["A"], "Accept the video"],
+  [["R"], "Reject it"],
+  [["J", "K"], "Next or previous flagged moment"],
+  [["↵"], "Replay the current moment"],
+  [["N"], "Write a note, kept with the decision"],
+  [["↑", "↓"], "Move through the queue"],
 ];
 
 const NAV = [
@@ -118,10 +128,10 @@ export function ProductPage() {
               <div
                 role="row"
                 key={name}
-                className="grid gap-2 border-t border-hairline px-5 py-5 transition-colors first:border-t-0 hover:bg-white/[0.02] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-6 md:first:border-t"
+                className="grid gap-2 border-t border-hairline px-5 py-5 transition-colors first:border-t-0 hover:bg-foreground/[0.02] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-6 md:first:border-t"
               >
                 <span role="rowheader" className="flex items-center gap-2.5 font-medium">
-                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-white/[0.06]">
+                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-foreground/[0.06]">
                     <Icon {...ICON} className="size-4" />
                   </span>
                   {name}
@@ -155,8 +165,22 @@ export function ProductPage() {
       <Section id="review">
         <H2>Only doubtful videos, decided from the keyboard.</H2>
         <Lead>Each video in review arrives with its reasons pinned to the timeline. Reviewers jump between flagged moments and decide with one key.</Lead>
-        <div className="mt-10">
-          <Keycaps />
+        <div className="mt-10 flex flex-col gap-8">
+          <ReviewConsole />
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Review shortcuts">
+            {SHORTCUTS.map(([keys, label]) => (
+              <div key={label} className="flex items-start gap-3">
+                <dt className="flex shrink-0 gap-1">
+                  {keys.map((k) => (
+                    <kbd key={k} className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-foreground/15 bg-foreground/[0.06] px-1.5 font-mono text-[12.5px] text-foreground">
+                      {k}
+                    </kbd>
+                  ))}
+                </dt>
+                <dd className="pt-1 text-[14px] leading-snug text-muted-foreground">{label}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </Section>
 

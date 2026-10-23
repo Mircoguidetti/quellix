@@ -6,7 +6,6 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import { ICON } from "../primitives";
 import { usePlayback } from "../use-playback";
-import s from "./home.module.css";
 
 type Verdict = "accept" | "reject";
 type Reason = { tag: "review" | "pass" | "fail"; text: string; at: string };
@@ -93,15 +92,19 @@ const NAV = [
   { icon: Settings, label: "Settings" },
 ];
 
-const STEP_MS = 3400;
-const REST = { index: 1, lit: null, decided: {} as Record<string, Verdict> };
+type Lit = Verdict | "J" | "Enter" | null;
+type State = { index: number; lit: Lit; decided: Record<string, Verdict>; head: number };
+
+const STEP_MS = 3800;
+// Still frame: the second video, playhead on its first flagged moment.
+const REST: State = { index: 1, lit: null, decided: {}, head: 14 };
 
 function Key({ children, lit }: { children: React.ReactNode; lit?: boolean }) {
   return (
     <kbd
       className={cn(
         "inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-black/15 bg-white px-1.5 font-mono text-[12px] font-medium text-[#0b0c0e] shadow-[0_1px_0_rgba(0,0,0,0.15)] transition-all duration-150",
-        lit && s.keyLit,
+        lit && "translate-y-px border-[#8fb4ff] bg-[#8fb4ff] text-black shadow-[0_0_0_4px_rgba(143,180,255,0.3)]",
       )}
     >
       {children}
@@ -109,11 +112,14 @@ function Key({ children, lit }: { children: React.ReactNode; lit?: boolean }) {
   );
 }
 
-/** Home §4: the app's review screen, the queue advancing on its own with the A/R keys lighting. */
+/**
+ * Product, Review: the app's review screen running on its own. For each video the reviewer presses
+ * J to reach the flagged moment, Enter to replay it, then A or R; the queue moves on.
+ */
 export function ReviewConsole() {
   const ref = useRef<HTMLDivElement>(null);
   const playing = usePlayback(ref);
-  const [state, setState] = useState<{ index: number; lit: Verdict | null; decided: Record<string, Verdict> }>(REST);
+  const [state, setState] = useState<State>(REST);
 
   useEffect(() => {
     if (!playing) return;
@@ -121,23 +127,30 @@ export function ReviewConsole() {
     const timers: number[] = [];
     const run = () => {
       const item = QUEUE[i];
-      timers.push(window.setTimeout(() => setState((st) => ({ ...st, lit: item.verdict })), 2000));
-      timers.push(window.setTimeout(() => setState((st) => ({ ...st, lit: null, decided: { ...st.decided, [item.id]: item.verdict } })), 2450));
+      const mark = item.marks[0];
+      const at = (ms: number, f: (st: State) => State) => timers.push(window.setTimeout(() => setState(f), ms));
+      at(600, (st) => ({ ...st, lit: "J", head: mark.left }));
+      at(900, (st) => ({ ...st, lit: null }));
+      at(1000, (st) => ({ ...st, head: mark.left + mark.width }));
+      at(1700, (st) => ({ ...st, lit: "Enter", head: mark.left }));
+      at(2000, (st) => ({ ...st, lit: null }));
+      at(2500, (st) => ({ ...st, lit: item.verdict }));
+      at(2950, (st) => ({ ...st, lit: null, decided: { ...st.decided, [item.id]: item.verdict } }));
       timers.push(
         window.setTimeout(() => {
           i = (i + 1) % QUEUE.length;
-          setState((st) => ({ index: i, lit: null, decided: i === 0 ? {} : st.decided }));
+          setState((st) => ({ index: i, lit: null, decided: i === 0 ? {} : st.decided, head: 2 }));
           run();
         }, STEP_MS),
       );
     };
-    timers.push(window.setTimeout(() => setState({ index: 0, lit: null, decided: {} }), 0));
+    timers.push(window.setTimeout(() => setState({ index: 0, lit: null, decided: {}, head: 2 }), 0));
     run();
     return () => timers.forEach(clearTimeout);
   }, [playing]);
 
   // At rest (off screen, reduced motion, server) the console shows its still frame.
-  const { index, lit, decided } = playing ? state : REST;
+  const { index, lit, decided, head } = playing ? state : REST;
   const item = QUEUE[index];
   const waiting = 11 - Object.keys(decided).length;
 
@@ -149,7 +162,7 @@ export function ReviewConsole() {
       className="overflow-hidden rounded-[22px] border border-hairline bg-white text-[#0b0c0e] shadow-[0_40px_120px_-40px_rgba(143,180,255,0.25)]"
     >
       <div className="grid md:grid-cols-[196px_minmax(0,1fr)]">
-        <aside className="hidden flex-col gap-1 bg-[#0b0c0e] p-4 text-[13.5px] text-white/60 md:flex" aria-hidden="true">
+        <aside className="surface-dark hidden flex-col gap-1 bg-[#0b0c0e] p-4 text-[13.5px] text-white/60 md:flex" aria-hidden="true">
           <Logo className="mb-5 px-2 pt-1 text-[13px] text-white" />
           {NAV.map(({ icon: Icon, label, count, on }) => (
             <span key={label} className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5", on && "bg-white/10 text-white")}>
@@ -219,7 +232,7 @@ export function ReviewConsole() {
                     style={{ left: `${m.left}%`, width: `${m.width}%` }}
                   />
                 ))}
-                <span className="absolute -top-1 h-4 w-0.5 rounded bg-[#0b0c0e]" style={{ left: `${item.marks[0].left}%` }} />
+                <span className="absolute -top-1 h-4 w-0.5 rounded bg-[#0b0c0e] transition-[left] duration-700 ease-linear" style={{ left: `${head}%` }} />
               </div>
               <ul className="mt-4 flex flex-col gap-2">
                 {item.reasons.map((r) => (
@@ -244,8 +257,11 @@ export function ReviewConsole() {
                 <span className={cn("inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors", lit === "reject" ? "border-[#ff8a7a] bg-[#fdeeeb]" : "border-[#e6e8eb]")}>
                   Reject <Key lit={lit === "reject"}>R</Key>
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-[#e6e8eb] px-3 py-1.5 text-[#5c626b]">
-                  Next moment <Key>J</Key>
+                <span className={cn("inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[#5c626b] transition-colors", lit === "J" ? "border-[#8fb4ff] bg-[#eef3ff]" : "border-[#e6e8eb]")}>
+                  Next moment <Key lit={lit === "J"}>J</Key>
+                </span>
+                <span className={cn("inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[#5c626b] transition-colors", lit === "Enter" ? "border-[#8fb4ff] bg-[#eef3ff]" : "border-[#e6e8eb]")}>
+                  Replay <Key lit={lit === "Enter"}>↵</Key>
                 </span>
               </div>
             </div>

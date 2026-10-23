@@ -16,11 +16,11 @@ function Switch({ on, onChange, label, disabled }: { on: boolean; onChange?: (v:
       onClick={() => onChange?.(!on)}
       className={cn(
         "relative h-8 w-14 shrink-0 rounded-full border transition-colors duration-200",
-        on ? "border-brand bg-brand" : "border-white/15 bg-white/[0.06]",
+        on ? "border-brand bg-brand" : "border-foreground/15 bg-foreground/[0.06]",
         disabled ? "cursor-default" : "cursor-pointer",
       )}
     >
-      <span className={cn("absolute left-0 top-[3px] size-6 rounded-full shadow transition-transform duration-200", on ? "translate-x-[27px] bg-black" : "translate-x-[3px] bg-white/80")} />
+      <span className={cn("absolute left-0 top-[3px] size-6 rounded-full shadow transition-transform duration-200", on ? "translate-x-[27px] bg-background" : "translate-x-[3px] bg-foreground/80")} />
     </button>
   );
 }

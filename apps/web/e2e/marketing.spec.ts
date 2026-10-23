@@ -97,6 +97,53 @@ test.describe("marketing site", () => {
     await expect(page.getByText("Saving creates v4")).toBeVisible();
   });
 
+  test("Home: nine sections, one buyer question each, in order (issue #69)", async ({ page }) => {
+    await page.goto("/");
+    // Section shots: the sticky header would cover the top of each section.
+    await page.addStyleTag({ content: "header { position: static !important; }" });
+    const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
+    expect(ids).toEqual(["top", "problem", "flow", "checks", "why", "privacy", "api", "pilot", "faq", "start"]);
+    // The review console and the old phone moved off Home; "What Ormes doesn't do" and pricing are gone.
+    await expect(page.getByText("What Ormes doesn’t do.")).toHaveCount(0);
+    await expect(page.getByText("Pay per hour of video checked.")).toHaveCount(0);
+    await expect(page.getByRole("img", { name: /The Ormes review screen/ })).toHaveCount(0);
+    // Problem sources are cited.
+    await expect(page.locator("#problem").getByRole("link", { name: /Market Xcel/ })).toBeVisible();
+    await expect(page.locator("#problem").getByRole("link", { name: /Unidata/ })).toBeVisible();
+    // Why Ormes, at rest: the reviewer's verdict tomorrow vs Ormes's real reason and the contributor's fix,
+    // then the three real clips with all three outcomes, as the worker wrote them.
+    const why = page.locator("#why");
+    await expect(why.getByText("tomorrow")).toBeVisible();
+    await expect(why.getByText("Your video was rejected.")).toBeVisible();
+    await expect(why.getByText(/^Film in even light/)).toBeVisible();
+    const cards = why.getByRole("list", { name: "Three versions of the same video" }).getByRole("button");
+    await expect(cards).toHaveCount(3);
+    for (const [i, outcome] of ["accept", "review", "reject"].entries()) await expect(cards.nth(i)).toContainText(outcome);
+    await expect(cards.nth(2)).toHaveAttribute("aria-pressed", "true");
+    await cards.nth(1).click();
+    await expect(why.getByText("A person will check your video.")).toBeVisible();
+    await expect(why.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/product");
+    // FAQ keeps the five questions and adds the sixth.
+    await expect(page.locator("#faq details")).toHaveCount(6);
+    await expect(page.getByText("Can Ormes reject a good video?")).toBeVisible();
+  });
+
+  test("Product: the review section shows the console and its shortcuts", async ({ page }) => {
+    await page.goto("/product");
+    const review = page.locator("#review");
+    await expect(review.getByRole("img", { name: /The Ormes review screen/ })).toBeVisible();
+    await expect(review.getByLabel("Review shortcuts")).toContainText("Replay the current moment");
+  });
+
+  test("Product: the decision diagram plays real clips, each ending at the worker's decision", async ({ page }) => {
+    await page.goto("/product");
+    const diagram = page.locator("#decision");
+    await diagram.getByRole("button", { name: "Play video 4" }).click();
+    await expect(diagram.getByText(/^Too dark or too bright 35% of the time/)).toBeVisible();
+    await diagram.getByRole("button", { name: "Play video 3" }).click();
+    await expect(diagram.getByText("Hand visibility could not be measured (ratio_both_manipulation).")).toBeVisible();
+  });
+
   test("Product: hovering a check lights its path to an outcome", async ({ page, isMobile }) => {
     test.skip(isMobile, "Hover");
     await page.goto("/product");
@@ -133,6 +180,58 @@ test.describe("marketing site", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(PAGES[0].h1);
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/app$/);
+  });
+
+  test("axe: docs has no serious violations (light content, dark footer)", async ({ page, isMobile }) => {
+    test.skip(isMobile, "Runs on desktop");
+    await page.goto("/docs/quickstart");
+    await page.waitForLoadState("networkidle");
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(", ")}`)).toEqual([]);
+  });
+
+  test("surfaces: dark accents on Home, light everywhere else (issue #69)", async ({ page }) => {
+    const surface = (sel: string) => page.locator(sel).first().evaluate((el) => el.closest(".surface-dark, .surface-light")?.className.match(/surface-(dark|light)/)?.[1]);
+    await page.goto("/");
+    expect(await surface("#top")).toBe("dark");
+    for (const id of ["problem", "flow", "checks", "privacy", "api", "pilot", "faq"]) expect(await surface(`#${id}`), id).toBe("light");
+    expect(await surface("#why")).toBe("dark");
+    expect(await surface("#start")).toBe("dark");
+    expect(await surface("footer")).toBe("dark");
+    for (const route of ["/product", "/security"]) {
+      await page.goto(route);
+      expect(await surface("main section"), route).toBe("light");
+      expect(await surface("footer"), route).toBe("dark");
+    }
+    // The hero has no trust row any more; the real clip sits in a 16:9 card with the worker's decision.
+    await page.goto("/");
+    await expect(page.getByText("Videos deleted after analysis")).toHaveCount(0);
+    const card = page.locator("#top img[src='/media/clips/clip-01.jpg']");
+    await expect(card).toBeVisible();
+    const box = (await card.boundingBox())!;
+    expect(box.width / box.height).toBeCloseTo(16 / 9, 1);
+    await expect(page.locator("#top").getByText("accept", { exact: true })).toBeVisible();
+  });
+
+  test("screenshots: every Home section, and the other pages above the fold", async ({ page }, info) => {
+    const dir = path.join(OUT, info.project.name, "sections");
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: path.join(dir, "home-00-above-the-fold.jpg"), type: "jpeg", quality: 72 });
+    // Section shots: the sticky header would cover the top of each section.
+    await page.addStyleTag({ content: "header { position: static !important; }" });
+    const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
+    for (const [i, id] of ids.entries()) {
+      await page.locator(`#${id}`).screenshot({ path: path.join(dir, `home-${String(i + 1).padStart(2, "0")}-${id}.jpg`), type: "jpeg", quality: 72 });
+    }
+    for (const [name, route] of [["product", "/product"], ["security", "/security"], ["docs", "/docs"]]) {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({ path: path.join(dir, `${name}-above-the-fold.jpg`), type: "jpeg", quality: 72 });
+    }
   });
 
   for (const p of PAGES) {
