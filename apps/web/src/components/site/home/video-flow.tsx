@@ -12,10 +12,11 @@ import { usePlayback } from "../use-playback";
  */
 
 type Lane = "accept" | "review" | "reject";
-const LANES: { key: Lane; y: number; label: string; color: string; icon: typeof CircleCheck; final: number }[] = [
-  { key: "accept", y: 60, label: "Accept", color: "#7ed6a8", icon: CircleCheck, final: 8000 },
-  { key: "review", y: 180, label: "Review", color: "#8fb4ff", icon: UserRoundSearch, final: 1500 },
-  { key: "reject", y: 300, label: "Reject", color: "#ff8a7a", icon: CircleX, final: 500 },
+// `color` outlines the (dark) thumbnails; `token` is the surface's status colour for lanes and counters.
+const LANES: { key: Lane; y: number; label: string; color: string; token: string; icon: typeof CircleCheck; final: number }[] = [
+  { key: "accept", y: 60, label: "Accept", color: "#7ed6a8", token: "var(--brand-ok)", icon: CircleCheck, final: 8000 },
+  { key: "review", y: 180, label: "Review", color: "#8fb4ff", token: "var(--brand)", icon: UserRoundSearch, final: 1500 },
+  { key: "reject", y: 300, label: "Reject", color: "#ff8a7a", token: "var(--brand-no)", icon: CircleX, final: 500 },
 ];
 const PER_THUMB = 250;
 const TOTAL = 10_000;
@@ -178,23 +179,23 @@ export function VideoFlow() {
 
   return (
     <div ref={rootRef}>
-      <figure className="rounded-[22px] border border-hairline bg-panel p-4 sm:p-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <figure className="rounded-[22px] border border-hairline bg-panel p-4 sm:p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 sm:mb-4">
           <p className="text-[14px] text-muted-foreground">
             Videos received <span ref={(el) => void (counters.current.total = el)} className="tabular ml-2 text-foreground">{fmt(TOTAL)}</span>
           </p>
           <Example>Example month</Example>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_200px]">
-          <svg ref={svgRef} viewBox="0 0 720 360" className="block h-auto w-full overflow-hidden" aria-hidden="true">
+          <svg ref={svgRef} viewBox="0 0 720 360" className="block h-auto max-h-[280px] w-full overflow-hidden text-foreground" aria-hidden="true">
             <defs>
               <linearGradient id="vf-fade" x1="0" x2="1">
-                <stop offset="0" stopColor="#fff" stopOpacity="0" />
-                <stop offset="0.25" stopColor="#fff" stopOpacity="0.14" />
+                <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="0.25" stopColor="currentColor" stopOpacity="0.2" />
               </linearGradient>
             </defs>
             {LANES.map((l) => (
-              <path key={l.key} d={path(l.y)} fill="none" stroke={l.color} strokeOpacity={0.3} strokeWidth="1.5" strokeDasharray="2 6" />
+              <path key={l.key} d={path(l.y)} fill="none" style={{ stroke: l.token }} strokeOpacity={0.45} strokeWidth="1.5" strokeDasharray="2 6" />
             ))}
             <path d={path(180)} fill="none" stroke="url(#vf-fade)" strokeWidth="1.5" />
             {Array.from({ length: POOL }, (_, i) => {
@@ -231,9 +232,9 @@ export function VideoFlow() {
           <ul className="grid grid-cols-3 gap-3 sm:grid-cols-1 sm:grid-rows-3 sm:gap-0">
             {LANES.map((l) => (
               <li key={l.key} className="flex items-center">
-                <div className="w-full border-l-2 pl-3 sm:pl-4" style={{ borderColor: l.color }}>
+                <div className="w-full border-l-2 pl-3 sm:pl-4" style={{ borderColor: l.token }}>
                   <p className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground sm:text-[14px]">
-                    <l.icon {...ICON} className="size-3.5 sm:size-4" style={{ color: l.color }} />
+                    <l.icon {...ICON} className="size-3.5 sm:size-4" style={{ color: l.token }} />
                     {l.label}
                   </p>
                   <p ref={(el) => void (counters.current[l.key] = el)} className="tabular font-mono text-[20px] leading-tight text-foreground sm:text-[28px]">
@@ -248,17 +249,17 @@ export function VideoFlow() {
           Example month of 10,000 videos: 8,000 accepted, 1,500 sent to review and 500 rejected. Review hours fall from 500 to 75.
         </figcaption>
 
-        <div className="mt-8 border-t border-hairline pt-6">
-          <p className="mb-4 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
+        <div className="mt-4 border-t border-hairline pt-4 sm:mt-6 sm:pt-5">
+          <p className="mb-3 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
             <Clock {...ICON} className="size-4" />
             Review hours, at 3 minutes a video
           </p>
-          <dl className="flex flex-col gap-4">
+          <dl className="flex flex-col gap-3">
             <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">
               <dt className="text-[14px] text-muted-foreground">Without Ormes</dt>
               <dd className="flex items-center gap-3">
-                <span className="h-3 flex-1 overflow-hidden rounded-full bg-white/[0.04]">
-                  <span ref={(el) => void (bars.current.without = el)} className="block h-full rounded-full bg-white/35" style={{ width: "100%" }} />
+                <span className="h-3 flex-1 overflow-hidden rounded-full bg-foreground/[0.04]">
+                  <span ref={(el) => void (bars.current.without = el)} className="block h-full rounded-full bg-foreground/35" style={{ width: "100%" }} />
                 </span>
                 <span ref={(el) => void (bars.current.withoutLabel = el)} className="tabular w-14 text-right font-mono text-[15px] text-foreground">
                   {HOURS_WITHOUT} h
@@ -268,7 +269,7 @@ export function VideoFlow() {
             <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">
               <dt className="text-[14px] text-foreground">With Ormes</dt>
               <dd className="flex items-center gap-3">
-                <span className="h-3 flex-1 overflow-hidden rounded-full bg-white/[0.04]">
+                <span className="h-3 flex-1 overflow-hidden rounded-full bg-foreground/[0.04]">
                   <span ref={(el) => void (bars.current.with = el)} className="block h-full rounded-full bg-brand" style={{ width: "15%" }} />
                 </span>
                 <span ref={(el) => void (bars.current.withLabel = el)} className="tabular w-14 text-right font-mono text-[15px] text-brand">
@@ -277,7 +278,7 @@ export function VideoFlow() {
               </dd>
             </div>
           </dl>
-          <p className="mt-4 text-[13px] text-muted-foreground">Only the videos sent to review are watched by a person. Your pilot report shows your own numbers.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">Only videos sent to review are watched by a person.</p>
         </div>
       </figure>
     </div>

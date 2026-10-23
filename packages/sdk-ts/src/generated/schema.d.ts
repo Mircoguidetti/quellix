@@ -249,7 +249,7 @@ export interface components {
         };
         Rubric: components["schemas"]["rubric.schema"];
         /** @enum {unknown} */
-        checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality";
+        checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality" | "viewpoint";
         segment: {
             start_s: number;
             end_s: number;
@@ -303,7 +303,7 @@ export interface components {
                     end_s: number;
                 };
                 /** @enum {unknown} */
-                checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality";
+                checkName: "task_completed" | "hands_visible" | "framing" | "technical" | "privacy" | "originality" | "viewpoint";
                 checkResult: {
                     /** @enum {unknown} */
                     status: "pass" | "fail" | "uncertain" | "skipped" | "error";
@@ -407,6 +407,17 @@ export interface components {
                      * @enum {unknown}
                      */
                     on_duplicate: "reject" | "review";
+                };
+                viewpoint?: {
+                    /** @default true */
+                    enabled: boolean;
+                    /**
+                     * @default first_person
+                     * @enum {unknown}
+                     */
+                    required: "first_person" | "third_person" | "any";
+                    /** @default true */
+                    critical: boolean;
                 };
             };
         };

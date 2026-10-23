@@ -78,6 +78,14 @@ def _task_segments(m: Mapping[str, Any], cfg: Mapping[str, Any]) -> Segments:
     return [[float(end), float(dur)]] if end is not None and dur is not None else []
 
 
+def _viewpoint_hint(cfg: Mapping[str, Any], rubric: Mapping[str, Any]) -> str:
+    if cfg.get("required") == "third_person":
+        return ("Film from a tripod or a steady stand, facing your work, so your hands and the "
+                "objects are seen from the side or the front.")
+    return ("Record with the camera on your head or chest, so your arms come up from the bottom "
+            "of the frame. No tripod or propped-up phone.")
+
+
 def _privacy_segments(kind: str) -> Callable[[Mapping[str, Any], Mapping[str, Any]], Segments]:
     def seg(m: Mapping[str, Any], cfg: Mapping[str, Any]) -> Segments:
         times = [d["t_s"] for d in (m.get(kind) or []) if isinstance(d, Mapping) and "t_s" in d]
@@ -124,6 +132,8 @@ HINTS: dict[str, Entry] = {
         _fixed("Keep papers and documents with text out of view."), _privacy_segments("documents")),
     "privacy.screens": Entry(
         _fixed("Keep phone and computer screens out of view."), _privacy_segments("screens")),
+    "viewpoint.wrong": Entry(_viewpoint_hint),
+    "viewpoint.uncertain": Entry(_viewpoint_hint),
     "originality.duplicate": Entry(None, visible=False),
     "pipeline.skipped_without_reject": Entry(None, visible=False),
 }

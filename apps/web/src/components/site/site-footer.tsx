@@ -12,7 +12,7 @@ const LINKS = [
 /** Footer of the marketing pages. */
 export function SiteFooter() {
   return (
-    <footer className="border-t border-hairline">
+    <footer className="surface-dark border-t border-hairline">
       <div className="mx-auto flex max-w-[1160px] flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex flex-col gap-2">
           <Link href="/" className="w-fit rounded-md" aria-label="Ormes home">

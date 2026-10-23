@@ -39,7 +39,9 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b bg-black/75 backdrop-blur-xl transition-colors duration-200",
+        "sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-200",
+        // Always dark (issue #85), on every page and over light sections; solid, so it never reads grey.
+        "surface-dark bg-background",
         scrolled || open ? "border-hairline" : "border-transparent",
       )}
     >
@@ -68,13 +70,13 @@ export function SiteNav() {
           </ul>
           <Link
             href="/signup"
-            className="ml-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-medium text-black transition-colors hover:bg-white/85"
+            className="ml-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-foreground px-4 text-[14px] font-medium text-background transition-colors hover:bg-foreground/85"
           >
             Start a pilot
           </Link>
           <button
             type="button"
-            className="ml-1 inline-flex size-10 items-center justify-center rounded-full text-foreground hover:bg-white/5 md:hidden"
+            className="ml-1 inline-flex size-10 items-center justify-center rounded-full text-foreground hover:bg-foreground/5 md:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="site-menu"

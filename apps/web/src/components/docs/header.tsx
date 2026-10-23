@@ -13,12 +13,12 @@ const SITE_LINKS = [
   { href: "/docs", label: "Docs" },
 ];
 
-/** Light top bar of the docs. Below `lg` the sidebar moves into a drawer behind the menu button. */
+/** Dark top bar of the docs (issue #85: the navbar is always dark). Below `lg` the sidebar moves into a drawer behind the menu button. */
 export function DocsHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="surface-dark sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

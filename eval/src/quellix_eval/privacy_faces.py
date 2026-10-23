@@ -304,23 +304,24 @@ def pixabay_clips(net: Any, key: str, per_query: int = PER_QUERY,
     from .datasets import pixabay as pb
 
     out: list[tuple[FaceClip, Any]] = []
-    seen: list[int] = list(exclude)
+    seen: set[int] = set(exclude)
     for q, proposed, group in queries:
         try:
-            hits = pb.search(net, key, q, per_query, exclude=seen)
+            hits = pb.search(net, key, [q], per_query, skip=seen)
         except Exception as e:  # noqa: BLE001 - one failed query must not stop the run
             print(f"pixabay {q!r}: {type(e).__name__}: {e}", flush=True)
             continue
         for h in hits:
-            seen.append(h.pixabay_id)
-            out.append((FaceClip(h.clip_id, "pixabay", pb.LICENSE, h.page_url, proposed, group,
-                                 q), h))
+            seen.add(h.pixabay_id)
+            out.append((FaceClip(h.clip_id, "pixabay", pb.LICENSE, h.page, proposed, group, q),
+                        h))
     return out
 
 
 def pixabay_known(net: Any, key: str,
                   known: Sequence[dict[str, Any]]) -> list[tuple[FaceClip, Any]]:
-    """Clips of an earlier batch (manifest rows), fetched again by id."""
+    """Clips of an earlier batch (manifest rows), looked up again by id (download URLs
+    expire)."""
     from .datasets import pixabay as pb
 
     out = []
@@ -331,6 +332,9 @@ def pixabay_known(net: Any, key: str,
             hit = pb.by_id(net, key, int(row["clip_id"].removeprefix("pixabay_")))
         except Exception as e:  # noqa: BLE001
             print(f"{row['clip_id']}: {type(e).__name__}: {e}", flush=True)
+            continue
+        if hit is None:
+            print(f"{row['clip_id']}: not found", flush=True)
             continue
         out.append((FaceClip(row["clip_id"], "pixabay", pb.LICENSE, row["page_url"],
                              row["proposed"], row["group"], row.get("query", "")), hit))
@@ -553,7 +557,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     a.out.mkdir(parents=True, exist_ok=True)
     a.report_dir.mkdir(parents=True, exist_ok=True)
     key = os.environ.get("PIXABAY_API_KEY", "")
-    pnet = pb.Throttled(pb.UrllibNet())
+    pnet = pb.Throttled(px.UrllibNet())
     xnet = px.UrllibNet()
     pkey = os.environ.get("PEXELS_API_KEY", "")
     known = ([json.loads(x) for x in MANIFEST_PATH.read_text().splitlines() if x.strip()]
@@ -572,7 +576,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
 
     def fetch(clip: FaceClip, src: Any) -> Path:
         if clip.source == "pixabay":
-            return pb.fetch(pnet, src, a.out)
+            return pb.download(pnet, src, a.out / "pixabay-raw")
         if clip.source == "pexels":
             return px.fetch_pick(xnet, src, a.out, pkey)[0]
         return Path(src)

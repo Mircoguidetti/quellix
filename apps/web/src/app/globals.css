@@ -88,6 +88,55 @@
   --destructive-foreground: #000000;
 }
 
+/*
+ * Marketing surfaces (issue #69): light content with dark accents. A section sets its surface with
+ * one class; every token below (background, text, hairlines, panels, accent and status colours)
+ * follows it, so components never hard-code a theme. The dashboard (/app) does not use these.
+ */
+@layer base {
+  .surface-dark {
+    color-scheme: dark;
+    --background: #000000;
+    --foreground: #f2f3f5;
+    --card: #0b0c0e;
+    --card-foreground: #f2f3f5;
+    --muted: #121417;
+    --muted-foreground: #8d939c;
+    --border: #22252a;
+    --hairline: #22252a;
+    --panel: #0b0c0e;
+    --panel-2: #121417;
+    --brand: #8fb4ff;
+    --brand-ok: #7ed6a8;
+    --brand-no: #ff8a7a;
+    --on-brand: #000000;
+    --ring: #8fb4ff;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .surface-light {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #0b0d12;
+    --card: #ffffff;
+    --card-foreground: #0b0d12;
+    --muted: #f4f5f7;
+    --muted-foreground: #5a606b;
+    --border: #e3e6ea;
+    --hairline: #e3e6ea;
+    --panel: #f6f7f9;
+    --panel-2: #eef0f3;
+    /* Darker steps of the brand and status hues: 4.5:1 or more on white and on the panels. */
+    --brand: #2a5bc9;
+    --brand-ok: #13783f;
+    --brand-no: #b8321d;
+    --on-brand: #ffffff;
+    --ring: #2a5bc9;
+    background: var(--background);
+    color: var(--foreground);
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -120,6 +169,7 @@
   --color-panel: var(--panel);
   --color-panel-2: var(--panel-2);
   --color-hairline: var(--hairline);
+  --color-on-brand: var(--on-brand, #000000);
 
   --color-accept: var(--accept);
   --color-accept-fg: var(--accept-fg);

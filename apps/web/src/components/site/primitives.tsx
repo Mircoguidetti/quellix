@@ -24,7 +24,7 @@ export function Section({
   label?: string;
 }) {
   return (
-    <section id={id} aria-label={label} className={cn("scroll-mt-28 py-20 sm:py-28", className)}>
+    <section id={id} aria-label={label} className={cn("scroll-mt-28 py-12 sm:py-20", className)}>
       <Wrap>{children}</Wrap>
     </section>
   );
@@ -32,14 +32,26 @@ export function Section({
 
 export function H2({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <h2 id={id} className={cn("max-w-[22ch] text-balance text-[clamp(30px,4.2vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]", className)}>
+    <h2 id={id} className={cn("max-w-[24ch] text-balance text-[clamp(28px,3.6vw,44px)] font-medium leading-[1.06] tracking-[-0.03em]", className)}>
       {children}
     </h2>
   );
 }
 
 export function Lead({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("mt-5 max-w-[60ch] text-pretty text-[17px] leading-relaxed text-muted-foreground", className)}>{children}</p>;
+  return <p className={cn("mt-3 max-w-[62ch] text-pretty text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]", className)}>{children}</p>;
+}
+
+/**
+ * Between two consecutive light sections (issue #85): a 1 px line, 80% of the content width,
+ * centred, fading to transparent at both ends.
+ */
+export function Divider() {
+  return (
+    <Wrap>
+      <hr aria-hidden="true" className="mx-auto h-px w-4/5 border-0 bg-[linear-gradient(90deg,transparent,var(--hairline)_20%,var(--hairline)_80%,transparent)]" />
+    </Wrap>
+  );
 }
 
 /** Small tag for features that are not built yet. */
@@ -59,7 +71,7 @@ export function Soon({ className }: { className?: string }) {
 /** Marks numbers that are illustrative, not measured. */
 export function Example({ className, children = "Example" }: { className?: string; children?: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center rounded border border-hairline px-1.5 text-[12px] text-muted-foreground", className)}>
+    <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded border border-hairline px-1.5 text-[12px] text-muted-foreground", className)}>
       {children}
     </span>
   );
@@ -90,7 +102,7 @@ export function ButtonLink({
       href={href}
       className={cn(
         "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-medium transition-colors",
-        variant === "solid" ? "bg-white text-black hover:bg-white/85" : "border border-white/20 text-foreground hover:border-white/45 hover:bg-white/5",
+        variant === "solid" ? "bg-foreground text-background hover:bg-foreground/85" : "border border-foreground/20 text-foreground hover:border-foreground/45 hover:bg-foreground/5",
         className,
       )}
     >
@@ -118,14 +130,14 @@ export function PageIntro({
         <h1 className="text-balance text-[clamp(36px,5.4vw,60px)] font-medium leading-[1.02] tracking-[-0.035em]">{title}</h1>
         <p className="mt-4 max-w-[62ch] text-pretty text-[17px] leading-relaxed text-muted-foreground">{intro}</p>
       </Wrap>
-      <nav aria-label="On this page" className="sticky top-16 z-40 border-y border-hairline bg-black/80 backdrop-blur-md">
+      <nav aria-label="On this page" className="sticky top-16 z-40 border-y border-hairline bg-background/80 backdrop-blur-md">
         <Wrap>
           <ul className="-mx-1 flex gap-1 overflow-x-auto py-2 [scrollbar-width:none]">
             {nav.map(({ href, label, icon: Icon }) => (
               <li key={href} className="shrink-0">
                 <a
                   href={href}
-                  className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-[14px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-[14px] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
                 >
                   <Icon {...ICON} className="size-4" />
                   {label}

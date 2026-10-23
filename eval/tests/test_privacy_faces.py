@@ -1,10 +1,30 @@
 import json
+from urllib.parse import parse_qs, urlparse
 
 import numpy as np
-from test_pixabay import FakeNet, hit
 
 from quellix_eval import privacy_faces as pf
 from quellix_eval.defects import write_video
+
+
+def hit(i):
+    return {"id": i, "pageURL": f"https://pixabay.com/videos/x-{i}/", "tags": "face",
+            "duration": 12,
+            "videos": {"small": {"url": f"https://cdn/{i}.mp4", "width": 640, "height": 360}}}
+
+
+class FakeNet:
+    """Pixabay API: every search returns all hits; an id lookup returns that hit only."""
+
+    def __init__(self, hits):
+        self.hits = hits
+
+    def get(self, url, headers=None):
+        q = parse_qs(urlparse(url).query)
+        if "id" in q:
+            return json.dumps({"hits": [h for h in self.hits
+                                        if str(h["id"]) == q["id"][0]]}).encode()
+        return json.dumps({"hits": self.hits}).encode()
 
 
 def shot(n: int = 16) -> list[np.ndarray]:

@@ -129,7 +129,7 @@ export function stepAt(steps: readonly ClipStep[], t: number): ClipStep | null {
   return current;
 }
 
-/** "HoloAssist (CDLA-Permissive-2.0)" for a list of sources, for the page intro. */
+/** "Pexels (Pexels License)" for a list of sources, for the page intro. */
 export function sourcesLabel(sources: readonly { dataset: string; license: string }[]): string {
   return sources.map((s) => `${s.dataset} (${s.license})`).join(" and ");
 }

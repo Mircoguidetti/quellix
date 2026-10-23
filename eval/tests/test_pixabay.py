@@ -1,57 +1,45 @@
 import json
-from urllib.parse import parse_qs, urlparse
-
-import pytest
 
 from quellix_eval.datasets import pixabay as pb
 
-
-def hit(i, duration=12, small=True):
-    v = {"tiny": {"url": f"https://cdn/{i}-tiny.mp4", "width": 640, "height": 360}}
-    if small:
-        v["small"] = {"url": f"https://cdn/{i}-small.mp4", "width": 960, "height": 540}
-    return {"id": i, "pageURL": f"https://pixabay.com/videos/x-{i}/", "tags": "face, woman",
-            "duration": duration, "videos": v}
+HIT = {"id": 123, "pageURL": "https://pixabay.com/videos/x-123/", "tags": "kitchen, cooking",
+       "duration": 14,
+       "videos": {"large": {"url": "L", "width": 1920, "height": 1080},
+                  "medium": {"url": "M", "width": 1280, "height": 720},
+                  "small": {"url": "S", "width": 640, "height": 360},
+                  "tiny": {"url": "T", "width": 320, "height": 180}}}
 
 
 class FakeNet:
-    def __init__(self, hits):
-        self.hits, self.urls, self.downloads = hits, [], []
+    def __init__(self, pages):
+        self.pages, self.urls = pages, []
 
-    def get(self, url):
+    def get(self, url, headers=None):
         self.urls.append(url)
-        q = parse_qs(urlparse(url).query)
-        if "id" in q:
-            found = [h for h in self.hits if str(h["id"]) == q["id"][0]]
-            return json.dumps({"hits": found}).encode()
-        return json.dumps({"hits": self.hits}).encode()
-
-    def download(self, url, dst):
-        self.downloads.append(url)
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes(b"x" * 20_000)
+        q = url.split("q=")[1].split("&")[0]
+        return json.dumps({"hits": self.pages.get(q, [])}).encode()
 
 
-def test_search_skips_long_and_excluded_and_prefers_the_small_rendition():
-    net = FakeNet([hit(1, duration=90), hit(2), hit(3, small=False), hit(4)])
-    out = pb.search(net, "KEY", "woman face", 2, exclude=[4])
-    assert [h.pixabay_id for h in out] == [2, 3]
-    assert out[0].video_url.endswith("2-small.mp4") and out[1].video_url.endswith("3-tiny.mp4")
-    q = parse_qs(urlparse(net.urls[0]).query)
-    assert q["q"] == ["woman face"] and q["safesearch"] == ["true"] and q["key"] == ["KEY"]
-    assert q["video_type"] == ["film"]
-    assert out[0].clip_id == "pixabay_2"
+def test_smallest_rendition_that_is_big_enough():
+    assert pb.pick_rendition(HIT["videos"]) == ("S", 640, 360)
+    assert pb.pick_rendition({"tiny": {"url": "T", "width": 320, "height": 180}}) == (
+        "T", 320, 180)
+    assert pb.pick_rendition({}) is None
 
 
-def test_by_id_and_fetch(tmp_path):
-    net = FakeNet([hit(7)])
-    h = pb.by_id(net, "K", 7)
-    p = pb.fetch(net, h, tmp_path)
-    assert p.name == "pixabay_7.mp4" and p.exists()
-    pb.fetch(net, h, tmp_path)
-    assert len(net.downloads) == 1  # cached
-    with pytest.raises(RuntimeError, match="not found"):
-        pb.by_id(net, "K", 8)
+def test_parse_skips_long_videos_and_keeps_the_query():
+    long = {**HIT, "id": 9, "duration": 300}
+    (h,) = pb.parse_hits(json.dumps({"hits": [HIT, long]}), "cooking")
+    assert h.clip_id == "pixabay_123" and h.query == "cooking" and h.url == "S"
+
+
+def test_search_dedupes_and_limits_per_query():
+    other = {**HIT, "id": 124}
+    net = FakeNet({"a": [HIT, other], "b": [HIT]})
+    hits = pb.search(net, "KEY", ["a", "b"], per_query=1)
+    assert [h.pixabay_id for h in hits] == [123]
+    assert [h.pixabay_id for h in pb.search(net, "KEY", ["a"], 5, skip={123})] == [124]
+    assert "key=KEY" in net.urls[0] and "video_type=film" in net.urls[0]
 
 
 def test_throttle_spaces_calls_and_retries_429():
@@ -83,6 +71,8 @@ def test_throttle_spaces_calls_and_retries_429():
 
 def test_throttle_gives_up_after_the_retries():
     import urllib.error
+
+    import pytest
 
     class Always429:
         def get(self, url):

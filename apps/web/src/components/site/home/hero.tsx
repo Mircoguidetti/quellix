@@ -1,46 +1,34 @@
-import { Code2, MonitorCheck, Trash2 } from "lucide-react";
-import { ButtonLink, ICON, Wrap } from "../primitives";
+import { ButtonLink, Wrap } from "../primitives";
 import { HeroScreen } from "./hero-screen";
 
-const TRUST = [
-  { icon: Code2, label: "API and SDKs" },
-  { icon: MonitorCheck, label: "Review console" },
-  { icon: Trash2, label: "Videos deleted after analysis" },
-];
-
-/** The only hero on the site: headline, the viewfinder canvas and the decision card. */
+/**
+ * The only hero on the site (issue #85): headline, subline and the two CTAs centred, then the clip
+ * card, whose bottom fades into the background. With the navbar above it, the hero fills exactly
+ * the first screen (100svh).
+ */
 export function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pb-16 pt-16 sm:pt-24">
+    <section id="top" className="surface-dark relative flex h-[calc(100svh-4rem-1px)] min-h-[560px] flex-col overflow-hidden pt-10 sm:pt-14">
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-20%] aspect-square w-[min(1100px,160vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(143,180,255,0.14),rgba(143,180,255,0))]"
+        className="pointer-events-none absolute left-1/2 top-[-25%] aspect-square w-[min(1100px,160vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(143,180,255,0.13),rgba(143,180,255,0))]"
       />
-      <Wrap className="relative">
-        <div className="mx-auto max-w-[900px] text-center">
-          <h1 className="text-balance text-[clamp(42px,7.4vw,88px)] font-medium leading-[0.98] tracking-[-0.04em]">
+      <Wrap className="relative flex min-h-0 flex-1 flex-col justify-center sm:justify-start">
+        <div className="mx-auto max-w-[1000px] text-center">
+          <h1 className="text-balance text-[clamp(34px,5vw,72px)] font-medium leading-[1.02] tracking-[-0.035em]">
             Stop watching every video before you pay for it.
           </h1>
-          <p className="mx-auto mt-6 max-w-[58ch] text-pretty text-[clamp(17px,1.6vw,19px)] leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-[58ch] text-pretty text-[clamp(16px,1.4vw,18px)] leading-relaxed text-muted-foreground">
             Ormes applies your lab’s spec to every first-person video and decides accept, reject or review. It checks what your reviewers check
             by hand: hands on the work, every step done, nothing private in view.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <ButtonLink href="/signup">Start a free pilot</ButtonLink>
             <ButtonLink href="/product" variant="outline">
               See how it decides
             </ButtonLink>
           </div>
-          <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[14px] text-muted-foreground">
-            {TRUST.map(({ icon: Icon, label }) => (
-              <li key={label} className="inline-flex items-center gap-2">
-                <Icon {...ICON} className="size-4 text-brand" />
-                {label}
-              </li>
-            ))}
-          </ul>
         </div>
-
         <HeroScreen />
       </Wrap>
     </section>

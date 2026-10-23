@@ -92,7 +92,7 @@ export function SecurityPage() {
               ))}
             </ul>
           </div>
-          <div className="flex flex-col rounded-[22px] border border-dashed border-white/15 p-6">
+          <div className="flex flex-col rounded-[22px] border border-dashed border-foreground/15 p-6">
             <p className="flex items-center gap-2.5 text-[17px] font-medium">
               <span className="inline-flex size-9 items-center justify-center rounded-lg bg-no/12 text-no">
                 <Trash2 {...ICON} className="size-[18px]" />

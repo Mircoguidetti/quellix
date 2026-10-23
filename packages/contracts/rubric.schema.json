@@ -91,6 +91,15 @@
             "similarity_threshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.9 },
             "on_duplicate": { "enum": ["reject", "review"], "default": "reject" }
           }
+        },
+        "viewpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "required": { "enum": ["first_person", "third_person", "any"], "default": "first_person" },
+            "critical": { "type": "boolean", "default": true }
+          }
         }
       }
     }
