@@ -72,15 +72,16 @@ def summarise(decision: Mapping[str, Any] | None) -> tuple[str | None, dict[str,
 
 
 def holo_clips(kind: str, sessions_n: int, work: Path, seed: int,
-               remote: holo.Remote, client: httpx.Client) -> tuple[list[ClipRecord], dict]:
+               remote: holo.Remote, client: httpx.Client,
+               split: str = "val") -> tuple[list[ClipRecord], dict]:
     ann_path = work / "annotations.json"
     if not ann_path.exists():
         ann_path.write_bytes(client.get(holo.ANNOTATIONS_URL).raise_for_status().content)
     ann = holo.load_annotations(json.loads(ann_path.read_text()))
     splits = holo.load_splits(client.get(holo.SPLITS_URL).raise_for_status().content)
-    val = [s for s in splits.get("val", []) if s in ann]
+    val = [s for s in splits.get(split, []) if s in ann]
     vreader, vidx = remote.videos()
-    stats: dict[str, Any] = {"val_sessions_annotated": len(val), "skipped": {}}
+    stats: dict[str, Any] = {"val_sessions_annotated": len(val), "split": split, "skipped": {}}
 
     def skip(why: str) -> None:
         stats["skipped"][why] = stats["skipped"].get(why, 0) + 1

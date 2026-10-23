@@ -96,6 +96,7 @@ def _privacy_segments(kind: str) -> Callable[[Mapping[str, Any], Mapping[str, An
 
 HINTS: dict[str, Entry] = {
     "hands_visible.below_min": Entry(_hands_hint, _hands_segments),
+    "hands_visible.near_min": Entry(_hands_hint, _hands_segments),
     "hands_visible.missing_measurement": Entry(None, visible=False),
     "framing.off_target": Entry(
         _fixed("Point the camera at your hands and the work, not around the room."),

@@ -219,7 +219,7 @@ def test_hands_adapter_reports_exact_intervals(tmp_path):
     rubric = {**RUBRIC, "checks": {**RUBRIC["checks"], "hands_visible": {"min_ratio": 0.9}}}
     d = evaluate("v", rubric, {"hands_visible": out})
     ann = feedback.annotate(d, rubric, duration_s=8.0)
-    reason = next(r for r in ann["reasons"] if r["code"] == "hands_visible.below_min")
+    reason = next(r for r in ann["reasons"] if r["code"] == "hands_visible.near_min")
     assert reason["segments"][0]["start_s"] < 2.5 and "both hands" in reason["hint"].lower()
 
 

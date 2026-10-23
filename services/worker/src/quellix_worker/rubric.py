@@ -96,6 +96,12 @@ HANDS_CAN_REJECT = False
 VIEWPOINT_CAN_REJECT = False
 VIEWPOINTS = {"first_person": "first-person", "third_person": "third-person"}
 
+# A ratio within this distance below min_ratio is "uncertain" (review), not "fail" (#4): the
+# hands model's ratio runs below HoloAssist's tracking near the bar. Chosen on 287 HoloAssist
+# train windows (dev false reject rate 1/13); validation false reject rate 2/11, false accept
+# rate unchanged (eval/reports/hands-score.md).
+HANDS_UNCERTAIN_BAND = 0.2
+
 # Defaults mirror packages/contracts/rubric.schema.json.
 DEFAULTS: dict[str, dict[str, Any]] = {
     "task_completed": {"enabled": True, "critical": True, "min_confidence": 0.7},
@@ -170,9 +176,15 @@ def _hands_visible(cfg: dict[str, Any], m: Mapping[str, Any]) -> tuple[Status, l
                    f"Hand visibility could not be measured ({key}).", "review")
         ]
     ratio = float(m[key])
+    hands = "Both hands" if cfg["require_both"] else "Hands"
+    where = "during manipulation" if scope == "manipulation" else "in the video"
+    if round(cfg["min_ratio"] - HANDS_UNCERTAIN_BAND, 6) <= ratio < cfg["min_ratio"]:
+        return "uncertain", [
+            Reason("hands_visible", "hands_visible.near_min",
+                   f"{hands} visible {_pct(ratio)} of the time {where}, just under the minimum "
+                   f"({_pct(cfg['min_ratio'])}); a person should check.", "review")
+        ]
     if ratio < cfg["min_ratio"]:
-        hands = "Both hands" if cfg["require_both"] else "Hands"
-        where = "during manipulation" if scope == "manipulation" else "in the video"
         effect: Effect = "reject" if cfg["critical"] and HANDS_CAN_REJECT else "review"
         return "fail", [
             Reason("hands_visible", "hands_visible.below_min",
