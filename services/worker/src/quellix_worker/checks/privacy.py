@@ -58,14 +58,19 @@ PERSIST_WINDOW_S = 2.0
 # Second stage for faces (#83). YuNet also fires on round textured things seen from above (a bowl
 # of ground coffee with a spoon scored 0.86, as high as a real face). Such a "face" only exists at
 # the size it happens to have: redrawn at other sizes, YuNet no longer finds it, while a real face
-# is still found. A face that passes the score and size floors is *verified* when YuNet scores its
-# box, redrawn FACE_VERIFY_SIZES px wide, at least FACE_VERIFY_MIN at every one of those sizes
-# (`verify` = the lowest of those scores). An unverified face goes to `faces_possible`: recorded,
-# not used by the rubric. A face verified at FACE_SINGLE_FRAME_VERIFY or more counts even when
-# seen in a single analysed frame (a real face can be in view for less than a second).
-# Chosen on the dev half of eval/test_sets/privacy_faces.jsonl (eval/reports/privacy-score.md).
-FACE_VERIFY_SIZES = (40, 112)
-FACE_VERIFY_MIN = 0.6
+# is still found. Every face from FACE_VERIFY_FROM_SCORE and FACE_MIN_SHARE gets `verify`: the
+# lowest score YuNet gives its box redrawn FACE_VERIFY_SIZES px wide. It is confident (reported)
+# when `verify` >= FACE_VERIFY_MIN; otherwise it goes to `faces_possible` (recorded, not used by
+# the rubric). Because a verified face is a face, the floors are lower than without the check
+# (0.75 instead of FACE_CONFIDENT_SCORE, 2% of the width instead of FACE_CONFIDENT_SHARE): a
+# coworker's face across the bench is caught. A face verified at FACE_SINGLE_FRAME_VERIFY or more
+# counts even when seen in a single analysed frame (a real face can be in view for under a second).
+# Chosen on the dev half of eval/test_sets/privacy_faces.jsonl (44 clips with a face, 123 without):
+# the middle of the plateau of settings with the fewest misses and no false reject. Held-out
+# results: eval/reports/privacy-faces/score.md.
+FACE_VERIFY_FROM_SCORE = 0.75
+FACE_VERIFY_SIZES = (40, 112)  # not smaller: a clear face shrunk to 24 px often scores < 0.5
+FACE_VERIFY_MIN = 0.5
 FACE_SINGLE_FRAME_VERIFY = 0.8
 FACE_VERIFY_CENTRE = 0.25  # the face found in the crop must be centred within this share
 
@@ -194,8 +199,8 @@ class YuNetFaceDetector:
         return min(self.crop_score(face_crop(rgb, box, px)) for px in FACE_VERIFY_SIZES)
 
     def detect(self, rgb: np.ndarray) -> list[tuple[float, ...]]:
-        """(x, y, w, h, score[, verify]) per face; ``verify`` only for faces above the
-        confident floors (the only ones it can change)."""
+        """(x, y, w, h, score[, verify]) per face; ``verify`` for faces from
+        FACE_VERIFY_FROM_SCORE (the only ones it can make confident)."""
         h, w = rgb.shape[:2]
         if self._detector is None:
             self._detector = cv2.FaceDetectorYN.create(
@@ -211,7 +216,7 @@ class YuNetFaceDetector:
         for b in boxes:
             if b[2] < FACE_MIN_SHARE:
                 continue
-            if b[4] >= FACE_CONFIDENT_SCORE and b[2] >= FACE_CONFIDENT_SHARE:
+            if b[4] >= FACE_VERIFY_FROM_SCORE:
                 b = (*b, self.verify(rgb, b))
             out.append(b)
         return out
@@ -463,8 +468,10 @@ def _is_confident(kind: str, det: dict[str, Any]) -> bool:
     if score is None:
         return True
     if kind == "faces":
-        return (score >= FACE_CONFIDENT_SCORE and det["box"][2] >= FACE_CONFIDENT_SHARE
-                and det.get("verify", 1.0) >= FACE_VERIFY_MIN)
+        if "verify" in det:  # the second stage ran (#83)
+            return (score >= FACE_VERIFY_FROM_SCORE and det["box"][2] >= FACE_MIN_SHARE
+                    and det["verify"] >= FACE_VERIFY_MIN)
+        return score >= FACE_CONFIDENT_SCORE and det["box"][2] >= FACE_CONFIDENT_SHARE
     if kind == "documents":
         return score >= MIN_TEXT_LINES_IN_DOCUMENT
     return score >= 1.0  # screens: text found (0.5 = bright accents only)

@@ -1,1 +1,1 @@
-{"stage": "collect", "batch": 2, "holoassist": 24, "egocentric": 40, "note": "#83: batch 2 again, API calls throttled (the first try hit Pixabay 429s)"}
+{"stage": "score", "holoassist": 24, "egocentric": 40, "note": "#83: worker privacy check before / after on the labelled face set (constants frozen on dev)"}
