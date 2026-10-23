@@ -206,3 +206,33 @@ def test_boxes_also_get_xywh_without_changing_the_format():
     assert out["left"]["box"] == [0.1, 0.2, 0.4, 0.6]
     assert out["left"]["box_xywh"] == [0.1, 0.2, 0.3, 0.4]
     assert out["right"]["box_xywh"] is None
+
+
+def _row(t, left, right):
+    return {"t": t, "left": {"box": left}, "right": {"box": right}}
+
+
+def test_exit_plans_take_one_hand_out_and_keep_the_other():
+    rows = [_row(t, [0.15, 0.5, 0.35, 0.8], [0.6, 0.5, 0.8, 0.8]) for t in np.arange(0, 9, 0.125)]
+    plans = hero.exit_plans(rows, 3.0, 6.5)
+    assert {p["leaving"] for p in plans} == {"left", "right"}
+    left = next(p for p in plans if p["leaving"] == "left")
+    crop_x0 = 1 - 1 / left["zoom"]
+    assert crop_x0 > 0.35 and crop_x0 < 0.6                  # left hand out, right hand in
+    right = next(p for p in plans if p["leaving"] == "right")
+    assert 0.35 < 1 / right["zoom"] < 0.6
+    assert plans[0]["zoom"] <= plans[1]["zoom"]
+    overlapping = [_row(t, [0.2, 0.5, 0.7, 0.8], [0.4, 0.5, 0.9, 0.8]) for t in (3.0, 4.0)]
+    assert hero.exit_plans(overlapping, 3.0, 6.5) == []
+
+
+def test_exit_progress_and_crop_keep_the_frame_size():
+    assert hero.exit_progress(0.0, 1.0) == 0.0
+    assert hero.exit_progress(1.0 + hero.EXIT_RAMP_S + 1.0, 1.0) == 1.0
+    assert hero.exit_progress(1.0 + 2 * hero.EXIT_RAMP_S + hero.EXIT_HOLD_S + 0.1, 1.0) == 0.0
+    img = np.zeros((90, 160, 3), np.uint8)
+    img[:, 120:] = 255                                       # the right-hand side is white
+    plan = {"leaving": "left", "zoom": 2.0, "x0": 0.5, "y0": 0.25}
+    for p in (0.0, 0.3, 0.7, 1.0):
+        assert hero.exit_crop(img, plan, p).shape == img.shape
+    assert hero.exit_crop(img, plan, 1.0)[:, -10:].mean() == 255   # the crop ends at the right

@@ -539,6 +539,160 @@ def render_hero(  # pragma: no cover - network, models, encoding
             "reasons": [r.get("message") for r in (decision or {}).get("reasons", [])]}
 
 
+# --- the Product page pair (founder decision on #87, 12:08 UTC) ---------------------------
+
+EXIT_RAMP_S = 0.25     # how fast the framing moves in and out of the hand-exit crop
+EXIT_HOLD_S = 3.0      # how long one hand stays out of the frame
+EXIT_MARGIN = 0.03     # clearance between the leaving hand and the crop edge (share of width)
+MAX_EXIT_ZOOM = 2.2
+
+
+def exit_plans(rows: Sequence[dict[str, Any]], a: float, b: float) -> list[dict[str, Any]]:
+    """Crops (no black bars) that take one hand fully out of the frame between a and b while the
+    other stays in, from a sidecar's per-frame boxes ([x0, y0, x1, y1], normalised). Smallest
+    zoom first. The crop is anchored to the side of the hand that stays."""
+    inside = [r for r in rows if a <= r["t"] <= b]
+    boxes = {s: [r[s]["box"] for r in inside if r.get(s, {}).get("box")] for s in ("left", "right")}
+    if not boxes["left"] or not boxes["right"]:
+        return []
+    plans = []
+    lx1 = max(bx[2] for bx in boxes["left"]) + EXIT_MARGIN    # left hand leaves: crop starts here
+    rx0 = min(bx[0] for bx in boxes["right"]) - EXIT_MARGIN   # right hand leaves: crop ends here
+    for leaving, stays, ok, zoom in (
+        ("left", "right", lx1 < min(bx[0] for bx in boxes["right"]), 1 / max(1e-6, 1 - lx1)),
+        ("right", "left", rx0 > max(bx[2] for bx in boxes["left"]), 1 / max(1e-6, rx0)),
+    ):
+        if not ok or zoom > MAX_EXIT_ZOOM:
+            continue
+        cy = float(np.mean([(bx[1] + bx[3]) / 2 for bx in boxes[stays]]))
+        y0 = min(max(cy - 0.5 / zoom, 0.0), 1 - 1 / zoom)
+        x0 = 1 - 1 / zoom if leaving == "left" else 0.0
+        plans.append({"leaving": leaving, "zoom": round(zoom, 3), "x0": round(x0, 4),
+                      "y0": round(y0, 4)})
+    return sorted(plans, key=lambda p: p["zoom"])
+
+
+def exit_progress(t: float, start: float) -> float:
+    """0 -> 1 (eased) over EXIT_RAMP_S, held for EXIT_HOLD_S, then back to 0."""
+    def ease(x: float) -> float:
+        x = min(max(x, 0.0), 1.0)
+        return x * x * (3 - 2 * x)
+    d = t - start
+    if d <= 0:
+        return 0.0
+    if d < EXIT_RAMP_S:
+        return ease(d / EXIT_RAMP_S)
+    if d <= EXIT_RAMP_S + EXIT_HOLD_S:
+        return 1.0
+    return 1.0 - ease((d - EXIT_RAMP_S - EXIT_HOLD_S) / EXIT_RAMP_S)
+
+
+def exit_crop(img: np.ndarray, plan: dict[str, Any], p: float) -> np.ndarray:
+    """The part of `img` the camera sees at progress p, scaled back to the full frame size.
+    Zoom grows linearly with p and the corner moves linearly to the plan's corner: the crop
+    stays inside the frame all the way (1 - 1/z is concave in p)."""
+    if p <= 0:
+        return img
+    h, w = img.shape[:2]
+    z = 1 + (plan["zoom"] - 1) * p
+    cw, ch = w / z, h / z
+    x0 = min(plan["x0"] * p * w, w - cw)
+    y0 = min(plan["y0"] * p * h, h - ch)
+    x, y = int(round(x0)), int(round(y0))
+    crop = img[y:y + int(round(ch)), x:x + int(round(cw))]
+    return cv2.resize(crop, (w, h), interpolation=cv2.INTER_CUBIC)
+
+
+def render_product(  # pragma: no cover - network, models, encoding
+    pexels_id: int, name: str, final_dir: Path, work: Path,
+) -> dict[str, Any]:
+    """<name>: the founder pick cut to its steadiest good 9 s; <name>-hand: the same cut with one
+    hand leaving the frame for ~3 s. Both checked by the worker, each with its sidecar."""
+    from quellix_hands.model import HandsModel
+
+    from . import site_clips as sc
+
+    pick = next(p for p in founder_picks() if p.pexels_id == pexels_id)
+    got, errors = sc.fetch_pexels(pexels_net(), work, [pick], os.environ.get("PEXELS_API_KEY", ""))
+    if not got:
+        raise RuntimeError("download failed: " + "; ".join(errors))
+    item = got[0]
+    hands, worker, rubric = HandsModel(), sc.worker_check_via_cli(), sc.DEFAULT_RUBRIC
+    cand = sc.analyse(item.clip_id, item.path, hands, worker, rubric, source=item.source)
+    samples = list(sc.iter_frames(item.path, sc.SCORE_FPS))
+    per_frame = hands.frames([f for _, f in samples], [t for t, _ in samples])
+    sharp = [float(cv2.Laplacian(cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
+             for _, f in samples]
+    steady = steadiest_window(per_frame, sharp, sc.WINDOW_S)
+    if steady is None:
+        raise RuntimeError("no 9 s window with hands")
+    both, working = window_stats(per_frame, *steady)
+    cand.window = sc.Window(steady[0], steady[1], both, working, 0.7 * working + 0.3 * both)
+    final_dir.mkdir(parents=True, exist_ok=True)
+    budgets = sc.Budgets(*HERO_BUDGETS)
+    out: dict[str, Any] = {}
+
+    files = sc.render_clip(cand, name, final_dir, budgets=budgets)
+    mp4 = final_dir / files["mp4"]
+    decision = worker(mp4, rubric)
+    clean = with_xywh(sc.build_sidecar(cand, name, files, hands, decision, mp4))
+    clean["selection"]["window_choice"] = ("steadiest good window (sharpest frames among windows "
+                                           "within 90% of the best hands score)")
+    out[name] = _write_sidecar(final_dir, name, files, clean, decision)
+
+    # The defective copy: same window, one hand leaves for ~3 s through a crop (no black bars).
+    hname = f"{name}-hand"
+    dur = files["duration_s"]
+    span = 2 * EXIT_RAMP_S + EXIT_HOLD_S
+    start = max(0.0, (dur - span) / 2)
+    plans = exit_plans(clean["hands"]["frames"], start, start + span)
+    if plans:
+        plan = plans[0]
+        w = cand.window
+        _, src_w, src_h, src_fps = sc.video_info(cand.path)
+        fps = min(src_fps, 30.0)
+        width = min(sc.OUT_WIDTH, sc.PORTRAIT_WIDTH) if src_h > src_w else sc.OUT_WIDTH
+
+        def frames() -> Any:
+            raw = sc.iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None)
+            return sc._scaled(((t, exit_crop(f, plan, exit_progress(t - w.start_s, start)))
+                               for t, f in raw), width)
+
+        poster_t = w.start_s + start + EXIT_RAMP_S + EXIT_HOLD_S / 2
+        poster = next(sc._scaled(((t, exit_crop(f, plan, 1.0)) for t, f in sc.iter_frames(
+            cand.path, 8, poster_t, poster_t + 0.2, max_width=None)), width))
+        hfiles = sc.encode_set(frames, poster, hname, final_dir, fps, budgets)
+        hdecision = worker(final_dir / hfiles["mp4"], rubric)
+        info = {"kind": "hand", "recipe": f"crop: the {plan['leaving']} hand leaves the frame "
+                f"(zoom up to x{plan['zoom']}, eased in/out over {EXIT_RAMP_S} s, no black bars)",
+                "interval_s": [round(start, 2), round(start + span, 2)],
+                "hand_out_s": [round(start + EXIT_RAMP_S, 2),
+                               round(start + EXIT_RAMP_S + EXIT_HOLD_S, 2)],
+                "plan": plan, "tried": [p["leaving"] for p in plans]}
+    else:   # no crop can drop one hand and keep the other: the existing recipes (black strip)
+        hfiles, hdecision, info = sc.make_variant(mp4, "hand", hname, final_dir, worker, rubric)
+    hside = with_xywh(sc.build_sidecar(cand, hname, hfiles, hands, hdecision,
+                                       final_dir / hfiles["mp4"], variant=info))
+    out[hname] = _write_sidecar(final_dir, hname, hfiles, hside, hdecision)
+    out[hname]["variant"] = info
+    return out
+
+
+def _write_sidecar(  # pragma: no cover - file output
+    final_dir: Path, name: str, files: dict[str, Any], sidecar: dict[str, Any],
+    decision: dict[str, Any] | None,
+) -> dict[str, Any]:
+    side = final_dir / f"{name}.json"
+    side.write_text(json.dumps(sidecar, separators=(",", ":")))
+    sizes = {**files["bytes"], "json": side.stat().st_size}
+    if sum(sizes.values()) > MAX_HERO_BYTES:
+        raise RuntimeError(f"{name}: {sum(sizes.values())} bytes, over {MAX_HERO_BYTES}")
+    return {"decision": (decision or {}).get("decision"), "bytes": sizes,
+            "window_in_source_s": sidecar["source"]["segment_in_source_s"],
+            "reasons": [(r.get("check"), r.get("message"), r.get("segments"))
+                        for r in (decision or {}).get("reasons", [])]}
+
+
 def pexels_net() -> Any:  # pragma: no cover
     from .datasets import pexels
 
@@ -606,7 +760,8 @@ def comment(records: Sequence[Record], top: Sequence[Record], image_base: str,
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="run", choices=["run", "viewpoint", "clip"])
+    ap.add_argument("cmd", nargs="?", default="run",
+                    choices=["run", "viewpoint", "clip", "product"])
     ap.add_argument("--pexels-id", type=int, default=11142458)
     ap.add_argument("--name", default="hero-lemons")
     ap.add_argument("path", nargs="?", type=Path)
@@ -621,6 +776,10 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     a = ap.parse_args(argv)
     if a.cmd == "viewpoint":
         return _viewpoint_child(a.path)
+    if a.cmd == "product":
+        res = render_product(a.pexels_id, a.name, a.final_dir, a.out / "work")
+        print(json.dumps(res, indent=1, default=str))
+        return 0
     if a.cmd == "clip":
         print(json.dumps(render_hero(a.pexels_id, a.name, a.final_dir, a.out / "work"), indent=1))
         return 0

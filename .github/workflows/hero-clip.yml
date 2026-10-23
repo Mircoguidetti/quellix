@@ -1,15 +1,19 @@
 name: Hero clip
 
-# The landing hero clip chosen by the founder (#87): one Pexels pick cut to its best 9 s,
-# encoded as mp4 / webm / poster, checked by the worker, with a site-clip sidecar carrying the
-# per-frame hand boxes. Commits apps/web/public/media/clips/<name>.* to agent/hero-candidates.
+# Founder-picked clips for the website (#87), from eval/hero-clip-request.json:
+#   {"cmd": "clip", ...}    one Pexels pick cut to its best 9 s (the landing hero, hero-lemons);
+#   {"cmd": "product", ...} the steadiest 9 s (<name>) plus the same cut with one hand leaving the
+#                           frame for ~3 s (<name>-hand), for the Product page.
+# Each is encoded as mp4 / webm / poster, checked by the worker, with a site-clip sidecar carrying
+# the per-frame hand boxes. Commits apps/web/public/media/clips/<name>* to agent/hero-candidates.
 # Run it from the Actions tab, or push eval/hero-clip-request.json to agent/hero-candidates.
 
 on:
   workflow_dispatch:
     inputs:
-      pexels_id: {description: "Pexels video id", default: "11142458"}
-      name: {description: "Output name", default: "hero-lemons"}
+      cmd: {description: "clip or product (empty: from the request file)", default: ""}
+      pexels_id: {description: "Pexels video id (empty: from the request file)", default: ""}
+      name: {description: "Output name (empty: from the request file)", default: ""}
   push:
     branches: [agent/hero-candidates]
     paths: ["eval/hero-clip-request.json"]
@@ -30,8 +34,9 @@ jobs:
         working-directory: eval
     env:
       PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      PEXELS_ID: ${{ inputs.pexels_id || '11142458' }}
-      CLIP_NAME: ${{ inputs.name || 'hero-lemons' }}
+      IN_CMD: ${{ inputs.cmd }}
+      IN_ID: ${{ inputs.pexels_id }}
+      IN_NAME: ${{ inputs.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -43,17 +48,23 @@ jobs:
       - run: uv sync --extra data --extra mediapipe
       - name: Hands model weights
         run: uv run python -m quellix_hands.weights download
+      - name: What to render
+        run: |
+          req=hero-clip-request.json
+          echo "CLIP_CMD=${IN_CMD:-$(jq -r '.cmd // "clip"' $req)}" >> "$GITHUB_ENV"
+          echo "PEXELS_ID=${IN_ID:-$(jq -r '.pexels_id' $req)}" >> "$GITHUB_ENV"
+          echo "CLIP_NAME=${IN_NAME:-$(jq -r '.name' $req)}" >> "$GITHUB_ENV"
       - name: Cut, encode, check, sidecar
         run: |
-          uv run python -m quellix_eval.hero clip --pexels-id "$PEXELS_ID" --name "$CLIP_NAME" \
-            --out out/hero-clip --final-dir ../apps/web/public/media/clips
+          uv run python -m quellix_eval.hero "$CLIP_CMD" --pexels-id "$PEXELS_ID" \
+            --name "$CLIP_NAME" --out out/hero-clip --final-dir ../apps/web/public/media/clips
       - name: Commit the clip to this branch
         if: success() && github.ref != 'refs/heads/main'
         working-directory: .
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/media/clips/"$CLIP_NAME".*
+          git add apps/web/public/media/clips/"$CLIP_NAME"*
           git diff --cached --stat
           if ! git diff --cached --quiet; then
             git commit -q -m "web: hero clip $CLIP_NAME from Pexels $PEXELS_ID (run ${{ github.run_id }})"
