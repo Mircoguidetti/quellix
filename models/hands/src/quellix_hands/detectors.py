@@ -14,6 +14,12 @@ import numpy as np
 from .types import RawHand, Side
 from .weights import default_path
 
+# MediaPipe's own thresholds (hand detection and hand presence). 0.5, its default, missed hands
+# holding an object or partly hidden (issue #4). 0.2 was chosen on HoloAssist *train*-split
+# windows (eval: `quellix_eval.hands_score`, rule: lowest false reject + false accept rate),
+# never on the clips the check is scored on.
+DETECTION_THRESHOLD = 0.2
+
 
 class MediaPipeDetector:
     """Wraps ``mediapipe.tasks.vision.HandLandmarker`` in IMAGE mode (frames are sparse samples,
@@ -26,7 +32,9 @@ class MediaPipeDetector:
     name = "mediapipe-hand_landmarker@float16-1"
 
     def __init__(self, model_path: str | Path | None = None, *, mirrored: bool = False,
-                 min_detection_confidence: float = 0.5, num_hands: int = 2) -> None:
+                 min_detection_confidence: float = DETECTION_THRESHOLD,
+                 min_presence_confidence: float = DETECTION_THRESHOLD,
+                 num_hands: int = 2) -> None:
         try:
             import mediapipe as mp
             from mediapipe.tasks.python import BaseOptions, vision
@@ -43,6 +51,7 @@ class MediaPipeDetector:
             running_mode=vision.RunningMode.IMAGE,
             num_hands=num_hands,
             min_hand_detection_confidence=min_detection_confidence,
+            min_hand_presence_confidence=min_presence_confidence,
         )
         self._landmarker: Any = vision.HandLandmarker.create_from_options(opts)
 

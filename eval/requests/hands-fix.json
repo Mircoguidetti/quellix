@@ -1,0 +1,1 @@
+{"dev_sessions": 300, "val_sessions": 130, "synthetic_sources": 0, "threshold": 0.2, "bands": true, "note": "run 5: uncertain band chosen on 300 train sessions, val scored once"}

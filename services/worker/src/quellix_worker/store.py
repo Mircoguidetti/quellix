@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
 import os
+import socket
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -29,6 +31,31 @@ MAX_ATTEMPTS = 3
 REVIEW_RETENTION = timedelta(days=14)  # founder data rule: a review video is kept at most this long
 RETRY_DELAYS_S = (60, 300)  # wait before attempt 2 and 3
 SIGNATURE_HEADER = "Ormes-Signature"
+MAX_SOURCE_BYTES = 5 * 1024**3  # same cap as an upload (openapi CreateVideoRequest.size_bytes)
+
+
+class UnsafeSourceError(ValueError):
+    """A pilot ``source_url`` the worker refuses to fetch (not https, or not a public host)."""
+
+
+def check_source_url(url: str, resolve: Any = None) -> list[str]:
+    """Shadow pilots may point at the collector's own signed URLs (issue #65). Only https to a
+    public address: never the metadata service, localhost or a private network (SSRF).
+    -> the vetted IP addresses of the host; the download connects to one of them, so a DNS
+    answer that changes after this check (rebinding) cannot redirect it."""
+    parsed = httpx.URL(url)
+    if parsed.scheme != "https" or not parsed.host:
+        raise UnsafeSourceError("source_url must be an https URL")
+    resolve = resolve or socket.getaddrinfo
+    ips: list[str] = []
+    for info in resolve(parsed.host, parsed.port or 443, proto=socket.IPPROTO_TCP):
+        ip = ipaddress.ip_address(info[4][0])
+        if not ip.is_global:
+            raise UnsafeSourceError(f"source_url resolves to a non-public address ({ip})")
+        ips.append(str(ip))
+    if not ips:
+        raise UnsafeSourceError("source_url host does not resolve")
+    return ips
 
 
 def sign(body: bytes, secret: str, timestamp: int | None = None) -> str:
@@ -64,6 +91,8 @@ class JobContext:
     video_created_at: str | None = None
     external_id: str | None = None
     delete_after: str | None = None
+    shadow: bool = False  # pilot video (issue #65): no webhooks
+    source_url: str | None = None  # pilot video fetched from the collector's own URL
 
 
 class SupabaseStore:
@@ -162,12 +191,13 @@ class SupabaseStore:
         videos = self._rest("GET", "videos", params={
             "id": f"eq.{job.video_id}",
             "select": "org_id,status,created_at,external_id,storage_path,filename,delete_after,"
-                      "rubric_id,rubric_version,"
+                      "rubric_id,rubric_version,shadow,source_url,"
                       "organizations(training_opt_in,allow_external_models)"})
         if not jobs or not videos:
             raise LookupError(f"job {job.job_id} or video {job.video_id} not found")
         v = videos[0]
-        if not v["storage_path"] and v["status"] not in ("decided", "deleted"):
+        if not v["storage_path"] and not v.get("source_url") \
+                and v["status"] not in ("decided", "deleted"):
             raise LookupError(f"video {job.video_id} has no file")
         versions = self._rest("GET", "rubric_versions", params={
             "rubric_id": f"eq.{v['rubric_id']}", "version": f"eq.{v['rubric_version']}",
@@ -179,7 +209,8 @@ class SupabaseStore:
         return JobContext(job, v["org_id"], v["storage_path"], v["filename"], rubric,
                           jobs[0]["attempts"], bool(v["organizations"]["training_opt_in"]),
                           bool(v["organizations"]["allow_external_models"]),
-                          v["status"], v["created_at"], v["external_id"], v["delete_after"])
+                          v["status"], v["created_at"], v["external_id"], v["delete_after"],
+                          bool(v.get("shadow")), v.get("source_url"))
 
     def start_job(self, job_id: str, attempts: int) -> None:
         self._rest("PATCH", "jobs", params={"id": f"eq.{job_id}"}, json_body={
@@ -205,6 +236,36 @@ class SupabaseStore:
             resp.raise_for_status()
             with dest.open("wb") as fh:
                 for chunk in resp.iter_bytes(1 << 20):
+                    fh.write(chunk)
+        return dest
+
+    def forget_source_url(self, video_id: str) -> None:
+        """Clear a pilot video's ``source_url`` (a signed URL is a credential)."""
+        self._rest("PATCH", "videos", params={"id": f"eq.{video_id}",
+                                              "source_url": "not.is.null"},
+                   json_body={"source_url": None})
+
+    def fetch_source(self, url: str, dest: Path, max_bytes: int = MAX_SOURCE_BYTES) -> Path:
+        """Download a pilot video from the collector's signed URL into ``dest`` (a temporary
+        directory, deleted with it). Never stored in our bucket; no redirects followed."""
+        ip = check_source_url(url)[0]
+        target = httpx.URL(url)
+        # Connect to the vetted address, but keep the original name for the Host header and for
+        # TLS (SNI + certificate check), so the collector's CDN still works.
+        pinned = target.copy_with(host=ip)
+        host_header = target.host if target.port is None else f"{target.host}:{target.port}"
+        written = 0
+        with self._client.stream("GET", pinned, headers={"Host": host_header},
+                                 extensions={"sni_hostname": target.host},
+                                 follow_redirects=False, timeout=600) as resp:
+            if resp.is_redirect:
+                raise UnsafeSourceError("source_url redirects; give the final URL")
+            resp.raise_for_status()
+            with dest.open("wb") as fh:
+                for chunk in resp.iter_bytes(1 << 20):
+                    written += len(chunk)
+                    if written > max_bytes:
+                        raise UnsafeSourceError("source_url file is larger than 5 GB")
                     fh.write(chunk)
         return dest
 

@@ -19,6 +19,16 @@ Only data we are allowed to use commercially:
 - Never use EPIC-KITCHENS, Ego4D or Ego-Exo4D (non-commercial licenses).
 - Customer data only for orgs with `training_opt_in = true`.
 
+## Third-person test set (`test_sets/third_person_pexels.jsonl`)
+
+All other tests are first-person. This set holds Pexels clips filmed from the side or front
+(Pexels License, free commercial use) to measure that gap: links, author, viewpoint
+(`third_person`) and what the worker returned on the day (`observed`, an observation, not a
+label; `truth` stays null until a person labels the clip). The videos are never committed and
+never shown on the site. It is written by `python -m quellix_eval.site_clips --third-person`
+(the `Site clips` workflow does it); schema in `datasets/third_person.py`. The landing page's
+one first-person clip is a separate flow (`--pexels`).
+
 ## Synthetic defects
 
 From a clean clip, generate labelled bad variants: hand pushed out of frame (crop/shift), task cut before its end, motion blur, under/over-exposure, overlaid document/face/screen, re-encoded/cropped/mirrored/speed-changed duplicates. Each variant records which check should fail and why, so labels are free.
@@ -78,3 +88,22 @@ clips while time is left until the driver's 38-minute job budget. Clips an engin
 are reported as "not run", not as failures, and the report shows spend and time used per phase.
 The Gemini retry client also stops at the phase deadline, so one clip stuck in 429 backoff
 cannot eat the worker's time.
+
+## Benchmark v2 (#64): the customer-facing numbers
+
+`.github/workflows/benchmark.yml` (Actions tab, a file under `eval/requests/benchmark/` pushed to
+`main`, or the label `benchmark` on a PR) runs three slices in parallel and writes
+`reports/benchmark-v2.md` (posted on #64):
+- `tasks` and `hands`: HoloAssist validation sessions, read member by member from the official
+  tars with HTTP Range requests (`benchmark/remote_tar.py`, indexes cached). Labels only from
+  HoloAssist: action annotations (task: 60 s ending after vs. halfway through the last action)
+  and hand tracking projected into the RGB frame (`benchmark/handpose.py`, as PyHoloAssist).
+- `synthetic`: the existing defects on Egocentric-10K, reported separately, never pooled.
+- Egocentric-10K blind slice: from `labels/egocentric10k-blind-v1.jsonl` when it exists (see
+  `labels/README.md`; the kit is an artifact of every run).
+
+Metrics (`benchmark/stats.py`): false reject AND false accept rate, precision, recall, review
+rate, base reject rate, each with a Wilson 95% CI. Gemini: full rubric + measurement definitions
+in the prompt, JSON-schema answer with per-check confidence (`prompts/benchmark_v2/`), cheap
+model on every clip, strong model on a label-balanced order; spend cap per run (input `cap_usd`,
+default 3) shared by the jobs (tasks 50%, hands 25%, synthetic 25%), checked before every call.

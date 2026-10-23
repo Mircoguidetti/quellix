@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import copy
+import json
 
 import pytest
 
+from quellix_worker import rubric as rubric_module
 from quellix_worker.contracts import load_example, validate_decision, validate_rubric
 from quellix_worker.rubric import CheckOutput, evaluate
 
@@ -44,13 +46,59 @@ def test_clean_video_is_accepted() -> None:
     assert all(c["status"] == "pass" for c in d["checks"].values())
 
 
-def test_hands_below_min_rejects_with_readable_reason() -> None:
+@pytest.fixture
+def hands_can_reject(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The one-line flip described in rubric.HANDS_CAN_REJECT."""
+    monkeypatch.setattr(rubric_module, "HANDS_CAN_REJECT", True)
+
+
+def test_hands_below_min_is_review_until_the_check_is_validated() -> None:
+    """Issues #53 / #64: a critical hands failure must not reject while the check is unvalidated."""
+    assert rubric_module.HANDS_CAN_REJECT is False
     o = good_outputs()
-    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.61})
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.55})
+    d = run(o)
+    assert d["decision"] == "review"
+    reason = d["reasons"][0]
+    assert reason["code"] == "hands_visible.below_min" and reason["effect"] == "review"
+    assert "55%" in reason["message"] and "80%" in reason["message"]  # message unchanged
+    m = d["checks"]["hands_visible"]["measurements"]
+    assert m["reject_capped_to_review"] is True and "#64" in m["reject_cap_note"]
+    assert m["ratio_both_manipulation"] == 0.55  # the real measurement is still recorded
+    assert d["checks"]["hands_visible"]["status"] == "fail"
+
+
+def test_hands_below_min_rejects_again_when_the_flag_is_flipped(hands_can_reject: None) -> None:
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.55})
     d = run(o)
     assert d["decision"] == "reject"
     assert d["reasons"][0]["code"] == "hands_visible.below_min"
-    assert "61%" in d["reasons"][0]["message"] and "80%" in d["reasons"][0]["message"]
+    assert d["reasons"][0]["effect"] == "reject"
+    assert "reject_capped_to_review" not in d["checks"]["hands_visible"]["measurements"]
+
+
+def test_the_cap_only_touches_the_hands_check() -> None:
+    o = good_outputs()
+    o["task_completed"] = CheckOutput({"completed": False, "confidence": 0.9})
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.55})
+    d = run(o)
+    assert d["decision"] == "reject"  # the task check still rejects
+    effects = {r["code"]: r["effect"] for r in d["reasons"]}
+    assert effects == {"task_completed.not_completed": "reject",
+                       "hands_visible.below_min": "review"}
+
+
+def test_no_cap_note_when_hands_pass_or_are_not_critical() -> None:
+    d = run(good_outputs())
+    assert "reject_capped_to_review" not in d["checks"]["hands_visible"]["measurements"]
+    rubric = json.loads(json.dumps(RUBRIC))
+    rubric["checks"]["hands_visible"]["critical"] = False
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.55})
+    d = evaluate("v", rubric, o)
+    assert d["decision"] == "review"
+    assert "reject_capped_to_review" not in d["checks"]["hands_visible"]["measurements"]
 
 
 def test_task_not_completed_rejects() -> None:
@@ -125,7 +173,7 @@ def test_disabled_check_is_skipped() -> None:
     assert d["checks"]["framing"]["status"] == "skipped"
 
 
-def test_reject_reasons_are_listed_before_review_reasons() -> None:
+def test_reject_reasons_are_listed_before_review_reasons(hands_can_reject: None) -> None:
     o = good_outputs()
     o["framing"] = CheckOutput({"off_target_ratio": 0.3, "unstable_ratio": 0.0})
     o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.5})
@@ -134,7 +182,7 @@ def test_reject_reasons_are_listed_before_review_reasons() -> None:
     assert [r["effect"] for r in d["reasons"]] == ["reject", "review"]
 
 
-def test_skipped_check_adds_no_reason_when_already_rejected() -> None:
+def test_skipped_check_adds_no_reason_when_already_rejected(hands_can_reject: None) -> None:
     o = good_outputs()
     o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.3})
     o["task_completed"] = CheckOutput(skipped="a critical check already failed")
@@ -161,3 +209,48 @@ def test_duration_limits(duration: float, code: str) -> None:
     d = run(o)
     assert d["decision"] == "reject"
     assert d["reasons"][0]["code"] == code
+
+
+@pytest.mark.parametrize("ratio", [0.6, 0.7, 0.79])
+def test_hands_just_under_the_minimum_is_uncertain_and_goes_to_review(ratio: float) -> None:
+    """#4: within HANDS_UNCERTAIN_BAND under min_ratio a person checks; never a reject."""
+    assert rubric_module.HANDS_UNCERTAIN_BAND == 0.2
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": ratio})
+    d = run(o)
+    assert d["decision"] == "review"
+    assert d["checks"]["hands_visible"]["status"] == "uncertain"
+    [reason] = d["reasons"]
+    assert reason["code"] == "hands_visible.near_min" and reason["effect"] == "review"
+    assert f"{round(ratio * 100)}%" in reason["message"] and "80%" in reason["message"]
+    assert "reject_capped_to_review" not in d["checks"]["hands_visible"]["measurements"]
+
+
+def test_the_band_stays_review_even_when_hands_can_reject(hands_can_reject: None) -> None:
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.7})
+    assert run(o)["decision"] == "review"
+
+
+@pytest.mark.parametrize(("ratio", "status", "code"), [
+    (0.59, "fail", "hands_visible.below_min"),
+    (0.3, "fail", "hands_visible.below_min"),
+    (0.8, "pass", None),
+    (0.95, "pass", None),
+])
+def test_hands_band_edges(ratio: float, status: str, code: str | None) -> None:
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": ratio})
+    d = run(o)
+    assert d["checks"]["hands_visible"]["status"] == status
+    assert [r["code"] for r in d["reasons"]] == ([code] if code else [])
+
+
+def test_the_band_follows_a_custom_min_ratio() -> None:
+    rubric = json.loads(json.dumps(RUBRIC))
+    rubric["checks"]["hands_visible"]["min_ratio"] = 0.5
+    o = good_outputs()
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.35})
+    assert run(o, rubric)["checks"]["hands_visible"]["status"] == "uncertain"
+    o["hands_visible"] = CheckOutput({"ratio_both_manipulation": 0.25})
+    assert run(o, rubric)["checks"]["hands_visible"]["status"] == "fail"

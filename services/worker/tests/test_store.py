@@ -9,10 +9,11 @@ import httpx
 import numpy as np
 import pytest
 
+from quellix_worker import store as store_module
 from quellix_worker.checks.originality import FrameFingerprint, SupabaseFingerprintStore
 from quellix_worker.jobs import process_job
 from quellix_worker.pipeline import Dependencies, PipelineConfig
-from quellix_worker.store import Job, SupabaseStore, sign
+from quellix_worker.store import Job, SupabaseStore, UnsafeSourceError, check_source_url, sign
 
 from .clips import scene, write_clip
 
@@ -22,7 +23,7 @@ class Fake:
 
     def __init__(self, video: bytes = b"", status: str = "queued", attempts: int = 0,
                  delete_after: str | None = None, last_decision: str | None = None,
-                 due: list[dict] | None = None):
+                 due: list[dict] | None = None, video_fields: dict | None = None):
         self.status = status
         self.attempts = attempts
         self.delete_after = delete_after
@@ -32,6 +33,9 @@ class Fake:
         self.log: list[httpx.Request] = []
         self.video = video
         self.webhook_bodies: list[tuple[bytes, str]] = []
+        self.video_fields = video_fields or {}
+        self.source_gets: list[tuple[str, str]] = []
+        self.requests_to_source: list[httpx.Request] = []
 
     def __call__(self, req: httpx.Request) -> httpx.Response:
         self.log.append(req)
@@ -48,8 +52,9 @@ class Fake:
             return httpx.Response(200, json=[{"attempts": self.attempts}])
         if p.endswith("/rest/v1/videos") and req.method == "GET" and "select" in req.url.params \
                 and req.url.params["select"] == "storage_path,delete_after":
-            return httpx.Response(200, json=[{"storage_path": "org/o1/v1/a.mp4",
-                                              "delete_after": self.delete_after}])
+            return httpx.Response(200, json=[{
+                "storage_path": self.video_fields.get("storage_path", "org/o1/v1/a.mp4"),
+                "delete_after": self.delete_after}])
         if p.endswith("/rest/v1/videos") and req.method == "GET":
             return httpx.Response(200, json=[{
                 "org_id": "o1", "status": self.status, "created_at": "2026-10-21T00:00:00Z",
@@ -57,7 +62,7 @@ class Fake:
                 "storage_path": "org/o1/v1/a.mp4", "filename": "a.mp4",
                 "rubric_id": "r1", "rubric_version": 1,
                 "organizations": {"training_opt_in": False,
-                                  "allow_external_models": True}}])
+                                  "allow_external_models": True}, **self.video_fields}])
         if p.endswith("/rubric_versions"):
             return httpx.Response(200, json=[{"body": self.rubric}])
         if p.startswith("/storage/v1/object/videos/org") and req.method == "GET":
@@ -72,6 +77,13 @@ class Fake:
         if p.endswith("/webhooks"):
             return httpx.Response(200, json=[{"id": "w", "url": "https://hook.test/x",
                                               "signing_secret": "s3"}])
+        if req.headers.get("host", "").startswith("cdn.collector.test"):
+            # the worker connects to the vetted IP and keeps the name in Host / SNI
+            self.requests_to_source.append(req)
+            self.source_gets.append((req.headers["host"], req.url.raw_path.decode()))
+            if req.url.path.endswith("/moved.mp4"):
+                return httpx.Response(302, headers={"location": "http://169.254.169.254/"})
+            return httpx.Response(200, content=self.video)
         if req.url.host == "hook.test":
             self.webhook_bodies.append((req.content, req.headers["Ormes-Signature"]))
             return httpx.Response(200)
@@ -453,3 +465,107 @@ def test_modal_sweep_runs_both_purges(monkeypatch):
     monkeypatch.setattr(store.SupabaseStore, "purge_expired", lambda self: ["a", "b"])
     monkeypatch.setattr(store.SupabaseStore, "purge_reviewed", lambda self: ["c"])
     assert modal_app.sweep() == {"expired": 2, "reviewed": 1}
+
+
+# ---------------------------------------------------------------- shadow pilots (issue #65)
+
+PUBLIC = [(2, 1, 6, "", ("93.184.216.34", 443))]
+
+
+def _run(f):
+    s = make(f)
+    deps = Dependencies(face_detector=type("F", (), {"detect": lambda self, rgb: []})())
+    return process_job(s, s.read_job(), _fp(f), PipelineConfig(), deps)
+
+
+def test_shadow_video_sends_no_webhook(tmp_path):
+    clip = write_clip(tmp_path / "a.mp4", scene(1, 40))
+    f = Fake(clip.read_bytes(), video_fields={"shadow": True})
+    assert _run(f) in {"accept", "reject", "review"}
+    assert f.webhook_bodies == []
+    assert any(r.method == "POST" and r.url.path.endswith("/decisions") for r in f.log)
+
+
+def test_regular_video_still_sends_its_webhook(tmp_path):
+    clip = write_clip(tmp_path / "a.mp4", scene(1, 40))
+    f = Fake(clip.read_bytes(), video_fields={"shadow": False})
+    _run(f)
+    assert len(f.webhook_bodies) == 1
+
+
+def test_source_url_is_fetched_to_temp_and_never_stored(tmp_path, monkeypatch):
+    monkeypatch.setattr(store_module.socket, "getaddrinfo", lambda *a, **k: PUBLIC)
+    clip = write_clip(tmp_path / "a.mp4", scene(1, 40))
+    url = "https://cdn.collector.test/batch/a.mp4?sig=abc"
+    f = Fake(clip.read_bytes(), video_fields={"shadow": True, "storage_path": None,
+                                              "source_url": url})
+    assert _run(f) in {"accept", "reject", "review"}
+    assert f.source_gets == [("cdn.collector.test", "/batch/a.mp4?sig=abc")]
+    paths = [(r.method, r.url.path) for r in f.log]
+    # Nothing read from or written to our bucket.
+    assert not any(p.startswith("/storage/") for _, p in paths)
+    patches = _bodies(f, "/videos")
+    # The signed URL is the collector's credential: forgotten once the decision is written.
+    assert any(p.get("status") == "decided" and p.get("source_url", 1) is None for p in patches)
+
+
+def test_check_source_url_refuses_unsafe_targets():
+    def resolver(ip):
+        return lambda *a, **k: [(2, 1, 6, "", (ip, 443))]
+
+    check_source_url("https://cdn.collector.test/a.mp4", resolve=resolver("93.184.216.34"))
+    for url, ip in [("http://cdn.collector.test/a.mp4", "93.184.216.34"),
+                    ("https://meta.test/a", "169.254.169.254"),
+                    ("https://intra.test/a", "10.0.0.5"),
+                    ("https://local.test/a", "127.0.0.1"),
+                    ("https://v6.test/a", "::1")]:
+        with pytest.raises(UnsafeSourceError):
+            check_source_url(url, resolve=resolver(ip))
+
+
+def test_fetch_source_refuses_redirects_and_oversized_files(tmp_path, monkeypatch):
+    monkeypatch.setattr(store_module.socket, "getaddrinfo", lambda *a, **k: PUBLIC)
+    s = make(Fake(b"x" * 4096))
+    with pytest.raises(UnsafeSourceError, match="redirects"):
+        s.fetch_source("https://cdn.collector.test/moved.mp4", tmp_path / "a.mp4")
+    with pytest.raises(UnsafeSourceError, match="larger"):
+        s.fetch_source("https://cdn.collector.test/big.mp4", tmp_path / "b.mp4", max_bytes=1000)
+
+
+def test_fetch_connects_to_the_vetted_ip_with_the_original_name(tmp_path, monkeypatch):
+    """DNS rebinding: the name is resolved once, vetted, and the download connects to that
+    address (the name stays in Host and TLS SNI), so a second, different answer is never used."""
+    answers = iter([PUBLIC, [(2, 1, 6, "", ("169.254.169.254", 443))]])
+    monkeypatch.setattr(store_module.socket, "getaddrinfo", lambda *a, **k: next(answers))
+    f = Fake(b"video-bytes")
+    out = make(f).fetch_source("https://cdn.collector.test/batch/a.mp4?sig=abc", tmp_path / "a")
+    assert out.read_bytes() == b"video-bytes"
+    (req,) = f.requests_to_source
+    assert req.url.host == "93.184.216.34"  # the vetted address, not the name
+    assert req.headers["host"] == "cdn.collector.test"
+    assert req.extensions["sni_hostname"] == "cdn.collector.test"
+    assert "apikey" not in req.headers and "authorization" not in req.headers  # no service key
+    assert next(answers)  # the second (malicious) answer was never consumed
+
+
+def test_a_host_that_resolves_to_nothing_is_refused():
+    with pytest.raises(UnsafeSourceError, match="does not resolve"):
+        check_source_url("https://nowhere.test/a", resolve=lambda *a, **k: [])
+
+
+def test_final_failure_forgets_the_source_url():
+    f = Fake(b"", attempts=2, video_fields={"shadow": True, "storage_path": None,
+                                             "source_url": "https://cdn.collector.test/a.mp4"})
+    s = make(f)
+
+    def boom(*a, **k):
+        raise RuntimeError("fetch failed")
+
+    s.fetch_source = boom
+    deps = Dependencies(face_detector=type("F", (), {"detect": lambda self, rgb: []})())
+    assert process_job(s, s.read_job(), _fp(f), PipelineConfig(), deps) == "failed"
+    cleared = [r for r in f.log if r.method == "PATCH" and r.url.path.endswith("/videos")
+               and r.url.params.get("source_url") == "not.is.null"]
+    assert cleared and json.loads(cleared[0].content) == {"source_url": None}
+    assert not any(r.method == "DELETE" and r.url.path == "/storage/v1/object/videos"
+                   for r in f.log)  # nothing of theirs was ever in our bucket

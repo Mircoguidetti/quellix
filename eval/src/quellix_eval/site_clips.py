@@ -20,9 +20,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from collections.abc import Callable, Iterator, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Protocol
@@ -39,10 +40,11 @@ SIDECAR_FPS = 8.0          # per-frame boxes stored with the final clip
 ANALYSIS_WIDTH = 640       # frames are downscaled for the hands model (boxes are normalized)
 WINDOW_S = 9.0
 OUT_WIDTH = 1280
-MP4_BUDGET = 950_000       # bytes: the total for 6 clips (mp4 + webm + poster + json) stays < 12 MB
-WEBM_BUDGET = 650_000
-POSTER_BUDGET = 110_000
-TOTAL_BUDGET = 11_500_000
+PORTRAIT_WIDTH = 720       # portrait clips are for the 390 px mobile hero
+MP4_BUDGET = 640_000       # bytes: 7 clips + 2 defective copies (with webm, poster, json) < 12 MB
+WEBM_BUDGET = 440_000
+POSTER_BUDGET = 75_000
+TOTAL_BUDGET = 11_800_000
 
 # Selection thresholds.
 MIN_BOTH_FULL = 0.85       # share of window frames with both hands fully visible
@@ -206,6 +208,11 @@ class SourceInfo:
     task: str                    # shown to people next to the clip
     offset_s: float = 0.0        # where the candidate file starts inside the original recording
     annotated_steps: tuple[dict[str, Any], ...] = ()    # human annotations, on the recording clock
+    page_url: str = ""           # where a person can find the original (credits, /media-preview)
+    author: str = ""
+    author_url: str = ""
+    orientation: str = ""
+    fixed: bool = False          # hand-picked by a person: the worker's verdict is the only gate
 
 
 EGO10K = "Build AI Egocentric-10K"
@@ -227,16 +234,26 @@ class Candidate:
     hist: np.ndarray | None = field(default=None, repr=False)
     rejected: str | None = None       # why it is not eligible
     source: SourceInfo | None = None
+    hand_extent: tuple[float, float] | None = None    # x-range (0-1) the hands span in the window
 
     @property
     def score(self) -> float:
         return self.window.score if self.window else 0.0
 
 
+def reject_reasons(decision: dict[str, Any]) -> str:
+    return "; ".join(str(r.get("message") or r.get("code")) for r in decision.get("reasons", []))
+
+
 def eligibility(c: Candidate) -> str | None:
     """None when the candidate may be picked, else the reason it may not."""
     if c.decision is None:
         return "worker failed"
+    if c.source is not None and c.source.fixed:
+        # A person chose this clip: it goes on the site unless the worker would reject it.
+        if c.decision.get("decision") == "reject":
+            return f"the worker would reject it: {reject_reasons(c.decision)}"
+        return None if c.window is not None else "hands analysis found no usable stretch"
     if not privacy_clean(c.decision):
         return "face, document or screen detected (or privacy not measured)"
     if not technical_ok(c.decision):
@@ -266,6 +283,8 @@ def select_picks(
         c.rejected = eligibility(c)
         if c.rejected is None:
             eligible.append(c)
+    if eligible and all(c.source is not None and c.source.fixed for c in eligible):
+        return eligible[:n]            # hand-picked clips keep the order they were given in
     eligible.sort(key=lambda c: c.score, reverse=True)
 
     def different(c: Candidate, picked: Sequence[Candidate]) -> bool:
@@ -305,6 +324,15 @@ def factory_of(clip_id: str) -> str:
     return m.group(0) if m else clip_id
 
 
+def hand_extent(per_frame: Sequence[Any]) -> tuple[float, float] | None:
+    """The horizontal range (0-1) the hands' boxes cover over these frames, if any is seen."""
+    xs = [b for f in per_frame for side in ("left", "right")
+          if (b := hand_box(f.hand(side))) is not None and f.hand(side).state != "absent"]
+    if not xs:
+        return None
+    return min(b[0] for b in xs), max(b[2] for b in xs)
+
+
 def analyse(
     clip_id: str, path: Path, hands: HandsLike, worker: WorkerCheck, rubric: Path,
     window_s: float = WINDOW_S, source: SourceInfo | None = None,
@@ -312,15 +340,21 @@ def analyse(
     source = source or ego10k_source(clip_id)
     cand = Candidate(clip_id, path, source.group, source=source)
     cand.decision = worker(path, rubric)
-    if cand.decision is None or not privacy_clean(cand.decision):
+    if cand.decision is None or not (source.fixed or privacy_clean(cand.decision)):
         return cand            # no need to run the hands model on a clip that is out already
     samples = list(iter_frames(path, SCORE_FPS))
     if not samples:
         return cand
     ts, frames = [t for t, _ in samples], [f for _, f in samples]
     per_frame = hands.frames(frames, ts)
+    if source.fixed:       # a clip shorter than the window is used whole, not padded
+        window_s = min(window_s, max(ts[-1] - ts[0], 0.5))
     cand.window = best_window(per_frame, window_s)
+    if source.fixed and cand.window is not None and video_info(path)[0] <= window_s + 0.5:
+        cand.window = replace(cand.window, start_s=0.0, end_s=video_info(path)[0])
     if cand.window is not None:
+        cand.hand_extent = hand_extent(
+            [f for f in per_frame if cand.window.start_s <= f.t_s <= cand.window.end_s])
         inside = [f for t, f in samples if cand.window.start_s <= t <= cand.window.end_s]
         ok, cand.luma, cand.contrast = light_ok(inside)
         if inside:
@@ -385,32 +419,29 @@ def write_poster(img: np.ndarray, dst: Path, budget: int = POSTER_BUDGET) -> int
     return dst.stat().st_size
 
 
-def render_clip(
-    cand: Candidate, name: str, out_dir: Path, fps_out: float | None = None,
-    width: int = OUT_WIDTH,
+@dataclass(frozen=True)
+class Budgets:
+    mp4: int = MP4_BUDGET
+    webm: int = WEBM_BUDGET
+    poster: int = POSTER_BUDGET
+
+
+VARIANT_BUDGETS = Budgets(480_000, 320_000, 60_000)
+
+
+def encode_set(
+    make_frames: Callable[[], Iterator[np.ndarray]], poster: np.ndarray, name: str, out_dir: Path,
+    fps: float, budgets: Budgets,
 ) -> dict[str, Any]:
-    """Cut the chosen window of the candidate into <name>.mp4 / .webm / .jpg."""
-    assert cand.window is not None
-    w = cand.window
-    _, _, _, src_fps = video_info(cand.path)
-    fps = fps_out or min(src_fps, 30.0)      # the source rate: no resampling, no speed change
-
-    def frames() -> Iterator[np.ndarray]:
-        return _scaled(iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None), width)
-
+    """<name>.mp4 / .webm / .jpg from a frame source, each at the best quality that fits."""
     mp4, webm, jpg = out_dir / f"{name}.mp4", out_dir / f"{name}.webm", out_dir / f"{name}.jpg"
     crf_mp4, size_mp4 = fit(
-        frames, mp4, "libx264", fps, MP4_BUDGET, (24, 26, 28, 30, 32, 35),
+        make_frames, mp4, "libx264", fps, budgets.mp4, (24, 26, 28, 30, 32, 35, 38, 41),
         lambda crf: {"crf": str(crf), "preset": "slow", "movflags": "+faststart"})
     crf_webm, size_webm = fit(
-        frames, webm, "libvpx-vp9", fps, WEBM_BUDGET, (36, 40, 44, 48, 52, 56),
+        make_frames, webm, "libvpx-vp9", fps, budgets.webm, (36, 40, 44, 48, 52, 56, 60, 63),
         lambda crf: {"crf": str(crf), "b:v": "0", "row-mt": "1", "cpu-used": "2"})
-    # Poster: the sharpest of a few frames around the middle of the window.
-    mid = (w.start_s + w.end_s) / 2
-    options = list(_scaled(iter_frames(cand.path, 8, mid - 0.5, mid + 0.5, max_width=None), width))
-    poster = max(options, key=lambda f: cv2.Laplacian(
-        cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
-    size_jpg = write_poster(poster, jpg)
+    size_jpg = write_poster(poster, jpg, budgets.poster)
     duration, width_px, height_px, fps_real = video_info(mp4)
     return {
         "mp4": mp4.name, "webm": webm.name, "poster": jpg.name,
@@ -419,6 +450,189 @@ def render_clip(
         "bytes": {"mp4": size_mp4, "webm": size_webm, "poster": size_jpg},
         "crf": {"mp4": crf_mp4, "webm": crf_webm},
     }
+
+
+def render_clip(
+    cand: Candidate, name: str, out_dir: Path, fps_out: float | None = None,
+    width: int = OUT_WIDTH, budgets: Budgets | None = None,
+) -> dict[str, Any]:
+    """Cut the chosen window of the candidate into <name>.mp4 / .webm / .jpg."""
+    assert cand.window is not None
+    w = cand.window
+    _, src_w, src_h, src_fps = video_info(cand.path)
+    if src_h > src_w:
+        width = min(width, PORTRAIT_WIDTH)       # portrait clips are for the 390 px mobile hero
+    fps = fps_out or min(src_fps, 30.0)      # the source rate: no resampling, no speed change
+
+    def frames() -> Iterator[np.ndarray]:
+        return _scaled(iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None), width)
+
+    # Poster: the sharpest of a few frames around the middle of the window.
+    mid = (w.start_s + w.end_s) / 2
+    options = list(_scaled(iter_frames(cand.path, 8, mid - 0.5, mid + 0.5, max_width=None), width))
+    poster = max(options, key=lambda f: cv2.Laplacian(
+        cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
+    return encode_set(frames, poster, name, out_dir, fps, budgets or Budgets())
+
+
+# --- 4:5 crop for the mobile hero ------------------------------------------------------------
+
+MOBILE_ASPECT = (4, 5)     # the home hero is a 4:5 box on mobile (founder decision, PR #75)
+MOBILE_WIDTH = 720         # 720 x 900: the box is ~390 CSS px wide, so this covers 2x screens
+
+
+def crop_plan(
+    src_w: int, src_h: int, extent: tuple[float, float] | None,
+    aspect: tuple[int, int] = MOBILE_ASPECT,
+) -> dict[str, Any]:
+    """Where to cut a portrait (4:5 by default) out of a landscape frame.
+
+    The centre crop, unless it cuts the hands' horizontal range (`extent`): then the window moves
+    to the middle of that range (`moved`), which keeps as much of both hands as the window can
+    hold. `keeps_hands` says whether the whole range fits in the window that was chosen.
+    """
+    frac = min(1.0, (aspect[0] / aspect[1]) * src_h / src_w)   # crop width as a share of the frame
+    centre = (1 - frac) / 2
+    fits_centre = extent is None or (extent[0] >= centre and extent[1] <= centre + frac)
+    x0 = centre
+    if not fits_centre and extent is not None:
+        x0 = min(max((extent[0] + extent[1]) / 2 - frac / 2, 0.0), 1 - frac)
+    keeps = extent is None or (extent[0] >= x0 - 1e-9 and extent[1] <= x0 + frac + 1e-9)
+    return {"aspect": f"{aspect[0]}:{aspect[1]}", "x0": round(x0, 4),
+            "width_frac": round(frac, 4), "moved": abs(x0 - centre) > 1e-6,
+            "centre_crop_keeps_hands": fits_centre, "keeps_hands": keeps}
+
+
+def render_crop(
+    cand: Candidate, name: str, out_dir: Path, plan: dict[str, Any], width: int = MOBILE_WIDTH,
+    budgets: Budgets | None = None,
+) -> dict[str, Any]:
+    """The candidate's window cut to the portrait `plan`, as <name>.mp4 / .webm / .jpg."""
+    assert cand.window is not None
+    w = cand.window
+    _, src_w, src_h, src_fps = video_info(cand.path)
+    fps = min(src_fps, 30.0)
+    left = int(round(plan["x0"] * src_w)) // 2 * 2
+    cw = int(round(plan["width_frac"] * src_w)) // 2 * 2
+
+    def cropped(start: float, end: float, rate: float) -> Iterator[np.ndarray]:
+        frames = iter_frames(cand.path, rate, start, end, max_width=None)
+        return _scaled(((t, f[:, left:left + cw]) for t, f in frames), width)
+
+    mid = (w.start_s + w.end_s) / 2
+    options = list(cropped(mid - 0.5, mid + 0.5, 8))
+    poster = max(options, key=lambda f: cv2.Laplacian(
+        cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), cv2.CV_64F).var())
+    return encode_set(lambda: cropped(w.start_s, w.end_s, fps), poster, name, out_dir, fps,
+                      budgets or Budgets(MP4_BUDGET, WEBM_BUDGET, POSTER_BUDGET))
+
+
+# --- defective versions of a clean clip (the Home "Why Ormes" scene, issue #69) ------------
+
+DEFECT_SECONDS = 3.0
+
+
+def _timed(fn: Callable[[list], list], start_s: float, fps: float) -> Callable[[list], list]:
+    """Apply `fn` to the ~3 s of frames starting at start_s only."""
+
+    def apply(frames: list) -> list:
+        lo = int(round(start_s * fps))
+        hi = min(len(frames), lo + int(round(DEFECT_SECONDS * fps)))
+        return [*frames[:lo], *fn(frames[lo:hi]), *frames[hi:]]
+
+    return apply
+
+
+Recipe = tuple[str, Callable[[list], list]]
+
+
+def _slide(frames: list, dx: float) -> list:
+    """The frame slides sideways by dx (share of the width); the strip it leaves is black."""
+    out = []
+    for f in frames:
+        h, w = f.shape[:2]
+        shift = int(round(abs(dx) * w))
+        g = np.zeros_like(f)
+        if dx < 0:
+            g[:, : w - shift] = f[:, shift:]       # the camera turns right: the left side leaves
+        else:
+            g[:, shift:] = f[:, : w - shift]
+        out.append(g)
+    return out
+
+
+def defect_recipes(kind: str, start_s: float, fps: float) -> list[Recipe]:
+    """Recipes to try, in order, for 'hand' (one hand leaves for ~3 s) or 'dark' (too dark)."""
+    from .defects import generate as g
+
+    if kind == "hand":
+        return [
+            ("slide: the left hand leaves through the left edge",
+             _timed(lambda fr: _slide(fr, -0.4), start_s, fps)),
+            ("slide: the right hand leaves through the right edge",
+             _timed(lambda fr: _slide(fr, 0.4), start_s, fps)),
+            ("hand_out_one: zoom on the bottom-right quarter",
+             _timed(lambda fr: [g._zoom(f, 0.5, 0.5, 0.5) for f in fr], start_s, fps)),
+        ]
+    return [(f"exposure x{gain}", _timed(lambda fr, gain=gain: g.exposure(fr, gain), start_s, fps))
+            for gain in (0.25, 0.15)] + [
+        ("motion_blur", _timed(lambda fr: g.motion_blur(fr, 41), start_s, fps))]
+
+
+EXPECTED_CHECK = {"hand": "hands_visible", "dark": "technical"}
+
+
+def variant_rank(kind: str, decision: dict[str, Any] | None) -> int:
+    """How well a defective copy shows its own defect: 3 = flagged for the expected check and
+    nothing else technical, 2 = flagged for the expected check, 1 = flagged, 0 = accepted."""
+    if not decision or decision.get("decision") in (None, "accept"):
+        return 0
+    checks = {r.get("check") for r in decision.get("reasons", [])}
+    if EXPECTED_CHECK[kind] not in checks:
+        return 1
+    return 3 if kind == "hand" and "technical" not in checks else 2
+
+
+def make_variant(
+    clean_mp4: Path, kind: str, name: str, out_dir: Path, worker: WorkerCheck, rubric: Path,
+) -> tuple[dict[str, Any], dict[str, Any] | None, dict[str, Any]]:
+    """A defective copy of a clean delivered clip: (files, the worker's real decision, info).
+
+    Recipes are tried in order and ranked by how clearly the worker flags the intended defect
+    (`variant_rank`); the best one is kept, the first on ties. All are listed in `info["tried"]`.
+    Nothing about the decision is edited: what the site shows is what the worker returned.
+    """
+    from .defects.generate import read_video
+
+    clip = read_video(clean_mp4)
+    fps = clip.fps
+    duration = len(clip.frames) / fps
+    start_s = max(0.0, (duration - DEFECT_SECONDS) / 2)
+    tried: list[dict[str, Any]] = []
+    best: tuple[int, int] | None = None            # (rank, index)
+    results: list[tuple[dict[str, Any], dict[str, Any] | None, str]] = []
+    for i, (label, recipe) in enumerate(defect_recipes(kind, start_s, fps)):
+        frames = recipe(list(clip.frames))
+        mid = frames[min(len(frames) - 1, int(round((start_s + DEFECT_SECONDS / 2) * fps)))]
+        scratch = out_dir / f".variant-{name}-{i}"
+        files = encode_set(lambda f=frames: iter(f), mid, name, scratch, fps, VARIANT_BUDGETS)
+        decision = worker(scratch / files["mp4"], rubric)
+        rank = variant_rank(kind, decision)
+        tried.append({"recipe": label, "decision": (decision or {}).get("decision"), "rank": rank})
+        results.append((files, decision, label))
+        if best is None or rank > best[0]:
+            best = (rank, i)
+        if rank == 3:
+            break          # the defect shows up exactly as asked: stop here
+    assert best is not None
+    files, decision, label = results[best[1]]
+    for f in (out_dir / f".variant-{name}-{best[1]}").iterdir():
+        shutil.move(str(f), out_dir / f.name)
+    for d in out_dir.glob(f".variant-{name}-*"):
+        shutil.rmtree(d, ignore_errors=True)
+    info = {"kind": kind, "recipe": label, "interval_s": [round(start_s, 2),
+            round(start_s + DEFECT_SECONDS, 2)], "tried": tried}
+    return files, decision, info
 
 
 # --- sidecar -----------------------------------------------------------------------------
@@ -469,7 +683,7 @@ def sidecar_steps(cand: Candidate, decision: dict[str, Any] | None) -> list[dict
 
 def build_sidecar(
     cand: Candidate, name: str, files: dict[str, Any], hands: HandsLike,
-    decision: dict[str, Any] | None, mp4: Path,
+    decision: dict[str, Any] | None, mp4: Path, variant: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     samples = list(iter_frames(mp4, SIDECAR_FPS))
     per_frame = hands.frames([f for _, f in samples], [t for t, _ in samples])
@@ -480,14 +694,17 @@ def build_sidecar(
         "schema": SCHEMA,
         "id": name,
         "source": {"dataset": src.dataset, "license": src.license, "task": src.task,
-                   "clip_id": cand.clip_id, "group": src.group,
+                   "clip_id": cand.clip_id, "group": src.group, "page_url": src.page_url,
+                   "author": src.author, "author_url": src.author_url,
+                   "orientation": src.orientation,
                    "segment_in_source_s": [round(start, 2),
                                            round(start + cand.window.end_s - cand.window.start_s,
                                                  2)]},
         "video": files,
         "hands": {"model": hands.model_id, "sample_fps": SIDECAR_FPS,
                   "frames": frames_json(per_frame)},
-        "steps": sidecar_steps(cand, decision),
+        "steps": [] if variant else sidecar_steps(cand, decision),
+        "variant": variant,
         "decision": decision,
         "selection": {"both_hands_full": round(cand.window.both_full, 3),
                       "both_hands_working": round(cand.window.working, 3),
@@ -501,31 +718,84 @@ def build_sidecar(
 def produce(
     candidates: Sequence[Candidate], hands: HandsLike, worker: WorkerCheck, rubric: Path,
     final_dir: Path, picks_wanted: int = 6, quota: dict[str, int] | None = None,
-    log: Callable[[str], None] = print, width: int = OUT_WIDTH,
+    log: Callable[[str], None] = print, width: int = OUT_WIDTH, variants_of: int | None = None,
+    mobile_crop: bool = False, hero: str | None = None,
 ) -> dict[str, Any]:
+    """Render the picks. For the hero (the source clip id `hero`, else the `variants_of`-th
+    published clip) also its 4:5 mobile crop (`mobile_crop`) and two defective copies: one hand
+    leaves for ~3 s, and a too dark stretch."""
     picks = select_picks(candidates, picks_wanted, quota=quota)
     final_dir.mkdir(parents=True, exist_ok=True)
     for old in [*final_dir.glob("clip-*"), final_dir / "manifest.json"]:
         old.unlink(missing_ok=True)       # a run with fewer picks must not leave stale clips
     clips: list[dict[str, Any]] = []
-    for i, cand in enumerate(picks, 1):
-        name = f"clip-{i:02d}"
-        files = render_clip(cand, name, final_dir, width=width)
-        mp4 = final_dir / files["mp4"]
-        decision = worker(mp4, rubric)        # the worker's verdict on the delivered file itself
-        sidecar = build_sidecar(cand, name, files, hands, decision, mp4)
+
+    def entry(name: str, cand: Candidate, files: dict[str, Any], sidecar: dict[str, Any],
+              decision: dict[str, Any] | None, **extra: Any) -> dict[str, Any]:
+        src = sidecar["source"]
+        return {"id": name, "source_clip": cand.clip_id, "factory": cand.factory,
+                "dataset": src["dataset"], "license": src["license"], "task": src["task"],
+                "page_url": src["page_url"], "author": src["author"],
+                "author_url": src["author_url"], "orientation": src["orientation"],
+                "decision": (decision or {}).get("decision"), **extra, **files}
+
+    def write_sidecar(name: str, sidecar: dict[str, Any], files: dict[str, Any]) -> None:
         side = final_dir / f"{name}.json"
         side.write_text(json.dumps(sidecar, separators=(",", ":")))
         files["bytes"]["json"] = side.stat().st_size
-        src = sidecar["source"]
-        clips.append({"id": name, "source_clip": cand.clip_id, "factory": cand.factory,
-                      "dataset": src["dataset"], "license": src["license"], "task": src["task"],
-                      "decision": (decision or {}).get("decision"), **files})
+
+    for cand in picks:
+        name = f"clip-{sum(1 for c in clips if 'variant_of' not in c) + 1:02d}"
+        files = render_clip(cand, name, final_dir, width=width)
+        mp4 = final_dir / files["mp4"]
+        decision = worker(mp4, rubric)        # the worker's verdict on the delivered file itself
+        if cand.source is not None and cand.source.fixed and (
+            decision is None or decision.get("decision") == "reject"
+        ):
+            cand.rejected = "the worker rejects the delivered cut: " + (
+                reject_reasons(decision) if decision else "worker failed")
+            for f in final_dir.glob(f"{name}.*"):
+                f.unlink()
+            log(f"{cand.clip_id}: dropped, {cand.rejected}")
+            continue
+        sidecar = build_sidecar(cand, name, files, hands, decision, mp4)
+        write_sidecar(name, sidecar, files)
+        clips.append(entry(name, cand, files, sidecar, decision))
         log(f"{name}: {cand.clip_id} {cand.window.start_s:.1f}-{cand.window.end_s:.1f}s "  # type: ignore[union-attr]
             f"bytes={files['bytes']}")
+        is_hero = (cand.clip_id == hero) if hero else (
+            variants_of is not None and name == f"clip-{variants_of:02d}")
+        if is_hero:
+            if mobile_crop:
+                _, sw, sh, _ = video_info(cand.path)
+                plan = crop_plan(sw, sh, cand.hand_extent)
+                mname = f"{name}-mobile"
+                mfiles = render_crop(cand, mname, final_dir, plan)
+                mmp4 = final_dir / mfiles["mp4"]
+                mdecision = worker(mmp4, rubric)
+                info = {"kind": "mobile_crop", "crop": plan}
+                mside = build_sidecar(cand, mname, mfiles, hands, mdecision, mmp4,
+                                      {"of": name, **info})
+                rows = mside["hands"]["frames"]
+                plan["both_hands_whole_share"] = round(sum(
+                    r["left"]["state"] == "full" and r["right"]["state"] == "full"
+                    for r in rows) / max(1, len(rows)), 3)
+                write_sidecar(mname, mside, mfiles)
+                clips.append(entry(mname, cand, mfiles, mside, mdecision, variant_of=name,
+                                   variant_kind="mobile_crop", crop=plan))
+                log(f"{mname}: 4:5 crop {plan} -> {(mdecision or {}).get('decision')}")
+            for kind in ("hand", "dark"):
+                vname = f"{name}-{kind}"
+                vfiles, vdecision, info = make_variant(mp4, kind, vname, final_dir, worker, rubric)
+                vside = build_sidecar(cand, vname, vfiles, hands, vdecision,
+                                      final_dir / vfiles["mp4"], {"of": name, **info})
+                write_sidecar(vname, vside, vfiles)
+                clips.append(entry(vname, cand, vfiles, vside, vdecision,
+                                   variant_of=name, variant_kind=kind, defect=info))
+                log(f"{vname}: {info['recipe']} -> {(vdecision or {}).get('decision')}")
     total = sum(sum(c["bytes"].values()) for c in clips)
     sources = sorted({(c["dataset"], c["license"]) for c in clips})
-    manifest = {"schema": "ormes.site-clips/2",
+    manifest = {"schema": "ormes.site-clips/3",
                 "sources": [{"dataset": d, "license": lic} for d, lic in sources],
                 "total_bytes": total, "clips": clips}
     (final_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
@@ -537,13 +807,16 @@ def produce(
 def candidate_report(candidates: Sequence[Candidate], picks: Sequence[Candidate]) -> str:
     """A markdown table: every candidate, whether it was picked, and why not."""
     picked = {c.clip_id for c in picks}
-    lines = ["| clip | factory | result | window | both hands full | working | light |",
-             "|---|---|---|---|---|---|---|"]
-    for c in sorted(candidates, key=lambda c: (c.clip_id not in picked, -c.score)):
+    lines = ["| clip | group | result | worker decision | window | both hands full | working "
+             "| light |", "|---|---|---|---|---|---|---|---|"]
+    ordered = candidates if all(c.source and c.source.fixed for c in candidates) else sorted(
+        candidates, key=lambda c: (c.clip_id not in picked, -c.score))
+    for c in ordered:
         w = c.window
         result = "**picked**" if c.clip_id in picked else (c.rejected or "not eligible")
+        verdict = (c.decision or {}).get("decision", "-")
         lines.append(
-            f"| `{c.clip_id}` | {c.factory} | {result} | "
+            f"| `{c.clip_id}` | {c.factory} | {result} | {verdict} | "
             + (f"{w.start_s:.1f}-{w.end_s:.1f} s | {w.both_full:.2f} | {w.working:.2f} | "
                f"{c.luma:.0f} / {c.contrast:.0f}" if w else "- | - | - | -")
             + " |")
@@ -619,6 +892,106 @@ def worker_check_via_cli(cmd: Sequence[str] | None = None) -> WorkerCheck:  # pr
     return check
 
 
+def fetch_pexels(
+    net: Any, out_dir: Path, picks: Sequence[Any], api_key: str = "",
+    log: Callable[[str], None] = print,
+) -> tuple[list[Fetched], list[str]]:
+    """Download the picked Pexels videos. Returns (files, one error line per failed download)."""
+    from .datasets import pexels
+
+    got, errors = [], []
+    for pick in picks:
+        try:
+            raw, meta = pexels.fetch_pick(net, pick, out_dir, api_key, log)
+        except Exception as e:  # noqa: BLE001 - one failure must not hide the others
+            errors.append(f"{pick.clip_id}: {e}")
+            continue
+        if meta.debug:
+            errors.append(
+                f"{pick.clip_id}: AUTHOR NOT FOUND on the page; clues: {meta.debug[:700]}")
+        got.append(Fetched(pick.clip_id, raw, SourceInfo(
+            "pexels", pexels.DATASET, pexels.LICENSE, pick.slug, pick.task, 0.0, (),
+            meta.page, meta.author, meta.author_url, pick.orientation, fixed=True)))
+    return got, errors
+
+
+def download_pexels(a: argparse.Namespace, picks: Sequence[Any]) -> tuple[list[Fetched], str]:
+    import os
+
+    from .datasets import pexels
+
+    got, errors = fetch_pexels(pexels.UrllibNet(), a.out_dir, picks,
+                               os.environ.get("PEXELS_API_KEY", ""))
+    status = (f"Pexels: {len(got)} of {len(picks)} videos downloaded."
+              + "".join(f"\n- DOWNLOAD/AUTHOR PROBLEM, exact text: {e}" for e in errors))
+    print(status, flush=True)
+    (a.out_dir / "pexels-status.txt").write_text(status + "\n")
+    return got, status
+
+
+def run_landing(  # pragma: no cover - network, models
+    a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
+) -> int:
+    """The landing page's clips; the hero also gets a 4:5 mobile crop and two defective copies."""
+    from .datasets import pexels
+
+    got, _ = download_pexels(a, pexels.LANDING_CLIPS)
+    if not got:
+        return 1
+    cands = []
+    for item in got:
+        cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
+        print(f"{item.clip_id}: " + (eligibility(cand) or "eligible"), flush=True)
+        cands.append(cand)
+    manifest = produce(cands, hands, worker, a.rubric, a.final_dir, len(cands),
+                       mobile_crop=True, hero=pexels.LANDING.clip_id)
+    used = {x["source_clip"] for x in manifest["clips"]}
+    (a.out_dir / "candidates.md").write_text(
+        candidate_report(cands, [c for c in cands if c.clip_id in used]))
+    print(f"{len(manifest['clips'])} files, {manifest['total_bytes']} bytes")
+    return 0 if manifest["clips"] else 1
+
+
+def third_person_record(cand: Candidate, pick: Any, version: str = "") -> Any:
+    from .datasets.third_person import Observed, ThirdPersonRecord
+
+    src, d = cand.source, cand.decision
+    dur, w, h, _ = video_info(cand.path)
+    keep = ("check", "code", "effect", "message")
+    return ThirdPersonRecord(
+        clip_id=cand.clip_id, page_url=pick.page, pexels_id=pick.pexels_id,
+        author=src.author if src and not src.author.startswith("unknown") else None,
+        author_url=(src.author_url or None) if src else None,
+        orientation=pick.orientation, task=pick.task, duration_s=round(dur, 2), width=w, height=h,
+        observed=Observed(
+            decision=(d or {}).get("decision"),
+            reasons=[{k: r.get(k) for k in keep} for r in (d or {}).get("reasons", [])],
+            both_hands_whole=round(cand.window.both_full, 3) if cand.window else None,
+            both_hands_working=round(cand.window.working, 3) if cand.window else None,
+            worker_version=version))
+
+
+def run_third_person(  # pragma: no cover - network, models
+    a: argparse.Namespace, hands: HandsLike, worker: WorkerCheck,
+) -> int:
+    """Analyse the third-person clips and write the test-set manifest. No media is kept."""
+    from .datasets import pexels
+    from .datasets.third_person import write_records
+
+    got, _ = download_pexels(a, pexels.THIRD_PERSON)
+    by_id = {p.clip_id: p for p in pexels.THIRD_PERSON}
+    records = []
+    for item in got:
+        cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)
+        records.append(third_person_record(cand, by_id[item.clip_id],
+                                           (cand.decision or {}).get("engine_version", "")))
+        print(f"{item.clip_id}: {records[-1].observed.decision}", flush=True)
+        item.path.unlink(missing_ok=True)       # the video is never kept
+    n = write_records(records, a.third_person_out)
+    print(f"{n} third-person records -> {a.third_person_out}")
+    return 0 if n else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
     from .datasets import egocentric10k
     from .datasets.holoassist_stream import UrllibHttp
@@ -627,6 +1000,12 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--candidates", type=int, default=30)
     ap.add_argument("--holoassist", type=int, default=16, help="HoloAssist candidates (0 = skip)")
+    ap.add_argument("--pexels", action="store_true",
+                    help="the landing page's Pexels clips (hero: 4:5 crop, defective copies)")
+    ap.add_argument("--third-person", action="store_true",
+                    help="the third-person Pexels test set: write its manifest, keep no media")
+    ap.add_argument("--third-person-out", type=Path,
+                    default=Path("test_sets/third_person_pexels.jsonl"))
     ap.add_argument("--picks", type=int, default=6)
     ap.add_argument("--min-picks", type=int, default=1)
     ap.add_argument("--out-dir", type=Path, default=Path("out/site-clips"))
@@ -638,6 +1017,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     from quellix_hands.model import HandsModel
 
     a.out_dir.mkdir(parents=True, exist_ok=True)
+    hands, worker = HandsModel(), worker_check_via_cli()
+    if a.pexels:
+        return run_landing(a, hands, worker)
+    if a.third_person:
+        return run_third_person(a, hands, worker)
     manifest_path = a.out_dir / "candidates.jsonl"
     n = egocentric10k.build(
         manifest_path, a.out_dir / "candidates", clips=a.candidates, per_shard=2,
@@ -658,7 +1042,6 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     print(status, flush=True)
     (a.out_dir / "holoassist-status.txt").write_text(status + "\n")
 
-    hands, worker = HandsModel(), worker_check_via_cli()
     cands = []
     for item in todo:
         cand = analyse(item.clip_id, item.path, hands, worker, a.rubric, source=item.source)

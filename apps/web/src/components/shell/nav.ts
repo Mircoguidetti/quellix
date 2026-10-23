@@ -1,6 +1,7 @@
-import { ClipboardList, Film, Inbox, LayoutDashboard, ListChecks, Scale, Settings, type LucideIcon } from "lucide-react";
+import { ClipboardList, Film, FlaskConical, Inbox, LayoutDashboard, ListChecks, Scale, Settings, type LucideIcon } from "lucide-react";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "review" };
+/** `flag`: shown only when that feature is on (pilots need their migration, issue #65). */
+export type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "review"; flag?: "pilots" };
 
 export const NAV: NavItem[] = [
   { href: "/app", label: "Overview", icon: LayoutDashboard },
@@ -9,6 +10,7 @@ export const NAV: NavItem[] = [
   { href: "/app/rubrics", label: "Rubrics", icon: ListChecks },
   { href: "/app/contests", label: "Contests", icon: Scale },
   { href: "/app/audit", label: "Audit", icon: ClipboardList },
+  { href: "/app/pilots", label: "Pilots", icon: FlaskConical, flag: "pilots" },
   { href: "/app/settings", label: "Settings", icon: Settings },
 ];
 
