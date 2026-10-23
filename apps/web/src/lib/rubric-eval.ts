@@ -64,6 +64,14 @@ const taskCompleted: Evaluator = (cfg, m) => {
   return ["pass", []];
 };
 
+// The hands check cannot reject yet (#53, #64, #76): a critical `below_min` failure previews as
+// `review`. Mirrors HANDS_CAN_REJECT in rubric.py; flip both together.
+export const HANDS_CAN_REJECT = false;
+
+// A ratio within this distance below min_ratio is "uncertain" (review), not "fail" (#4).
+// Mirrors HANDS_UNCERTAIN_BAND in rubric.py.
+export const HANDS_UNCERTAIN_BAND = 0.2;
+
 const handsVisible: Evaluator = (cfg, m) => {
   const scope = cfg.scope === "manipulation" ? "manipulation" : "whole";
   const which = cfg.require_both ? "both" : "any";
@@ -76,10 +84,16 @@ const handsVisible: Evaluator = (cfg, m) => {
   }
   const ratio = num(m[key]);
   const min = num(cfg.min_ratio);
+  const hands = cfg.require_both ? "Both hands" : "Hands";
+  const where = scope === "manipulation" ? "during manipulation" : "in the video";
+  if (Math.round((min - HANDS_UNCERTAIN_BAND) * 1e6) / 1e6 <= ratio && ratio < min) {
+    return [
+      "uncertain",
+      [{ check: "hands_visible", code: "hands_visible.near_min", message: `${hands} visible ${pct(ratio)} of the time ${where}, just under the minimum (${pct(min)}); a person should check.`, effect: "review" }],
+    ];
+  }
   if (ratio < min) {
-    const hands = cfg.require_both ? "Both hands" : "Hands";
-    const where = scope === "manipulation" ? "during manipulation" : "in the video";
-    const effect: Effect = cfg.critical ? "reject" : "review";
+    const effect: Effect = cfg.critical && HANDS_CAN_REJECT ? "reject" : "review";
     return [
       "fail",
       [{ check: "hands_visible", code: "hands_visible.below_min", message: `${hands} visible ${pct(ratio)} of the time ${where} (minimum ${pct(min)}).`, effect }],
@@ -201,7 +215,16 @@ export function evaluate(rubric: { checks?: Record<string, unknown> }, outputs: 
       continue;
     }
     const [status, found] = EVALUATORS[name](cfg, out.measurements);
-    checks[name] = { status, measurements: out.measurements, ...(out.model ? { model: out.model } : {}) };
+    let measurements: Measurements = out.measurements;
+    if (name === "hands_visible" && cfg.critical && !HANDS_CAN_REJECT && found.some((r) => r.code === "hands_visible.below_min")) {
+      // Record that the cap was applied: the rubric asked for a reject, we send it to review.
+      measurements = {
+        ...measurements,
+        reject_capped_to_review: true,
+        reject_cap_note: "The hands check cannot reject until it is validated (issues #53, #64); this failure was sent to review.",
+      };
+    }
+    checks[name] = { status, measurements, ...(out.model ? { model: out.model } : {}) };
     reasons.push(...found);
   }
 

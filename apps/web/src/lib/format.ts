@@ -82,6 +82,7 @@ export function initials(name: string | undefined, email: string | undefined): s
 
 const REASON_LABELS: Record<string, string> = {
   "hands_visible.below_min": "Hands out of frame",
+  "hands_visible.near_min": "Hands near the limit",
   "hands_visible.missing_measurement": "Hands not measured",
   "task_completed.not_completed": "Task not completed",
   "task_completed.uncertain": "Task unclear",

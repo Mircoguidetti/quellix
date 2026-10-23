@@ -113,7 +113,7 @@ export function flaggedMoments(reasons: TimelineReason[], checks: Record<string,
         timed.push({ ...base, key: `${reasonIndex}`, t: clamp(t), detail: `Completed ${m.completed === true ? "yes" : m.completed === false ? "no" : "unknown"} · confidence ${pct(m.confidence)} · ${span}` });
         return;
       }
-    } else if (r.check === "hands_visible" && r.code === "hands_visible.below_min") {
+    } else if (r.check === "hands_visible" && (r.code === "hands_visible.below_min" || r.code === "hands_visible.near_min")) {
       const segments = (Array.isArray(m.manipulation_segments) ? (m.manipulation_segments as unknown[]) : []).filter(
         (s): s is number[] => Array.isArray(s) && num(s[0]) !== null,
       );
