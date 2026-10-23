@@ -59,7 +59,7 @@
       }
     },
     "checkName": {
-      "enum": ["task_completed", "hands_visible", "framing", "technical", "privacy", "originality"]
+      "enum": ["task_completed", "hands_visible", "framing", "technical", "privacy", "originality", "viewpoint"]
     },
     "checkResult": {
       "type": "object",
