@@ -179,15 +179,15 @@ export function VideoFlow() {
 
   return (
     <div ref={rootRef}>
-      <figure className="rounded-[22px] border border-hairline bg-panel p-4 sm:p-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <figure className="rounded-[22px] border border-hairline bg-panel p-4 sm:p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 sm:mb-4">
           <p className="text-[14px] text-muted-foreground">
             Videos received <span ref={(el) => void (counters.current.total = el)} className="tabular ml-2 text-foreground">{fmt(TOTAL)}</span>
           </p>
           <Example>Example month</Example>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_200px]">
-          <svg ref={svgRef} viewBox="0 0 720 360" className="block h-auto w-full overflow-hidden text-foreground" aria-hidden="true">
+          <svg ref={svgRef} viewBox="0 0 720 360" className="block h-auto max-h-[280px] w-full overflow-hidden text-foreground" aria-hidden="true">
             <defs>
               <linearGradient id="vf-fade" x1="0" x2="1">
                 <stop offset="0" stopColor="currentColor" stopOpacity="0" />
@@ -249,12 +249,12 @@ export function VideoFlow() {
           Example month of 10,000 videos: 8,000 accepted, 1,500 sent to review and 500 rejected. Review hours fall from 500 to 75.
         </figcaption>
 
-        <div className="mt-8 border-t border-hairline pt-6">
-          <p className="mb-4 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
+        <div className="mt-4 border-t border-hairline pt-4 sm:mt-6 sm:pt-5">
+          <p className="mb-3 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
             <Clock {...ICON} className="size-4" />
             Review hours, at 3 minutes a video
           </p>
-          <dl className="flex flex-col gap-4">
+          <dl className="flex flex-col gap-3">
             <div className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[150px_minmax(0,1fr)]">
               <dt className="text-[14px] text-muted-foreground">Without Ormes</dt>
               <dd className="flex items-center gap-3">
@@ -278,7 +278,7 @@ export function VideoFlow() {
               </dd>
             </div>
           </dl>
-          <p className="mt-4 text-[13px] text-muted-foreground">Only the videos sent to review are watched by a person. Your pilot report shows your own numbers.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">Only videos sent to review are watched by a person.</p>
         </div>
       </figure>
     </div>

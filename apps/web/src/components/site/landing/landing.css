@@ -1,0 +1,177 @@
+/* Ormes landing v4, built with the founder in the artifact (scoped under .ormes-landing). */
+/* Layout: dark opening (hero + problem), a calm white body, dark close (developers + CTA + footer).
+   Three section types only: showcase (one big visual), statement (big type, no visual), detail (quiet text). */
+.ormes-landing {
+  color-scheme: light;
+  --ink: #0B0D12;          /* dark surfaces */
+  --ink-2: #151821;        /* raised dark surface */
+  --paper: #FFFFFF;        /* white body */
+  --text: #0B0D12;
+  --muted: #5E6573;        /* secondary text on white */
+  --muted-dark: #9AA1AE;   /* secondary text on dark */
+  --rule: #E7E9EE;
+  --rule-dark: #232733;
+  --accent: #3D63F2;       /* the one accent */
+  --ok: #2E9C69;           /* decision chips only */
+  --no: #D2493F;
+  --font-sans: var(--font-schibsted), "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --w: 1120px;
+}
+.ormes-landing, .ormes-landing * { box-sizing: border-box; }
+
+.ormes-landing { background: var(--paper); color: var(--text); font-family: var(--font-sans); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.ormes-landing::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--ink); }
+.ormes-landing a { color: inherit; }
+.ormes-landing h1, .ormes-landing h2, .ormes-landing h3 { margin: 0; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; }
+.ormes-landing p { margin: 0; }
+
+.ormes-landing .wrap { max-width: var(--w); margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.ormes-landing .dark { background: var(--ink); color: #F3F4F6; }
+.ormes-landing .dark .sub { color: var(--muted-dark); }
+.ormes-landing .sub { color: var(--muted); max-width: 54ch; }
+.ormes-landing section { padding-block: clamp(72px, 12vh, 128px); }
+.ormes-landing .h2 { font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; }
+.ormes-landing .lede { font-size: clamp(17px, 1.4vw, 19px); margin-top: 16px; }
+
+/* divider between two white sections: 80%, fading at the ends */
+.ormes-landing .divider { height: 1px; width: 80%; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--rule) 18%, var(--rule) 82%, transparent); border: 0; }
+
+/* buttons */
+.ormes-landing .btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px; font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .15s ease, background .15s ease; }
+.ormes-landing .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ormes-landing .btn-light { background: #F3F4F6; color: var(--ink); }
+.ormes-landing .btn-light:hover { background: #fff; }
+.ormes-landing .btn-ghost { border: 1px solid #3A3F4B; color: #F3F4F6; }
+.ormes-landing .btn-ghost:hover { border-color: #6B7280; }
+.ormes-landing .btn-dark { background: var(--ink); color: #fff; }
+
+/* nav: always dark */
+.ormes-landing .nav { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,.06); transition: background .3s ease, border-color .3s ease; }
+.ormes-landing .nav.scrolled { background: rgba(11,13,18,.92); backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); border-bottom-color: rgba(255,255,255,.06); }
+.ormes-landing .nav .wrap { display: flex; align-items: center; gap: 40px; height: 72px; max-width: 1320px; }
+.ormes-landing .nav .actions { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 15px; color: #D7DAE0; }
+.ormes-landing .nav .actions a.link { text-decoration: none; }
+.ormes-landing .nav .actions a.link:hover { color: #fff; }
+.ormes-landing .logo { display: flex; align-items: center; gap: 10px; color: #F3F4F6; text-decoration: none; font-weight: 600; letter-spacing: .18em; font-size: 15px; }
+.ormes-landing .logo i { width: 18px; height: 18px; border: 1.5px solid #F3F4F6; border-radius: 4px; display: grid; place-items: center; }
+.ormes-landing .logo i::after { content: ""; width: 6px; height: 6px; background: #F3F4F6; border-radius: 1px; }
+.ormes-landing .nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--muted-dark); }
+.ormes-landing .nav ul a { text-decoration: none; }
+.ormes-landing .nav ul a:hover { color: #fff; }
+.ormes-landing .nav .btn { height: 42px; padding: 0 20px; font-size: 15px; background: var(--accent); color: #fff; }
+.ormes-landing .nav .btn:hover { background: #5577F5; }
+@media (max-width: 760px) { .ormes-landing .nav ul, .ormes-landing .nav .actions a.link { display: none; } }
+
+/* 1. hero: showcase, 100vh, card fading into the background */
+.ormes-landing .hero { padding-block: calc(72px + clamp(36px, 7vh, 80px)) 0; text-align: center; overflow: hidden; }
+.ormes-landing .hero h1 { font-size: clamp(36px, 4.6vw, 66px); line-height: 1.04; letter-spacing: -0.035em; max-width: 16ch; margin: 0 auto; }
+.ormes-landing .hero .lede { margin: 22px auto 0; max-width: 46ch; color: var(--muted-dark); font-size: clamp(16px, 1.35vw, 19px); line-height: 1.6; }
+.ormes-landing .hero .ctas { display: flex; gap: 14px; justify-content: center; margin-top: 36px; flex-wrap: wrap; }
+.ormes-landing .hero .stage-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.ormes-landing .stage { position: relative; margin: clamp(32px, 6vh, 64px) auto 0; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; }
+.ormes-landing .stage .card { position: absolute; inset: 0; border-radius: 24px 24px 0 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
+.ormes-landing .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ormes-landing .chip { position: absolute; top: 18px; right: 18px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .02em; padding: 5px 10px; border-radius: 999px; background: rgba(11,13,18,.72); color: #8BE0B4; border: 1px solid rgba(139,224,180,.25); }
+
+/* 2. problem: statement, dark, one number */
+.ormes-landing .problem { padding-top: clamp(48px, 9vh, 96px); }
+.ormes-landing .problem .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: end; }
+.ormes-landing .big { font-size: clamp(96px, 16vw, 200px); line-height: .85; letter-spacing: -0.06em; font-weight: 500; font-variant-numeric: tabular-nums; }
+.ormes-landing .big small { display: block; font-size: clamp(18px, 1.7vw, 22px); letter-spacing: -0.01em; color: var(--muted-dark); margin-top: 20px; line-height: 1.35; }
+.ormes-landing .problem .say { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.25; letter-spacing: -0.015em; }
+.ormes-landing .problem .say span { color: var(--muted-dark); }
+.ormes-landing .foot { font-size: 13px; color: var(--muted-dark); margin-top: 28px; }
+@media (max-width: 760px) { .ormes-landing .problem .grid { grid-template-columns: 1fr; align-items: start; } }
+
+/* 3. product: showcase, white */
+.ormes-landing .product .head { max-width: 640px; }
+.ormes-landing .panel { margin-top: clamp(32px, 5vh, 48px); display: grid; grid-template-columns: 1.35fr 1fr; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+.ormes-landing .panel .media { position: relative; background: #0B0D12; aspect-ratio: 16 / 9; min-width: 0; }
+.ormes-landing .panel video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ormes-landing .timeline { position: absolute; left: 16px; right: 16px; bottom: 14px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.22); overflow: hidden; }
+.ormes-landing .timeline b { position: absolute; inset: 0 0 0 0; background: rgba(240,180,80,.9); }
+.ormes-landing .timeline .head-pos { position: absolute; top: -3px; width: 2px; height: 10px; background: #fff; left: 0; }
+.ormes-landing .panel .read { padding: clamp(22px, 3vw, 32px); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.ormes-landing .label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.ormes-landing .decision { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); width: fit-content; }
+.ormes-landing .decision::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #E0A33B; }
+.ormes-landing .reason { font-size: 18px; line-height: 1.4; }
+.ormes-landing .when { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.ormes-landing .hint { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 15px; }
+.ormes-landing .hint strong { color: var(--text); font-weight: 500; }
+.ormes-landing .panel .note { font-size: 13px; color: var(--muted); margin-top: auto; }
+@media (max-width: 860px) { .ormes-landing .panel { grid-template-columns: 1fr; } }
+
+/* 4. numbers: statement */
+.ormes-landing .numbers .line { font-size: clamp(30px, 4.6vw, 56px); line-height: 1.12; letter-spacing: -0.03em; max-width: 20ch; }
+.ormes-landing .numbers .line em { font-style: normal; color: var(--muted); }
+.ormes-landing .split { display: flex; gap: clamp(24px, 5vw, 72px); margin-top: clamp(32px, 5vh, 56px); flex-wrap: wrap; }
+.ormes-landing .split div { display: flex; flex-direction: column; gap: 4px; }
+.ormes-landing .split strong { font-size: clamp(26px, 3vw, 36px); font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ormes-landing .split span { font-size: 14px; color: var(--muted); }
+
+/* 5. checks: detail, typographic rows */
+.ormes-landing .rows { margin-top: clamp(28px, 4vh, 44px); display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 6vw, 80px); }
+.ormes-landing .row { display: grid; grid-template-columns: 180px 1fr; gap: 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: baseline; }
+.ormes-landing .row h3 { font-size: 17px; }
+.ormes-landing .row p { color: var(--muted); font-size: 15px; }
+@media (max-width: 860px) { .ormes-landing .rows { grid-template-columns: 1fr; } .ormes-landing .row { grid-template-columns: 1fr; gap: 4px; padding-block: 14px; } }
+
+/* 6. why: statement, two quotes */
+.ormes-landing .quotes { margin-top: clamp(32px, 5vh, 52px); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 56px); }
+.ormes-landing .q .who { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.ormes-landing .q blockquote { margin: 12px 0 0; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.25; letter-spacing: -0.015em; }
+.ormes-landing .q.before blockquote { color: #9AA1AE; }
+.ormes-landing .q .after-hint { margin-top: 12px; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .ormes-landing .quotes { grid-template-columns: 1fr; } }
+
+/* 7. privacy + 8. pilot: detail */
+.ormes-landing .facts { margin-top: clamp(24px, 4vh, 40px); display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 4vw, 48px); }
+.ormes-landing .facts div { border-top: 1px solid var(--text); padding-top: 14px; }
+.ormes-landing .facts h3 { font-size: 17px; }
+.ormes-landing .facts p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.ormes-landing .textlink { display: inline-block; margin-top: 28px; color: var(--text); font-weight: 500; text-decoration: none; font-size: 15px; }
+.ormes-landing .textlink:hover { text-decoration: underline; }
+@media (max-width: 760px) { .ormes-landing .facts { grid-template-columns: 1fr; } }
+.ormes-landing .steps { margin-top: clamp(24px, 4vh, 40px); display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 3vw, 36px); counter-reset: s; }
+.ormes-landing .steps div { counter-increment: s; }
+.ormes-landing .steps div::before { content: counter(s); font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: block; margin-bottom: 10px; }
+.ormes-landing .steps h3 { font-size: 17px; }
+.ormes-landing .steps p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.ormes-landing .criteria { margin-top: 36px; display: flex; gap: 12px 32px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 15px; }
+.ormes-landing .criteria .btn { margin-left: auto; }
+@media (max-width: 860px) { .ormes-landing .steps { grid-template-columns: 1fr 1fr; } .ormes-landing .criteria .btn { margin-left: 0; } }
+
+/* 9. faq: detail */
+.ormes-landing .faq { display: grid; grid-template-columns: 1fr 1.6fr; gap: clamp(24px, 5vw, 72px); }
+.ormes-landing details { border-top: 1px solid var(--rule); }
+.ormes-landing details:last-child { border-bottom: 1px solid var(--rule); }
+.ormes-landing summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; font-size: 17px; }
+.ormes-landing summary::-webkit-details-marker { display: none; }
+.ormes-landing summary::after { content: "+"; color: var(--muted); font-size: 20px; line-height: 1; }
+.ormes-landing details[open] summary::after { content: "–"; }
+.ormes-landing summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ormes-landing details p { color: var(--muted); padding-bottom: 18px; max-width: 60ch; font-size: 15px; }
+@media (max-width: 760px) { .ormes-landing .faq { grid-template-columns: 1fr; } }
+
+/* 10. developers + cta + footer: dark close */
+.ormes-landing .devs .grid { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+.ormes-landing .devs ol { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 16px; }
+.ormes-landing .devs li span { display: block; color: var(--muted-dark); font-size: 15px; }
+.ormes-landing .code { background: var(--ink-2); border: 1px solid var(--rule-dark); border-radius: 14px; overflow-x: auto; min-width: 0; }
+.ormes-landing .code .bar { font-family: var(--font-mono); font-size: 12px; color: var(--muted-dark); padding: 12px 18px; border-bottom: 1px solid var(--rule-dark); }
+.ormes-landing .code pre { margin: 0; padding: 18px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.75; color: #D7DAE0; }
+.ormes-landing .code .k { color: #8DA6FF; } .ormes-landing .code .s { color: #A7D3B5; } .ormes-landing .code .c { color: #6C7383; }
+@media (max-width: 860px) { .ormes-landing .devs .grid { grid-template-columns: 1fr; } }
+.ormes-landing .cta { text-align: center; border-top: 1px solid var(--rule-dark); }
+.ormes-landing .cta h2 { font-size: clamp(34px, 5vw, 60px); line-height: 1.05; letter-spacing: -0.03em; max-width: 16ch; margin: 0 auto; }
+.ormes-landing .cta .sub { margin: 18px auto 0; }
+.ormes-landing .cta .ctas { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+.ormes-landing footer { border-top: 1px solid var(--rule-dark); padding-block: 28px; font-size: 14px; color: var(--muted-dark); }
+.ormes-landing footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ormes-landing footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.ormes-landing footer a { text-decoration: none; } .ormes-landing footer a:hover { color: #fff; }
+
+@media (prefers-reduced-motion: reduce) { .ormes-landing html { scroll-behavior: auto; } .ormes-landing * { transition: none !important; } }

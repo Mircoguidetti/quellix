@@ -42,6 +42,12 @@ HANDS_URL = ("https://storage.googleapis.com/mediapipe-models/hand_landmarker/ha
              "float16/1/hand_landmarker.task")
 HANDS_SHA256 = "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
 HANDS_PATH = "/models/hand_landmarker.task"
+# MediaPipe selfie multiclass segmenter (Apache-2.0) for the viewpoint check; same URL / sha256
+# as checks.viewpoint (a test keeps them equal).
+SEGMENTER_URL = ("https://storage.googleapis.com/mediapipe-models/image_segmenter/"
+                 "selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite")
+SEGMENTER_SHA256 = "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0"
+SEGMENTER_PATH = "/models/selfie_multiclass_256x256.tflite"
 
 
 def compute_usd_per_second() -> float:
@@ -140,9 +146,12 @@ if modal is not None:
             f'echo "{TEXT_SHA256}  {TEXT_PATH}" | sha256sum -c -',
             f"curl -fsSL -o {HANDS_PATH} {HANDS_URL}",
             f'echo "{HANDS_SHA256}  {HANDS_PATH}" | sha256sum -c -',
+            f"curl -fsSL -o {SEGMENTER_PATH} {SEGMENTER_URL}",
+            f'echo "{SEGMENTER_SHA256}  {SEGMENTER_PATH}" | sha256sum -c -',
         )
         .env({"QUELLIX_CONTRACTS_DIR": "/packages/contracts", "QUELLIX_YUNET_PATH": YUNET_PATH,
               "QUELLIX_TEXT_MODEL_PATH": TEXT_PATH, "QUELLIX_HANDS_MODEL_PATH": HANDS_PATH,
+              "QUELLIX_SEGMENTER_PATH": SEGMENTER_PATH,
               **({"QUELLIX_USE_DINOV2": "1"} if GPU else {})})
     )
     # Local files are added only while building / deploying from the repo; inside the container

@@ -96,7 +96,7 @@ export function LabChart() {
           ))}
         </svg>
       </div>
-      <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline text-[13px] sm:grid-cols-4">
+      <dl className="mt-4 hidden grid-cols-2 gap-px overflow-hidden rounded-xl border border-hairline bg-hairline text-[13px] sm:grid sm:grid-cols-4">
         {[
           ["Version", DATA[h].v],
           ["Reject precision", DATA[h].precision.toFixed(2)],

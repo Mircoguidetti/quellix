@@ -88,3 +88,11 @@ def test_hands_weights_pin_matches_the_hands_package():
     assert modal_app.HANDS_URL == weights.MEDIAPIPE_URL
     assert modal_app.HANDS_SHA256 == weights.MEDIAPIPE_SHA256
     assert len(weights.MEDIAPIPE_SHA256) == 64
+
+
+def test_viewpoint_segmenter_pin_matches_the_modal_image():
+    from quellix_worker.checks import viewpoint
+
+    assert modal_app.SEGMENTER_URL == viewpoint.SEGMENTER_URL
+    assert modal_app.SEGMENTER_SHA256 == viewpoint.SEGMENTER_SHA256
+    assert "/1/" in viewpoint.SEGMENTER_URL  # a pinned version, never "latest"

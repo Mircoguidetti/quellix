@@ -47,5 +47,12 @@ def validate_decision(decision: dict[str, Any]) -> None:
     _validator("decision.schema.json").validate(decision)
 
 
+def known_checks() -> frozenset[str]:
+    """Check names the loaded decision contract accepts (a new check runs only once its contract
+    change is applied, so the worker never emits a decision the contract rejects)."""
+    schema = json.loads((CONTRACTS_DIR / "decision.schema.json").read_text())
+    return frozenset(schema["$defs"]["checkName"]["enum"])
+
+
 def load_example(name: str) -> dict[str, Any]:
     return json.loads((CONTRACTS_DIR / "examples" / name).read_text())

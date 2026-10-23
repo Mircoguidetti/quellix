@@ -12,12 +12,14 @@ import {
   Keyboard,
   ListChecks,
   Network,
+  PlayCircle,
   ScanFace,
   Scale,
   UserRoundSearch,
 } from "lucide-react";
-import { ButtonLink, H2, ICON, Lead, PageIntro, Section, Soon } from "../primitives";
+import { ButtonLink, Divider, H2, ICON, Lead, PageIntro, Section, Soon } from "../primitives";
 import { ContestFlow } from "./contest-flow";
+import { ThreeOutcomes, TodayVsOrmes } from "./washing-up-demo";
 import { DecisionDiagram } from "./decision-diagram";
 import { ReviewConsole } from "./review-console";
 import { LabChart } from "./lab-chart";
@@ -79,6 +81,7 @@ const SHORTCUTS: [string[], string][] = [
 
 const NAV = [
   { href: "#decision", label: "Decision", icon: Network },
+  { href: "#demo", label: "Demo", icon: PlayCircle },
   { href: "#checks", label: "Checks", icon: ListChecks },
   { href: "#rubrics", label: "Rubrics", icon: GitBranch },
   { href: "#review", label: "Review", icon: Keyboard },
@@ -101,7 +104,7 @@ export function ProductPage() {
         <div className="mt-10">
           <DecisionDiagram />
         </div>
-        <ol className="mt-8 grid gap-x-8 gap-y-4 md:grid-cols-3">
+        <ol className="mt-8 hidden gap-x-8 gap-y-4 sm:grid md:grid-cols-3">
           {RULE.map(({ icon: Icon, color, label, text }) => (
             <li key={label} className="flex gap-3 text-[15.5px] leading-relaxed">
               <Icon {...ICON} className={`mt-1 size-[18px] shrink-0 ${color}`} />
@@ -113,11 +116,33 @@ export function ProductPage() {
         </ol>
       </Section>
 
+      <Divider />
+
+      <Section id="demo">
+        <H2>One video, three answers.</H2>
+        <Lead>A real washing-up video and two copies with a defect added. Decisions and reasons are Ormes’s output, unedited.</Lead>
+        <div className="mt-8 sm:mt-10">
+          <ThreeOutcomes />
+        </div>
+      </Section>
+
+      <Divider />
+
+      <Section id="compare">
+        <H2>The same rejection, today and with Ormes.</H2>
+        <Lead>Today a person watches it and the contributor hears “rejected” the next day. With Ormes: the reason and the moment, in seconds.</Lead>
+        <div className="mt-8 sm:mt-10">
+          <TodayVsOrmes />
+        </div>
+      </Section>
+
+      <Divider />
+
       <Section id="checks">
         <H2>Every check, what it measures, what you set.</H2>
         <Lead>Each check can be critical (a failure rejects), not critical (a failure goes to review), or turned off. Defaults below.</Lead>
-        <div className="mt-10 overflow-hidden rounded-[20px] border border-hairline">
-          <div role="table" aria-label="Checks" className="text-[14.5px]">
+        <div className="-mx-4 mt-8 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:mx-0 md:mt-10 md:overflow-hidden md:rounded-[20px] md:border md:border-hairline md:px-0 md:pb-0">
+          <div role="table" aria-label="Checks" className="flex snap-x snap-mandatory gap-3 text-[14.5px] md:block">
             <div role="row" className="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] gap-6 bg-panel px-6 py-3 font-mono text-[11.5px] uppercase tracking-[0.1em] text-muted-foreground md:grid">
               <span role="columnheader">Check</span>
               <span role="columnheader">Measures</span>
@@ -128,7 +153,7 @@ export function ProductPage() {
               <div
                 role="row"
                 key={name}
-                className="grid gap-2 border-t border-hairline px-5 py-5 transition-colors first:border-t-0 hover:bg-foreground/[0.02] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-6 md:first:border-t"
+                className="grid w-[80%] shrink-0 snap-start content-start gap-2 rounded-2xl border border-hairline bg-panel p-4 md:w-auto md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:gap-6 md:rounded-none md:border-0 md:border-t md:bg-transparent md:px-6 md:py-3.5"
               >
                 <span role="rowheader" className="flex items-center gap-2.5 font-medium">
                   <span className="inline-flex size-8 items-center justify-center rounded-lg bg-foreground/[0.06]">
@@ -154,22 +179,26 @@ export function ProductPage() {
         </div>
       </Section>
 
+      <Divider />
+
       <Section id="rubrics">
         <H2>Versioned, and previewed before you save.</H2>
-        <Lead>Change a threshold and see how recent decisions would change before anything goes live. Each task has its own rubric; each decision records the version it used.</Lead>
+        <Lead>Draft it from the lab’s spec or a ready one, change a threshold, and see which recent decisions would change before you save.</Lead>
         <div className="mt-10">
           <RubricEditor />
         </div>
       </Section>
 
+      <Divider />
+
       <Section id="review">
         <H2>Only doubtful videos, decided from the keyboard.</H2>
-        <Lead>Each video in review arrives with its reasons pinned to the timeline. Reviewers jump between flagged moments and decide with one key.</Lead>
-        <div className="mt-10 flex flex-col gap-8">
+        <Lead>Each video arrives with its reasons pinned to the timeline. Reviewers jump between flagged moments and decide with one key.</Lead>
+        <div className="mt-8 flex flex-col gap-5 sm:mt-10 sm:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_230px] lg:items-center lg:gap-10">
           <ReviewConsole />
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Review shortcuts">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:gap-x-8 lg:grid-cols-1 lg:gap-y-4" aria-label="Review shortcuts">
             {SHORTCUTS.map(([keys, label]) => (
-              <div key={label} className="flex items-start gap-3">
+              <div key={label} className="flex items-start gap-2 sm:gap-3">
                 <dt className="flex shrink-0 gap-1">
                   {keys.map((k) => (
                     <kbd key={k} className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-foreground/15 bg-foreground/[0.06] px-1.5 font-mono text-[12.5px] text-foreground">
@@ -177,39 +206,36 @@ export function ProductPage() {
                     </kbd>
                   ))}
                 </dt>
-                <dd className="pt-1 text-[14px] leading-snug text-muted-foreground">{label}</dd>
+                <dd className="pt-1 text-[13px] leading-snug text-muted-foreground sm:text-[14px]">{label}</dd>
               </div>
             ))}
           </dl>
         </div>
       </Section>
 
+      <Divider />
+
       <Section id="contests">
         <H2>A person can always contest.</H2>
-        <Lead>A contributor who disagrees with a rejection opens a contest from a link. A person on your team upholds or overturns it, with a note.</Lead>
+        <Lead>A contributor who disagrees opens a contest from a link. A person on your team upholds or overturns it, with a note.</Lead>
         <div className="mt-10">
           <ContestFlow />
         </div>
       </Section>
 
+      <Divider />
+
       <Section id="lab">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <div className="grid gap-6 sm:gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
             <H2>Measured against your lab, not against itself.</H2>
             <Lead>
-              Send the lab’s accept or reject for delivered videos. Ormes reports precision and recall on rejections against your reject rate, per rubric version.
+              Send the lab’s verdicts on delivered videos. Ormes reports precision and recall on rejections against your reject rate.
             </Lead>
-            <div className="mt-8 flex gap-3.5 rounded-2xl border border-dashed border-hairline p-5">
-              <FileDown {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-              <div>
-                <h3 className="flex items-center gap-2 text-[16px] font-medium">
-                  Audit export <Soon />
-                </h3>
-                <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
-                  Per batch and rubric version: pass rate per check, rejection codes, reviewer overrides. CSV and JSON, for the lab.
-                </p>
-              </div>
-            </div>
+            <p className="mt-4 flex flex-wrap items-center gap-2 text-[14px] text-muted-foreground sm:mt-6">
+              <FileDown {...ICON} className="size-4 shrink-0" />
+              Audit export per batch and rubric version, CSV and JSON <Soon />
+            </p>
           </div>
           <LabChart />
         </div>

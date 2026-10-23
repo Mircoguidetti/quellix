@@ -83,13 +83,19 @@ class QuellixHandsAdapter:
         self.name = str(model.model_id)
 
     def predict(self, video: DecodedVideo) -> CheckOutput:
+        return self.predict_with_frames(video)[0]
+
+    def predict_with_frames(self, video: DecodedVideo) -> tuple[CheckOutput, list[Any] | None]:
+        """The check output and the per-frame hand states (landmarks), which the viewpoint
+        check reuses so the hands model runs once per video."""
         frames = list(video.frames)
+        per_frame = None
         if hasattr(self._model, "frames"):
             m, per_frame, segments = self._measure_with_frames(frames)
             m.update(not_full_segments(per_frame, segments, 1.0 / video.sample_fps))
         else:  # a model that only offers measure_video(): ratios without exact intervals
             m = self._model.measure_video(video)
-        return CheckOutput(measurements=for_rubric(m), model=self.name)
+        return CheckOutput(measurements=for_rubric(m), model=self.name), per_frame
 
     def _measure_with_frames(self, frames: list[Any]) -> tuple[dict[str, Any], list[Any], Any]:
         """What ``HandsModel.measure`` does, but keeping the per-frame states: the exact
@@ -134,7 +140,16 @@ def configured_model() -> HandsModel | None:
 
 
 def run(video: DecodedVideo, model: HandsModel | None = None) -> CheckOutput:
+    return run_with_frames(video, model)[0]
+
+
+def run_with_frames(video: DecodedVideo,
+                    model: HandsModel | None = None) -> tuple[CheckOutput, list[Any] | None]:
+    """``run`` plus the per-frame hand states when the model offers them (else None)."""
     try:
-        return (model or configured_model() or PlaceholderHandsModel()).predict(video)
+        m = model or configured_model() or PlaceholderHandsModel()
+        if hasattr(m, "predict_with_frames"):
+            return m.predict_with_frames(video)
+        return m.predict(video), None
     except Exception as exc:  # a model crash must become a review, not a failed job
-        return CheckOutput(error=f"hands model failed: {exc}")
+        return CheckOutput(error=f"hands model failed: {exc}"), None

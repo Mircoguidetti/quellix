@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { FileInput, GitCommitHorizontal, Library, Save } from "lucide-react";
+import { GitCommitHorizontal, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ICON } from "../primitives";
 
@@ -31,7 +31,7 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 
 function Row({ children, label, hint }: { children: React.ReactNode; label: React.ReactNode; hint?: string }) {
   return (
-    <div className="flex flex-col gap-2 border-t border-[#eef0f3] py-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-[#eef0f3] py-3.5 first:border-t-0 sm:py-4">
       <div>
         <p className="text-[14px] font-medium">{label}</p>
         {hint ? <p className="text-[12.5px] text-[#5c626b]">{hint}</p> : null}
@@ -53,7 +53,10 @@ const VERSIONS = [
   { v: 3, date: "Oct 9", text: "Screens: review → ignore" },
 ];
 
-/** Product §3: a light rubric editor next to its version history. The hands slider is live. */
+/**
+ * Product §Rubrics: a light rubric editor next to its version history. The hands slider is live.
+ * Below `lg` the two panels sit in a row you swipe (issue #85: one screen per section).
+ */
 export function RubricEditor() {
   const id = useId();
   const [min, setMin] = useState(82);
@@ -64,15 +67,15 @@ export function RubricEditor() {
   const dirty = min !== SAVED_MIN || !taskCritical || framingCritical || privacy.some((v, i) => v !== PRIVACY[i].value);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-      <div className="overflow-hidden rounded-[22px] border border-hairline bg-white text-[#0b0c0e] shadow-[0_20px_60px_-30px_rgba(11,13,18,0.25)]">
+    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-[1.35fr_1fr] lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0">
+      <div className="w-[88%] shrink-0 snap-start overflow-hidden rounded-[22px] lg:w-auto border border-hairline bg-white text-[#0b0c0e] shadow-[0_20px_60px_-30px_rgba(11,13,18,0.25)]">
         <div className="flex items-center justify-between border-b border-[#e6e8eb] px-5 py-3.5">
           <p className="font-mono text-[12.5px] text-[#5c626b]">rubric · load the dishwasher · v3</p>
           <span className="rounded-full bg-[#f4f5f7] px-2 py-0.5 text-[12px] text-[#5c626b]">Example</span>
         </div>
         <div className="px-5">
           <Row label={<label htmlFor={`${id}-hands`}>Hands, while handling objects</label>} hint="Both hands, share of handling time">
-            <div className="flex items-center gap-3 sm:w-[260px]">
+            <div className="flex w-full items-center gap-3 sm:w-[260px]">
               <input
                 id={`${id}-hands`}
                 type="range"
@@ -118,11 +121,11 @@ export function RubricEditor() {
         </div>
       </div>
 
-      <div className="flex flex-col rounded-[22px] border border-hairline bg-panel p-5 sm:p-6">
-        <p className="mb-5 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
+      <div className="flex w-[88%] shrink-0 snap-start flex-col rounded-[22px] border border-hairline bg-panel p-5 sm:p-6 lg:w-auto">
+        <p className="mb-4 inline-flex items-center gap-2 text-[14px] text-muted-foreground">
           <GitCommitHorizontal {...ICON} className="size-4" /> Versions
         </p>
-        <ol className="relative flex flex-col gap-5 pl-7">
+        <ol className="relative flex flex-col gap-4 pl-7">
           <span aria-hidden className="absolute bottom-3 left-[7px] top-2 w-px bg-hairline" />
           {VERSIONS.map((v) => (
             <li key={v.v} className="relative">
@@ -135,7 +138,7 @@ export function RubricEditor() {
             </li>
           ))}
           <li className="relative">
-            <span aria-hidden className={cn("absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel ring-1", dirty ? "bg-brand ring-brand motion-safe:animate-pulse" : "bg-panel ring-foreground/20")} />
+            <span aria-hidden className={cn("absolute -left-7 top-1 size-[15px] rounded-full border-2 border-panel ring-1", dirty ? "bg-brand ring-brand" : "bg-panel ring-foreground/20")} />
             <p className="flex items-baseline gap-2">
               <span className="font-mono text-[13px] text-brand">v4</span>
               <span className="font-mono text-[11.5px] text-muted-foreground">draft</span>
@@ -151,32 +154,12 @@ export function RubricEditor() {
             </p>
           </li>
         </ol>
-        <span className="mt-6 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-foreground px-4 text-[14px] font-medium text-background">
+        <span className="mt-5 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-foreground px-4 text-[14px] font-medium text-background">
           <Save {...ICON} className="size-4" /> Save as v4
         </span>
         <p className="mt-3 text-[12.5px] text-muted-foreground">Old decisions keep the version they used. Move the hands slider to preview the effect.</p>
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
-          <FileInput {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          <div>
-            <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              From the lab’s spec
-            </h3>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Paste the lab’s guidelines or drop a PDF: Ormes drafts the rubric, each value tied to the line it came from.</p>
-          </div>
-        </li>
-        <li className="flex gap-3.5 rounded-2xl border border-hairline bg-panel p-5">
-          <Library {...ICON} className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-          <div>
-            <h3 className="flex items-center gap-2 text-[16px] font-medium">
-              A library of specs
-            </h3>
-            <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">Ready rubrics for common task families: kitchen, laundry, factory assembly.</p>
-          </div>
-        </li>
-      </ul>
     </div>
   );
 }

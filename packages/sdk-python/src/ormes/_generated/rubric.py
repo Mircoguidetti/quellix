@@ -111,6 +111,21 @@ class Originality(BaseModel):
     on_duplicate: OnDuplicate | None = "reject"
 
 
+class Required(Enum):
+    first_person = "first_person"
+    third_person = "third_person"
+    any = "any"
+
+
+class Viewpoint(BaseModel):
+    model_config = ConfigDict(
+        extra="allow",
+    )
+    enabled: bool | None = True
+    required: Required | None = "first_person"
+    critical: bool | None = True
+
+
 class Checks(BaseModel):
     model_config = ConfigDict(
         extra="allow",
@@ -121,6 +136,7 @@ class Checks(BaseModel):
     technical: Technical | None = None
     privacy: Privacy | None = None
     originality: Originality | None = None
+    viewpoint: Viewpoint | None = None
 
 
 class Schema(BaseModel):

@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { CircleCheck, CircleX, Copy, Crosshair, Gauge, Hand, ListChecks, Play, ScanFace, UserRoundSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ICON } from "../primitives";
 import { ClipPlayer, useClips } from "../clip-player";
 import { SITE_CLIPS } from "../clips";
-import { usePlayback } from "../use-playback";
 
 /**
  * Product's orchestrated moment: checks on the left, the reasons they can raise in the middle, the
- * three outcomes on the right. Hover, focus or tap a check to light its path; on its own the
- * diagram plays real clips through it (SITE_CLIPS.decision), each with the worker's output as it is.
+ * three outcomes on the right. Hover, focus or tap a check to light its path, or pick one of the real
+ * clips (SITE_CLIPS.decision) to see its path with the worker's output as it is. Static at rest
+ * (issue #85): it starts on the reject.
  */
 
 type Outcome = "reject" | "review" | "accept";
@@ -98,10 +98,9 @@ export function DecisionDiagram() {
   const nodeRefs = useRef(new Map<string, HTMLElement>());
   const [paths, setPaths] = useState<Record<string, string>>({});
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [example, setExample] = useState(0);
+  const [example, setExample] = useState(SITE_CLIPS.decision.indexOf("clip-01-dark"));
   const [hovered, setHovered] = useState<CheckKey | null>(null);
   const [pinned, setPinned] = useState<CheckKey | null>(null);
-  const playing = usePlayback(rootRef);
 
   const register = useCallback(
     (id: string) => (el: HTMLElement | null) => {
@@ -140,11 +139,6 @@ export function DecisionDiagram() {
   }, []);
 
   const interacting = hovered ?? pinned;
-  useEffect(() => {
-    if (!playing || interacting) return;
-    const t = window.setInterval(() => setExample((i) => (i + 1) % SITE_CLIPS.decision.length), 3600);
-    return () => clearInterval(t);
-  }, [playing, interacting]);
 
   const clips = useClips(SITE_CLIPS.decision);
   const exId = SITE_CLIPS.decision[example];
