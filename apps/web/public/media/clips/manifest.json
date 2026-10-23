@@ -6,7 +6,7 @@
       "license": "Pexels License"
     }
   ],
-  "total_bytes": 5521828,
+  "total_bytes": 6407914,
   "clips": [
     {
       "id": "clip-01",
@@ -19,7 +19,7 @@
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
-      "decision": "review",
+      "decision": "accept",
       "mp4": "clip-01.mp4",
       "webm": "clip-01.webm",
       "poster": "clip-01.jpg",
@@ -31,7 +31,7 @@
         "mp4": 597212,
         "webm": 337383,
         "poster": 71062,
-        "json": 13026
+        "json": 13128
       },
       "crf": {
         "mp4": 35,
@@ -54,12 +54,12 @@
       "variant_kind": "mobile_crop",
       "crop": {
         "aspect": "4:5",
-        "x0": 0.25,
+        "x0": 0.2475,
         "width_frac": 0.45,
         "moved": true,
         "centre_crop_keeps_hands": false,
         "keeps_hands": false,
-        "both_hands_whole_share": 0.029
+        "both_hands_whole_share": 0.324
       },
       "mp4": "clip-01-mobile.mp4",
       "webm": "clip-01-mobile.webm",
@@ -69,10 +69,10 @@
       "fps": 24.0,
       "duration_s": 8.46,
       "bytes": {
-        "mp4": 504756,
-        "webm": 357174,
-        "poster": 63922,
-        "json": 13001
+        "mp4": 505601,
+        "webm": 357632,
+        "poster": 63848,
+        "json": 13690
       },
       "crf": {
         "mp4": 35,
@@ -95,7 +95,7 @@
       "variant_kind": "hand",
       "defect": {
         "kind": "hand",
-        "recipe": "slide: the left hand leaves through the left edge",
+        "recipe": "slide: the right hand leaves through the right edge",
         "interval_s": [
           2.73,
           5.73
@@ -103,6 +103,11 @@
         "tried": [
           {
             "recipe": "slide: the left hand leaves through the left edge",
+            "decision": "accept",
+            "rank": 0
+          },
+          {
+            "recipe": "slide: the right hand leaves through the right edge",
             "decision": "review",
             "rank": 3
           }
@@ -116,10 +121,10 @@
       "fps": 24.0,
       "duration_s": 8.46,
       "bytes": {
-        "mp4": 385369,
-        "webm": 267186,
-        "poster": 53089,
-        "json": 13480
+        "mp4": 431002,
+        "webm": 312049,
+        "poster": 54653,
+        "json": 13781
       },
       "crf": {
         "mp4": 38,
@@ -176,7 +181,7 @@
         "mp4": 466277,
         "webm": 302153,
         "poster": 42527,
-        "json": 13593
+        "json": 13545
       },
       "crf": {
         "mp4": 35,
@@ -194,7 +199,7 @@
       "author": "unknown (see the Pexels page)",
       "author_url": "",
       "orientation": "landscape",
-      "decision": "review",
+      "decision": "accept",
       "mp4": "clip-02.mp4",
       "webm": "clip-02.webm",
       "poster": "clip-02.jpg",
@@ -206,7 +211,7 @@
         "mp4": 535664,
         "webm": 418549,
         "poster": 62383,
-        "json": 14257
+        "json": 14240
       },
       "crf": {
         "mp4": 32,
@@ -236,11 +241,41 @@
         "mp4": 555824,
         "webm": 348151,
         "poster": 70197,
-        "json": 15593
+        "json": 15241
       },
       "crf": {
         "mp4": 30,
         "webm": 48
+      }
+    },
+    {
+      "id": "clip-04",
+      "source_clip": "pexels_7658012",
+      "factory": "putting-ground-coffee-in-a-filter",
+      "dataset": "Pexels",
+      "license": "Pexels License",
+      "task": "Putting ground coffee in a filter",
+      "page_url": "https://www.pexels.com/video/putting-ground-coffee-in-a-filter-7658012/",
+      "author": "unknown (see the Pexels page)",
+      "author_url": "",
+      "orientation": "landscape",
+      "decision": "review",
+      "mp4": "clip-04.mp4",
+      "webm": "clip-04.webm",
+      "poster": "clip-04.jpg",
+      "width": 1280,
+      "height": 720,
+      "fps": 25.0,
+      "duration_s": 8.24,
+      "bytes": {
+        "mp4": 532911,
+        "webm": 203369,
+        "poster": 43963,
+        "json": 11879
+      },
+      "crf": {
+        "mp4": 24,
+        "webm": 36
       }
     }
   ]
