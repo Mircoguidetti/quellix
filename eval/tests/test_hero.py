@@ -71,7 +71,9 @@ def test_confident_faces_counts_frames_with_a_sure_face():
 
 
 def test_viewpoint_probe_degrades_to_not_measured(tmp_path):
-    assert hero.viewpoint_probe(tmp_path / "x.mp4", src="")["viewpoint"] == "not measured"
+    fail = SimpleNamespace(returncode=1, stdout="", stderr="no such file")
+    assert hero.viewpoint_probe(tmp_path / "x.mp4", src="",
+                                run=lambda c, **k: fail)["viewpoint"] == "not measured"
     ok = SimpleNamespace(returncode=0, stdout='log\n{"viewpoint": "first_person", '
                          '"first_person_ratio": 0.9}\n', stderr="")
     calls = []
@@ -166,3 +168,18 @@ def test_founder_picks_are_the_two_pexels_videos():
                                                               (11142458, "portrait")]
     assert picks[0].page == ("https://www.pexels.com/video/"
                              "a-person-kneading-a-dough-on-the-table-15157114/")
+
+
+def test_near_misses_are_hands_only_drops_between_30_and_60():
+    def rec(i, **m):
+        hit = hero.Hit("pixabay", i, f"p{i}", "u", "t", 20, 1920, 1080, "u")
+        return hero.record_for(hit, hero.Measured(**m), f"pixabay_{i}.jpg", "L")
+
+    recs = [rec(1, both_hands_whole=0.5), rec(2, both_hands_whole=0.35),
+            rec(3, both_hands_whole=0.2), rec(4, both_hands_whole=0.55, confident_faces=5),
+            rec(5, both_hands_whole=0.45, viewpoint="third_person"),
+            rec(6, both_hands_whole=0.9)]
+    assert [r.clip_id for r in hero.near_misses(recs, 5)] == ["pixabay_1", "pixabay_2"]
+    assert hero.near_misses(recs, 0) == []
+    text = hero.comment(recs, hero.survivors(recs), "B", {}, hero.near_misses(recs, 5))
+    assert "Near misses (NOT passing" in text and "![pixabay_1](B/pixabay_1.jpg)" in text

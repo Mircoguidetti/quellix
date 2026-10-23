@@ -114,8 +114,7 @@ default 3) shared by the jobs (tasks 50%, hands 25%, synthetic 25%), checked bef
 on `agent/hero-candidates` or from the Actions tab) searches Pixabay (`PIXABAY_API_KEY`;
 landscape, 10-60 s, largest rendition >= 1920 px) and the founder's two Pexels picks, keeps
 clips with both hands fully visible >= 60%, no confident face (YuNet), blur <= 10% and a
-viewpoint of first_person / uncertain (#79 check, run from the `agent/viewpoint` code until
-PR #80 merges), writes 2x2 contact sheets to `reports/hero-candidates/`, one line per candidate
+viewpoint of first_person / uncertain (#79 check, merged in #80), writes 2x2 contact sheets to `reports/hero-candidates/`, one line per candidate
 to `test_sets/hero_candidates.jsonl`, and runs the Pexels picks through the site-clips pipeline
 (9 s window; landscape: the steadiest good window) with the worker's verdict on the delivered
 cut. No video is committed; the encoded cuts are an artifact.

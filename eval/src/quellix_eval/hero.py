@@ -37,6 +37,11 @@ QUERIES = (
     "cutting fruit top view", "arranging flowers", "making tea", "making tea pov",
     "rolling pasta", "pasta dough hands", "pov hands kitchen", "first person cooking",
     "overhead hands table", "top view hands wooden table",
+    # run 2 (run 1 found 1 survivor in 80: most hits show no two hands): hand-centred queries
+    "hands kneading", "hands cutting vegetables top view", "hands chopping board",
+    "baking hands", "barista hands", "chef hands plating", "hands preparing food",
+    "hands making bread", "hands rolling dough", "hands pouring coffee", "hands tea ceremony",
+    "hands folding cloth", "hands arranging flowers", "hands writing desk top view",
 )
 API = "https://pixabay.com/api/videos/"
 PIXABAY_LICENSE = "Pixabay Content License"
@@ -48,6 +53,8 @@ FACE_MIN_SCORE = 0.9          # a "confident" face
 FACE_MIN_FRAMES = 2           # ... seen in at least this many analysed frames
 KEEP_VIEWPOINTS = ("first_person", "uncertain", "not measured")
 MAX_SURVIVORS = 30
+NEAR_MISS_HANDS = 0.30        # shown when too few survive: everything passes but hands are 30-60%
+MIN_SHOWN = 20
 
 
 @dataclass(frozen=True)
@@ -68,7 +75,7 @@ class Hit:
         return f"{self.source}_{self.source_id}"
 
 
-def search_url(key: str, query: str, per_page: int = 20) -> str:
+def search_url(key: str, query: str, per_page: int = 50) -> str:
     q = urllib.parse.urlencode({"key": key, "q": query[:100], "video_type": "film",
                                 "min_width": MIN_WIDTH, "per_page": max(3, min(per_page, 200)),
                                 "safesearch": "true"})
@@ -104,7 +111,7 @@ def search(get: Callable[[str], bytes], key: str, queries: Sequence[str] = QUERI
     out: list[Hit] = []
     for q in queries:
         taken = 0
-        for hit in parse_hits(get(search_url(key, q)), q):
+        for hit in parse_hits(get(search_url(key, q, per_page=max(50, per_query * 4))), q):
             if hit.source_id in seen or taken >= per_query or len(out) >= limit:
                 continue
             seen.add(hit.source_id)
@@ -207,14 +214,14 @@ def _faces(cls: Any) -> Any:  # pragma: no cover
 
 def viewpoint_probe(path: Path, src: str | None = None,
                     run: Callable[..., Any] = subprocess.run) -> dict[str, Any]:
-    """Run the #79 viewpoint check on one file in a child process. `src` (or
-    $QUELLIX_VIEWPOINT_SRC) is the worker `src/` of a checkout that has it (PR #80 is not merged
-    yet); it goes first on PYTHONPATH. Any failure -> {"viewpoint": "not measured", "note": ...}."""
+    """Run the #79 viewpoint check on one file in a child process (the worker's own code, merged
+    in #80). `src` (or $QUELLIX_VIEWPOINT_SRC), when set, is another worker `src/` to put first on
+    PYTHONPATH. Any failure -> {"viewpoint": "not measured", "note": ...}."""
     src = src if src is not None else os.environ.get("QUELLIX_VIEWPOINT_SRC", "")
-    if not src:
-        return {"viewpoint": "not measured", "note": "viewpoint code not available"}
-    env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in (src, os.environ.get(
-        "PYTHONPATH", "")) if p)}
+    env = dict(os.environ)
+    if src:      # only to test unmerged worker code; the installed worker has it since #80
+        env["PYTHONPATH"] = os.pathsep.join(p for p in (src, os.environ.get("PYTHONPATH", ""))
+                                            if p)
     try:
         proc = run([sys.executable, "-m", "quellix_eval.hero", "viewpoint", str(path)],
                    capture_output=True, text=True, env=env, timeout=600)
@@ -347,6 +354,21 @@ def write_jsonl(records: Sequence[Record], path: Path) -> None:
     path.write_text("".join(json.dumps(asdict(r), ensure_ascii=False) + "\n" for r in records))
 
 
+def near_misses(records: Sequence[Record], n: int) -> list[Record]:
+    """Pixabay clips dropped only for hands between NEAR_MISS_HANDS and MIN_BOTH_HANDS (every
+    other filter passed), best first: shown, clearly marked, when too few clips survive."""
+    def only_hands(r: Record) -> bool:
+        m = r.measurements
+        return (r.result.startswith("dropped: both hands") and not m.get("error")
+                and (m.get("both_hands_whole") or 0.0) >= NEAR_MISS_HANDS
+                and m.get("confident_faces", 0) < FACE_MIN_FRAMES
+                and m.get("viewpoint", "not measured") in KEEP_VIEWPOINTS
+                and (m.get("blur_ratio") or 0.0) <= MAX_BLUR)
+
+    ok = [r for r in records if r.source == "pixabay" and only_hands(r)]
+    return sorted(ok, key=lambda r: -(r.measurements.get("both_hands_whole") or 0.0))[:max(0, n)]
+
+
 def survivors(records: Sequence[Record], n: int = MAX_SURVIVORS) -> list[Record]:
     """Pixabay candidates that passed every filter, best hands ratio first, at most n."""
     ok = [r for r in records if r.source == "pixabay" and r.result == "candidate"]
@@ -435,7 +457,7 @@ def site_clip(  # pragma: no cover - models, encoding
 
 
 def comment(records: Sequence[Record], top: Sequence[Record], image_base: str,
-            stats: dict[str, Any]) -> str:
+            stats: dict[str, Any], near: Sequence[Record] = ()) -> str:
     def img(name: str | None, alt: str) -> str:
         return f"![{alt}]({image_base.rstrip('/')}/{name})" if name else "(no sheet)"
 
@@ -479,6 +501,14 @@ def comment(records: Sequence[Record], top: Sequence[Record], image_base: str,
     for i, r in enumerate(top, 1):
         lines += [f"{i}. [{r.clip_id}]({r.page_url}) by {r.author or 'unknown'}, query "
                   f"\"{r.query}\"", "", img(r.sheet, r.clip_id), ""]
+    if near:
+        lines += ["### Near misses (NOT passing: both hands whole 30-60%, every other filter "
+                  "passed)", "", f"Shown because fewer than {MIN_SHOWN} clips passed. A hero "
+                  "from this list would need a window where both hands stay in frame.", ""]
+        for r in near:
+            lines += [f"- [{r.clip_id}]({r.page_url}) by {r.author or 'unknown'}, both hands "
+                      f"whole {_pct(r.measurements.get('both_hands_whole'))}", "",
+                      img(r.sheet, r.clip_id), ""]
     return "\n".join(lines) + "\n"
 
 
@@ -491,8 +521,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--jsonl", type=Path, default=Path("test_sets/hero_candidates.jsonl"))
     ap.add_argument("--final-dir", type=Path, default=Path("out/hero/final"))
     ap.add_argument("--image-base", default="")
-    ap.add_argument("--per-query", type=int, default=5)
-    ap.add_argument("--limit", type=int, default=80)
+    ap.add_argument("--per-query", type=int, default=10)
+    ap.add_argument("--limit", type=int, default=240)
     ap.add_argument("--no-pixabay", action="store_true")
     a = ap.parse_args(argv)
     if a.cmd == "viewpoint":
@@ -515,7 +545,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     def analyse_hit(hit: Hit, path: Path, license_: str, always_sheet: bool) -> Record:
         m = measure(path, viewpoint_probe)
         rec = record_for(hit, m, None, license_)
-        if always_sheet or rec.result == "candidate":
+        hands = m.both_hands_whole or 0.0
+        if always_sheet or rec.result == "candidate" or hands >= NEAR_MISS_HANDS:
             name = f"{hit.clip_id}.jpg"
             try:
                 contact_sheet(sheet_frames(path), sheet_title(hit, m), a.sheets / name)
@@ -545,7 +576,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
             dst.unlink(missing_ok=True)
         stats["pixabay"] = sum(1 for r in records if r.source == "pixabay")
     top = survivors(records)
-    keep = {r.sheet for r in top}
+    near = near_misses(records, MIN_SHOWN - len(top))
+    keep = {r.sheet for r in (*top, *near)}
     for r in records:                       # sheets only for the shown candidates
         if r.source == "pixabay" and r.sheet and r.sheet not in keep:
             (a.sheets / r.sheet).unlink(missing_ok=True)
@@ -567,7 +599,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
             rec.site_clip = {"error": f"{type(e).__name__}: {e}"[:300]}
         records.append(rec)
     write_jsonl(records, a.jsonl)
-    (a.out / "comment.md").write_text(comment(records, top, a.image_base, stats))
+    (a.out / "comment.md").write_text(comment(records, top, a.image_base, stats, near))
     print(json.dumps({"records": len(records), "shown": len(top), **stats}, indent=1))
     return 0
 
