@@ -1,1 +1,1 @@
-{"stage": "collect", "note": "#83 step 3: real-face test set, contact sheets and per-detection features"}
+{"stage": "collect", "batch": 2, "holoassist": 24, "egocentric": 24, "note": "#83: more faces and hard negatives (round things from above), detection crops for the label check"}

@@ -39,6 +39,7 @@ def test_search_skips_long_and_excluded_and_prefers_the_small_rendition():
     assert out[0].video_url.endswith("2-small.mp4") and out[1].video_url.endswith("3-tiny.mp4")
     q = parse_qs(urlparse(net.urls[0]).query)
     assert q["q"] == ["woman face"] and q["safesearch"] == ["true"] and q["key"] == ["KEY"]
+    assert q["video_type"] == ["film"]
     assert out[0].clip_id == "pixabay_2"
 
 

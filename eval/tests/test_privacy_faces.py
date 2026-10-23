@@ -37,6 +37,16 @@ def test_crop_is_square_twice_the_box_and_padded_at_the_edge():
     assert tuple(crop[-3, -3]) == (200, 10, 10)          # inside the frame
 
 
+def test_known_clips_are_fetched_again_by_id():
+    net = FakeNet([hit(5)])
+    rows = [{"clip_id": "pixabay_5", "source": "pixabay", "page_url": "u", "proposed": "face",
+             "group": "frontal", "query": "q"}, {"clip_id": "pexels_1", "source": "pexels"},
+            {"clip_id": "pixabay_6", "source": "pixabay", "page_url": "u", "proposed": "face",
+             "group": "frontal"}]
+    out = pf.pixabay_known(net, "K", rows)
+    assert [(c.clip_id, h.pixabay_id) for c, h in out] == [("pixabay_5", 5)]  # 6: not found
+
+
 def test_pixabay_clips_keep_query_label_and_skip_repeats():
     net = FakeNet([hit(1), hit(2)])
     out = pf.pixabay_clips(net, "K", 2, [("woman talking", "face", "frontal"),
@@ -83,6 +93,9 @@ def test_run_records_features_sheets_and_manifest(tmp_path):
     md = pf.render_sheets(out, "{IMAGE_BASE}", "test")
     assert "![sheet-01.jpg]({IMAGE_BASE}sheet-01.jpg)" in md and "pixabay_2 (RuntimeError" in md
     assert pf.final_label(ok, {"pixabay_1": "drop"}) == "drop"
+    assert ok.crops == "crops/pixabay_1.jpg" and (tmp_path / ok.crops).exists()
+    assert "sheet-01" not in pf.render_sheets(out, "", "t", only_new={"pixabay_9"}).split(
+        "every sheet")[1]
     dump = pf.features_dump(out)
     assert all(d["score"] >= 0.45 for d in dump[0]["detections"])
     assert dump[0]["n_detections_below"] == len(weak)

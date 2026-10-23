@@ -86,6 +86,45 @@ QUERIES: tuple[tuple[str, str, str], ...] = (
     ("soldering", "no_face", "hands at work"),
 )
 
+# Batch 2 (after the first sheets): more faces (the first batch kept only 22 after the eye
+# check) and hard negatives like the pestle clip: round things seen from above, food, bowls.
+QUERIES_2: tuple[tuple[str, str, str], ...] = (
+    ("woman face closeup", "face", "frontal"),
+    ("man portrait", "face", "frontal"),
+    ("interview", "face", "frontal"),
+    ("video call", "face", "frontal"),
+    ("girl smiling", "face", "frontal"),
+    ("old woman", "face", "frontal"),
+    ("man wearing glasses", "face", "frontal"),
+    ("woman hijab", "face", "frontal"),
+    ("man drinking coffee", "face", "turned"),
+    ("woman reading book", "face", "turned"),
+    ("man on phone", "face", "turned"),
+    ("couple talking", "face", "turned"),
+    ("classroom students", "face", "small"),
+    ("market people", "face", "small"),
+    ("audience", "face", "small"),
+    ("barista", "face", "at work"),
+    ("carpenter workshop", "face", "at work"),
+    ("doctor", "face", "at work"),
+    ("baker", "face", "at work"),
+    ("soup bowl top view", "no_face", "round things"),
+    ("fruit bowl", "no_face", "round things"),
+    ("coffee cup top view", "no_face", "round things"),
+    ("pizza", "no_face", "round things"),
+    ("cake decorating", "no_face", "round things"),
+    ("frying eggs", "no_face", "round things"),
+    ("plates table top view", "no_face", "round things"),
+    ("spices bowls", "no_face", "round things"),
+    ("cooking pot stirring", "no_face", "hands at work"),
+    ("baking cookies", "no_face", "hands at work"),
+    ("assembling parts hands", "no_face", "hands at work"),
+)
+BATCHES = {1: QUERIES, 2: QUERIES_2}
+CROP_MIN_SCORE = 0.6
+CROP_PX = 72
+MAX_CROPS = 12
+
 # Pexels: what each of the founder's clips shows (looked at in the #83 diagnosis frames).
 PEXELS_FACE = {5592524: ("face", "turned")}  # the man at the top edge, in profile
 
@@ -112,6 +151,7 @@ class FaceClip:
     height: int = 0
     detections: list[dict[str, Any]] = field(default_factory=list)
     sheet: str = ""
+    crops: str = ""
 
     def __post_init__(self) -> None:
         self.split = self.split or split_of(self.clip_id)
@@ -216,6 +256,32 @@ def thumbs_row(video: media.DecodedVideo, clip: FaceClip, overrides: dict[str, s
     return np.vstack([head, body, np.full((4, width, 3), 255, np.uint8)])
 
 
+def save_crops(video: media.DecodedVideo, clip: FaceClip, out_dir: Path) -> str:
+    """The strongest detections (from CROP_MIN_SCORE) as a strip of zooms with their time and
+    score, so a person can check what was found before trusting a label."""
+    by_t = {round(float(f.t_s), 2): f for f in video.frames}
+    dets = sorted((d for d in clip.detections if d["score"] >= CROP_MIN_SCORE),
+                  key=lambda d: -d["score"])[:MAX_CROPS]
+    tiles = []
+    for d in dets:
+        f = by_t.get(d["t_s"])
+        if f is None:
+            continue
+        crop, _ = _crop_for(f.rgb, d["box"], CROP_PX // 2)
+        crop = cv2.resize(crop, (CROP_PX, CROP_PX), interpolation=cv2.INTER_AREA)
+        tile = np.vstack([np.full((14, CROP_PX, 3), 255, np.uint8),
+                          cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)])
+        cv2.putText(tile, f"{d['t_s']:.1f}s {d['score']:.2f}", (2, 11),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.32, (0, 0, 0), 1, cv2.LINE_AA)
+        tiles.append(tile)
+    if not tiles:
+        return ""
+    (out_dir / "crops").mkdir(parents=True, exist_ok=True)
+    name = f"crops/{clip.clip_id}.jpg"
+    cv2.imwrite(str(out_dir / name), np.hstack(tiles), [cv2.IMWRITE_JPEG_QUALITY, 80])
+    return name
+
+
 def write_sheets(rows: Sequence[tuple[FaceClip, np.ndarray]], out_dir: Path) -> list[str]:
     names = []
     for k in range(0, len(rows), SHEET_ROWS):
@@ -233,11 +299,12 @@ def write_sheets(rows: Sequence[tuple[FaceClip, np.ndarray]], out_dir: Path) -> 
 
 
 def pixabay_clips(net: Any, key: str, per_query: int = PER_QUERY,
-                  queries: Iterable[tuple[str, str, str]] = QUERIES) -> list[tuple[FaceClip, Any]]:
+                  queries: Iterable[tuple[str, str, str]] = QUERIES,
+                  exclude: Sequence[int] = ()) -> list[tuple[FaceClip, Any]]:
     from .datasets import pixabay as pb
 
     out: list[tuple[FaceClip, Any]] = []
-    seen: list[int] = []
+    seen: list[int] = list(exclude)
     for q, proposed, group in queries:
         try:
             hits = pb.search(net, key, q, per_query, exclude=seen)
@@ -248,6 +315,25 @@ def pixabay_clips(net: Any, key: str, per_query: int = PER_QUERY,
             seen.append(h.pixabay_id)
             out.append((FaceClip(h.clip_id, "pixabay", pb.LICENSE, h.page_url, proposed, group,
                                  q), h))
+    return out
+
+
+def pixabay_known(net: Any, key: str,
+                  known: Sequence[dict[str, Any]]) -> list[tuple[FaceClip, Any]]:
+    """Clips of an earlier batch (manifest rows), fetched again by id."""
+    from .datasets import pixabay as pb
+
+    out = []
+    for row in known:
+        if row.get("source") != "pixabay":
+            continue
+        try:
+            hit = pb.by_id(net, key, int(row["clip_id"].removeprefix("pixabay_")))
+        except Exception as e:  # noqa: BLE001
+            print(f"{row['clip_id']}: {type(e).__name__}: {e}", flush=True)
+            continue
+        out.append((FaceClip(row["clip_id"], "pixabay", pb.LICENSE, row["page_url"],
+                             row["proposed"], row["group"], row.get("query", "")), hit))
     return out
 
 
@@ -283,6 +369,7 @@ def run(items: Sequence[tuple[FaceClip, Any]], fetch: Callable[[FaceClip, Any], 
                 raise RuntimeError("not decodable")
             analyse(clip, video, detector, scorer)
             rows.append((clip, thumbs_row(video, clip, overrides)))
+            clip.crops = save_crops(video, clip, sheet_dir)
         except Exception as e:  # noqa: BLE001 - reported in the manifest
             clip.error = f"{type(e).__name__}: {e}"
         best = max((d["score"] for d in clip.detections), default=0.0)
@@ -310,7 +397,10 @@ def manifest_lines(clips: Sequence[FaceClip]) -> list[str]:
     return [json.dumps({k: asdict(c)[k] for k in keep}) for c in clips]
 
 
-def render_sheets(clips: Sequence[FaceClip], image_base: str, run_label: str) -> str:
+def render_sheets(clips: Sequence[FaceClip], image_base: str, run_label: str,
+                  only_new: set[str] | None = None) -> str:
+    """The report. With ``only_new``, only the sheets holding one of those clips are shown
+    (the others were already checked)."""
     ok = [c for c in clips if not c.error]
     by = {(g, p) for g, p in ((c.group, c.proposed) for c in ok)}
     L = ["# Privacy face test set: contact sheets (#83)", "",
@@ -328,7 +418,12 @@ def render_sheets(clips: Sequence[FaceClip], image_base: str, run_label: str) ->
         L += ["", f"{len(failed)} clips failed: " + "; ".join(
             f"{c.clip_id} ({(c.error or '')[:80]})" for c in failed[:20])]
     L.append("")
-    for name in sorted({c.sheet for c in ok if c.sheet}):
+    shown = sorted({c.sheet for c in ok if c.sheet and (only_new is None
+                                                       or c.clip_id in only_new)})
+    if only_new is not None:
+        L += [f"Sheets with clips new in this batch only ({len(shown)}); every sheet and the "
+              "detection crops (`crops/<clip_id>.jpg`) are in the branch.", ""]
+    for name in shown:
         L += [f"![{name}]({image_base}{name})", ""]
     return "\n".join(L) + "\n"
 
@@ -339,6 +434,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--report-dir", type=Path, required=True)
     ap.add_argument("--per-query", type=int, default=PER_QUERY)
+    ap.add_argument("--batch", type=int, default=1, choices=sorted(BATCHES),
+                    help="query batch; earlier batches' Pixabay clips are fetched again by id")
     ap.add_argument("--holoassist", type=int, default=12, help="HoloAssist sessions")
     ap.add_argument("--egocentric", type=int, default=16, help="Egocentric-10K clips")
     ap.add_argument("--run", default="local run")
@@ -348,13 +445,18 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
 
     a.out.mkdir(parents=True, exist_ok=True)
     a.report_dir.mkdir(parents=True, exist_ok=True)
-    for old in a.report_dir.glob("sheet-*.jpg"):
+    for old in [*a.report_dir.glob("sheet-*.jpg"), *a.report_dir.glob("crops/*.jpg")]:
         old.unlink()
     items: list[tuple[FaceClip, Any]] = []
     key = os.environ.get("PIXABAY_API_KEY", "")
     pnet = pb.UrllibNet()
+    known = ([json.loads(x) for x in MANIFEST_PATH.read_text().splitlines() if x.strip()]
+             if MANIFEST_PATH.exists() and a.batch > 1 else [])
     if key:
-        items += pixabay_clips(pnet, key, a.per_query)
+        items += pixabay_known(pnet, key, known)
+        seen = [int(c.clip_id.removeprefix("pixabay_")) for c, _ in items]
+        for b in range(1 if a.batch == 1 else 2, a.batch + 1):
+            items += pixabay_clips(pnet, key, a.per_query, BATCHES[b], exclude=seen)
     else:
         print("PIXABAY_API_KEY is not set: no Pixabay clips", flush=True)
     items += pexels_face_clips()
@@ -373,8 +475,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     (a.report_dir / "features.json").write_text(json.dumps(features_dump(clips)))
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST_PATH.write_text("\n".join(manifest_lines(clips)) + "\n")
+    new = None if a.batch == 1 else {c.clip_id for c in clips} - {r["clip_id"] for r in known}
     (a.report_dir / "README.md").write_text(render_sheets(clips, "", a.run))
-    (a.report_dir / "comment.md").write_text(render_sheets(clips, "{IMAGE_BASE}", a.run))
+    (a.report_dir / "comment.md").write_text(render_sheets(clips, "{IMAGE_BASE}", a.run, new))
     print((a.report_dir / "README.md").read_text())
     return 0
 

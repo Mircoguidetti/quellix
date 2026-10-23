@@ -4,7 +4,8 @@ name: Privacy fix
 # worker's own decode and face detector on the founder's Pexels clips (Pexels downloads only work
 # from Actions), saves every raw detection and annotated frames, commits them to
 # eval/reports/privacy-diagnosis/ on the branch it runs on and posts the report on issue #83.
-# Push eval/requests/privacy/request.json ({"stage": "diagnose" | "collect"}) to agent/privacy-fix.
+# Push eval/requests/privacy/request.json ({"stage": "diagnose" | "collect", "batch": N,
+# "holoassist": N, "egocentric": N}) to agent/privacy-fix.
 # - diagnose: every raw face detection on the Pexels clips (eval/reports/privacy-diagnosis/).
 # - collect: the real-face test set (Pixabay, Pexels, HoloAssist, Egocentric-10K), contact sheets
 #   for the labels and per-detection features (eval/reports/privacy-faces/).
@@ -64,8 +65,12 @@ jobs:
           set -o pipefail
           label="run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)"
           if [ "${{ steps.stage.outputs.stage }}" = collect ]; then
+            get() { python3 -c "import json,sys; print(json.load(open('requests/privacy/request.json')).get(sys.argv[1], sys.argv[2]))" "$1" "$2"; }
+            b="$(get batch 1)"; h="$(get holoassist 12)"; e="$(get egocentric 16)"
+            case "$b$h$e" in ''|*[!0-9]*) echo "batch/holoassist/egocentric must be integers" >&2; exit 1;; esac
             uv run python -m quellix_eval.privacy_faces collect --out out/privacy \
-              --report-dir reports/privacy-faces --run "$label" 2>&1 | tee out/privacy/run.log
+              --report-dir reports/privacy-faces --batch "$b" --holoassist "$h" --egocentric "$e" \
+              --run "$label" 2>&1 | tee out/privacy/run.log
           else
             uv run python -m quellix_eval.privacy_diagnosis --out out/privacy \
               --report-dir reports/privacy-diagnosis --run "$label" 2>&1 | tee out/privacy/run.log

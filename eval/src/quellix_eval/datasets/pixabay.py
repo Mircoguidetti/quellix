@@ -75,9 +75,12 @@ def _query(key: str, **params: Any) -> str:
     return API + "?" + urllib.parse.urlencode({"key": key, "safesearch": "true", **params})
 
 
-def search(net: Net, key: str, q: str, n: int, exclude: Sequence[int] = ()) -> list[Hit]:
-    """The first ``n`` usable hits for ``q`` (short clips only, ids in ``exclude`` skipped)."""
-    data = json.loads(net.get(_query(key, q=q, per_page=max(3, min(200, 4 * n)))))
+def search(net: Net, key: str, q: str, n: int, exclude: Sequence[int] = (),
+           video_type: str = "film") -> list[Hit]:
+    """The first ``n`` usable hits for ``q`` (short clips only, ids in ``exclude`` skipped).
+    ``video_type="film"`` leaves out animations (cartoon faces are not faces)."""
+    data = json.loads(net.get(_query(key, q=q, per_page=max(3, min(200, 4 * n)),
+                                     video_type=video_type)))
     out: list[Hit] = []
     for h in data.get("hits") or []:
         hit = parse_hit(h)
