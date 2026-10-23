@@ -49,25 +49,29 @@ HAIR = 1
 WRIST, MIDDLE_MCP = 0, 9
 
 # --- constants, set on the dev split of eval/reports/viewpoint (features.jsonl.gz) only.
-# v0.2 (#79): grid search on dev (66 first-person clips: Egocentric-10K, HoloAssist, founder and
-# Pixabay picks; 35 third-person: 3 founder Pexels + 32 Pixabay, labelled by eye), with the
-# constraint "no first-person clip called third-person", then fewest third-person clips called
-# first-person, then fewest first-person clips sent to review. What dev showed:
+# v0.3 (#79): joint grid search on dev (65 first-person clips: Egocentric-10K, HoloAssist, the
+# founder's and one Pixabay pick; 33 third-person: 3 founder Pexels + 30 Pixabay labelled by eye,
+# after the coordinator's veto), with the constraint "no first-person clip called third-person",
+# then fewest third-person clips called first-person, then fewest first-person clips sent to
+# review; ties broken towards the middle of the plateau. What dev showed:
 # - the share of hand frames pointing up separates the two well only with enough frames: under
-#   MIN_HAND_FRAMES the verdict is `uncertain` (a few frames of a third-person clip can all point
-#   up);
+#   MIN_HAND_FRAMES the verdict is `uncertain`. Clips sit close to the thresholds (a first-person
+#   salad clip reads 0.37-0.44 between two extractions), so the band between THIRD_PERSON_MAX
+#   and FIRST_PERSON_MIN is wide and `uncertain`;
 # - a still camera is NOT a tripod sign: head-mounted factory clips are still 78-89% of the time
 #   and stabilised first-person clips too. Stillness is reported, never used for the verdict;
 # - hands pointing *down* from the top happen on a tripod facing the person AND on a head camera
 #   mounted upside down (Egocentric-10K factory 19): that case is `uncertain`;
-# - a face blocks a first-person verdict but never makes a third-person one on its own.
-MIN_HAND_FRAMES = 15        # fewer frames with a hand: cannot tell
+# - a face blocks a first-person verdict but never makes a third-person one on its own;
+# - a head in view (hair) blocks a first-person verdict: it turns over-the-shoulder shots, whose
+#   hands point away from the camera like first-person ones, into `uncertain`.
+MIN_HAND_FRAMES = 10        # fewer frames with a hand: cannot tell
 UP_MIN = 0.4                # a hand "points up" when wrist->knuckles is within ~66 deg of up
-FIRST_PERSON_MIN = 0.6      # first_person_ratio at or above (and no face): first-person
-THIRD_PERSON_MAX = 0.4      # at or below: third-person, unless the hands point straight down
+FIRST_PERSON_MIN = 0.7      # first_person_ratio at or above (no face, no head): first-person
+THIRD_PERSON_MAX = 0.3      # at or below: third-person, unless the hands point straight down
 INVERTED_UP_MAX = -0.7      # median pointing-up at or below: down from the top (ambiguous)
 FACE_SHARE_MAX = 0.2        # a face in more than this share of the analysed frames
-HAIR_MIN = 0.02             # hair covering at least this share of a frame: a head is in view
+HAIR_MIN = 0.05             # hair covering at least this share of a frame: a head is in view
 HEAD_SHARE_MAX = 0.2        # a head in more than this share of the analysed frames
 STILL_SHIFT = 0.0015        # a 0.1 s pair moving less than this share of the width is "still"
 
