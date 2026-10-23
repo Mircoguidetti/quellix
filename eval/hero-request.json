@@ -1,1 +1,4 @@
-{"note": "#84 run 3: as run 2, with main merged so the viewpoint check (#80) is present"}
+{
+ "note": "run 3 searched fine but its push was rejected (hero-lemons landed mid-run); the workflow now rebases",
+ "run": 4
+}
