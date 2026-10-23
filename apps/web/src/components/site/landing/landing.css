@@ -61,7 +61,22 @@
 .ormes-landing .nav ul a:hover { color: #fff; }
 .ormes-landing .nav .btn { height: 42px; padding: 0 20px; font-size: 15px; background: #F3F4F6; color: var(--ink); }
 .ormes-landing .nav .btn:hover { background: #fff; }
-@media (max-width: 760px) { .ormes-landing .nav ul, .ormes-landing .nav .actions a.link { display: none; } }
+.ormes-landing .nav .burger { display: none; margin-left: auto; width: 40px; height: 40px; border: 0; background: transparent; cursor: pointer; position: relative; padding: 0; }
+.ormes-landing .nav .burger span { position: absolute; left: 10px; right: 10px; height: 1.5px; background: #fff; border-radius: 2px; transition: transform .25s ease, top .25s ease; }
+.ormes-landing .nav .burger span:first-child { top: 15px; } .ormes-landing .nav .burger span:last-child { top: 23px; }
+.ormes-landing .nav.open .burger span:first-child { top: 19px; transform: rotate(45deg); }
+.ormes-landing .nav.open .burger span:last-child { top: 19px; transform: rotate(-45deg); }
+.ormes-landing .nav .sheet { display: none; }
+@media (max-width: 760px) {
+  .ormes-landing .nav ul, .ormes-landing .nav .actions { display: none; }
+  .ormes-landing .nav .wrap { height: 60px; }
+  .ormes-landing .nav .burger { display: block; }
+  .ormes-landing .nav.open { background: rgba(11,13,18,.97); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom-color: rgba(255,255,255,.06); }
+  .ormes-landing .nav.open .sheet:not([hidden]) { display: flex; flex-direction: column; padding: 8px 20px 24px; }
+  .ormes-landing .nav .sheet a { text-decoration: none; color: #D7DAE0; font-size: 20px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.06); }
+  .ormes-landing .nav .sheet a:first-child { border-top: 0; }
+  .ormes-landing .nav .sheet a:hover { color: #fff; }
+}
 
 /* 1. hero: showcase, 100vh, card fading into the background */
 .ormes-landing .hero { padding-block: calc(72px + clamp(36px, 7vh, 80px)) 0; text-align: center; overflow: hidden; }

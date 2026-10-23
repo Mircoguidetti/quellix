@@ -8,7 +8,6 @@ type Sidecar = { video?: { width?: number; height?: number }; hands?: { frames?:
 type Segment = [number, number];
 
 /**
- * Navbar turns dark as soon as the page scrolls.
  * Every <video data-sidecar="…"> draws the hands model's real boxes from its clip's sidecar, synced to the video:
  * boxes are its sibling `.box[data-side=left|right]`, the card uses object-fit: cover with `data-pos-y` as the
  * vertical object-position. `data-flag="start-end,…"` turns the boxes amber inside flagged segments.
@@ -16,11 +15,6 @@ type Segment = [number, number];
  */
 export function LandingEffects() {
   useEffect(() => {
-    const nav = document.querySelector<HTMLElement>(".ormes-landing .nav");
-    const onScroll = () => nav?.classList.toggle("scrolled", window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-
     const players = Array.from(document.querySelectorAll<HTMLVideoElement>(".ormes-landing video[data-sidecar]")).map((video) => {
       const card = video.parentElement as HTMLElement;
       const p = {
@@ -104,7 +98,6 @@ export function LandingEffects() {
     };
     raf = requestAnimationFrame(tick);
     return () => {
-      window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
   }, []);

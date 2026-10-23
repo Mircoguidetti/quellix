@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LandingEffects } from "./landing-effects";
+import { SiteNav } from "./site-nav";
 import "./landing.css";
 
 /*
@@ -28,23 +29,7 @@ export function Product() {
   return (
     <div className="ormes-landing">
       <LandingEffects />
-      <header className="nav">
-        <div className="wrap">
-          <Link className="logo" href="/">
-            <i />
-            ORMES
-          </Link>
-          <ul>
-            <li><Link href="/product" style={{ color: "#fff" }}>Product</Link></li>
-            <li><Link href="/security">Security</Link></li>
-            <li><Link href="/docs">Docs</Link></li>
-          </ul>
-          <div className="actions">
-            <Link className="link" href="/login">Sign in ↗</Link>
-            <Link className="btn" href="/signup">Start a pilot</Link>
-          </div>
-        </div>
-      </header>
+      <SiteNav current="/product" />
 
       <main id="top">
         {/* Intro: no hero, just what the page explains */}
