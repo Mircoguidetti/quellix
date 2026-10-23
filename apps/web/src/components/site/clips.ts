@@ -4,8 +4,8 @@
  * analysed by the worker; the pages show its sidecar output as it is, never edited.
  */
 export const SITE_CLIPS = {
-  /** Home hero: the full 16:9 clip at every width (the 4:5 crop cuts the hands, so it is not used). */
-  hero: "clip-01",
+  /** Home hero: a placeholder until the founder picks the hero video (issue #85); not the washing-up clip, which is on Product. */
+  hero: "clip-02",
   /** Home "Why Ormes": the same task three ways, so all three outcomes appear. */
   why: { accept: "clip-01", review: "clip-01-hand", reject: "clip-01-dark" },
   /** Product decision diagram: the videos it plays through the checks, in order. */

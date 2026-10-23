@@ -40,9 +40,8 @@ export function SiteNav() {
     <header
       className={cn(
         "sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-200",
-        // The header takes the surface of the page's first section: solid dark above the Home hero
-        // (translucent black over the light page root would read grey), translucent light elsewhere.
-        pathname === "/" ? "surface-dark bg-background" : "surface-light bg-background/85",
+        // Always dark (issue #85), on every page and over light sections; solid, so it never reads grey.
+        "surface-dark bg-background",
         scrolled || open ? "border-hairline" : "border-transparent",
       )}
     >

@@ -97,35 +97,29 @@ test.describe("marketing site", () => {
     await expect(page.getByText("Saving creates v4")).toBeVisible();
   });
 
-  test("Home: nine sections, one buyer question each, in order (issue #69)", async ({ page }) => {
+  test("Home: one idea per section, in order, lighter (issues #69, #85)", async ({ page }) => {
     await page.goto("/");
-    // Section shots: the sticky header would cover the top of each section.
-    await page.addStyleTag({ content: "header { position: static !important; }" });
     const ids = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
     expect(ids).toEqual(["top", "problem", "flow", "checks", "why", "privacy", "api", "pilot", "faq", "start"]);
-    // The review console and the old phone moved off Home; "What Ormes doesn't do" and pricing are gone.
+    // The review console, pricing and "What Ormes doesn't do" stay off Home.
     await expect(page.getByText("What Ormes doesn’t do.")).toHaveCount(0);
-    await expect(page.getByText("Pay per hour of video checked.")).toHaveCount(0);
     await expect(page.getByRole("img", { name: /The Ormes review screen/ })).toHaveCount(0);
-    // Problem sources are cited.
+    // Problem: three short lines and the queue grid, with its source.
+    await expect(page.locator("#problem li")).toHaveCount(3);
+    await expect(page.locator("#problem").getByRole("img", { name: /480 videos uploaded/ })).toBeVisible();
     await expect(page.locator("#problem").getByRole("link", { name: /Market Xcel/ })).toBeVisible();
-    await expect(page.locator("#problem").getByRole("link", { name: /Unidata/ })).toBeVisible();
-    // Why Ormes, at rest: the reviewer's verdict tomorrow vs Ormes's real reason and the contributor's fix,
-    // then the three real clips with all three outcomes, as the worker wrote them.
+    // What it checks: six checks, no illustrations.
+    await expect(page.locator("#checks li")).toHaveCount(6);
+    // Why Ormes: no video, two notifications; Ormes's carries the worker's real reason and hint.
     const why = page.locator("#why");
-    await expect(why.getByText("tomorrow")).toBeVisible();
-    await expect(why.getByText("Your video was rejected.")).toBeVisible();
-    await expect(why.getByText(/^Film in even light/)).toBeVisible();
-    const cards = why.getByRole("list", { name: "Three versions of the same video" }).getByRole("button");
-    await expect(cards).toHaveCount(3);
-    for (const [i, outcome] of ["accept", "review", "reject"].entries()) await expect(cards.nth(i)).toContainText(outcome);
-    await expect(cards.nth(2)).toHaveAttribute("aria-pressed", "true");
-    await cards.nth(1).click();
-    await expect(why.getByText("A person will check your video.")).toBeVisible();
-    await expect(why.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/product");
-    // FAQ keeps the five questions and adds the sixth.
+    await expect(why.locator("video")).toHaveCount(0);
+    await expect(why.getByText("Rejected at 0:02: too dark or too bright 35% of the time (maximum 5%).", { exact: false }).first()).toBeAttached();
+    await expect(why.getByText(/Film in even light: avoid dark rooms/).first()).toBeAttached();
+    // Privacy: three facts. FAQ: six questions.
+    await expect(page.locator("#privacy li")).toHaveCount(3);
     await expect(page.locator("#faq details")).toHaveCount(6);
-    await expect(page.getByText("Can Ormes reject a good video?")).toBeVisible();
+    // The washing-up clip lives on Product now.
+    expect(await page.locator("main").innerHTML()).not.toContain("clip-01");
   });
 
   test("Product: the review section shows the console and its shortcuts", async ({ page }) => {
@@ -191,30 +185,58 @@ test.describe("marketing site", () => {
     expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(", ")}`)).toEqual([]);
   });
 
-  test("surfaces: dark accents on Home, light everywhere else (issue #69)", async ({ page }) => {
+  test("surfaces and navbar: the issue #85 rhythm, a dark navbar everywhere, dividers between light sections", async ({ page }) => {
     const surface = (sel: string) => page.locator(sel).first().evaluate((el) => el.closest(".surface-dark, .surface-light")?.className.match(/surface-(dark|light)/)?.[1]);
     await page.goto("/");
-    expect(await surface("#top")).toBe("dark");
-    for (const id of ["problem", "flow", "checks", "privacy", "api", "pilot", "faq"]) expect(await surface(`#${id}`), id).toBe("light");
-    expect(await surface("#why")).toBe("dark");
-    expect(await surface("#start")).toBe("dark");
+    const rhythm = { top: "dark", problem: "dark", flow: "light", checks: "light", why: "dark", privacy: "light", api: "dark", pilot: "light", faq: "light", start: "dark" };
+    for (const [id, want] of Object.entries(rhythm)) expect(await surface(`#${id}`), id).toBe(want);
     expect(await surface("footer")).toBe("dark");
+    // Two pairs of consecutive light sections on Home, each split by a divider.
+    await expect(page.locator("main > div hr")).toHaveCount(2);
+    for (const route of ["/", "/product", "/security", "/docs/quickstart"]) {
+      await page.goto(route);
+      expect(await surface("header"), route).toBe("dark");
+      await page.mouse.wheel(0, 2400);
+      expect(await page.locator("header").first().evaluate((el) => getComputedStyle(el).backgroundColor), route).toBe("rgb(0, 0, 0)");
+      expect(await surface("footer"), route).toBe("dark");
+    }
     for (const route of ["/product", "/security"]) {
       await page.goto(route);
       expect(await surface("main section"), route).toBe("light");
-      expect(await surface("footer"), route).toBe("dark");
     }
-    // The hero has no trust row any more; the real clip sits in a 16:9 card with the worker's decision.
+    // Hero: one screen with the navbar; the card fades out at the bottom, no bottom border; only the decision chip on top.
     await page.goto("/");
-    await expect(page.getByText("Videos deleted after analysis")).toHaveCount(0);
-    const card = page.locator("#top img[src='/media/clips/clip-01.jpg']");
-    await expect(card).toBeVisible();
-    const box = (await card.boundingBox())!;
-    expect(box.width / box.height).toBeCloseTo(16 / 9, 1);
+    const top = (await page.locator("#top").boundingBox())!;
+    expect(Math.round(top.y + top.height)).toBeLessThanOrEqual(page.viewportSize()!.height);
+    await expect(page.locator("#top").getByText("Ormes · live")).toHaveCount(0);
     await expect(page.locator("#top").getByText("accept", { exact: true })).toBeVisible();
   });
 
-  test("screenshots: every Home section, and the other pages above the fold", async ({ page }, info) => {
+  test("every Home and Product section fits one screen (issue #85)", async ({ page }) => {
+    const limit = page.viewportSize()!.height; // 900 at 1440×900, 844 (100svh) at 390×844
+    for (const route of ["/", "/product"]) {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(() => document.fonts.ready);
+      const heights = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => [e.id, Math.ceil(e.getBoundingClientRect().height)] as const));
+      expect(heights.length, route).toBeGreaterThan(5);
+      const tall = heights.filter(([, h]) => h > limit).map(([id, h]) => `${route}#${id}: ${h}px > ${limit}px`);
+      expect(tall).toEqual([]);
+    }
+  });
+
+  test("Product: the washing-up demonstration with real outcomes, and Today vs With Ormes", async ({ page }) => {
+    await page.goto("/product");
+    const cards = page.locator("#demo").getByRole("list", { name: "Three versions of the same video" }).getByRole("listitem");
+    await expect(cards).toHaveCount(3);
+    for (const [i, outcome] of ["accept", "review", "reject"].entries()) await expect(cards.nth(i)).toContainText(outcome);
+    await expect(cards.nth(2)).toContainText("Too dark or too bright 35% of the time (maximum 5%).");
+    const compare = page.locator("#compare");
+    await expect(compare.getByText("tomorrow")).toBeVisible();
+    await expect(compare.getByText(/Film in even light/)).toBeVisible();
+  });
+
+  test("screenshots: every Home and Product section, Security and Docs above the fold", async ({ page }, info) => {
     const dir = path.join(OUT, info.project.name, "sections");
     await page.goto("/");
     await page.waitForLoadState("networkidle");
@@ -226,7 +248,16 @@ test.describe("marketing site", () => {
     for (const [i, id] of ids.entries()) {
       await page.locator(`#${id}`).screenshot({ path: path.join(dir, `home-${String(i + 1).padStart(2, "0")}-${id}.jpg`), type: "jpeg", quality: 72 });
     }
-    for (const [name, route] of [["product", "/product"], ["security", "/security"], ["docs", "/docs"]]) {
+    await page.goto("/product");
+    await page.waitForLoadState("networkidle");
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: path.join(dir, "product-00-above-the-fold.jpg"), type: "jpeg", quality: 72 });
+    await page.addStyleTag({ content: "header, nav[aria-label='On this page'] { position: static !important; }" });
+    const productIds = await page.locator("main > section[id]").evaluateAll((els) => els.map((e) => e.id));
+    for (const [i, id] of productIds.entries()) {
+      await page.locator(`#${id}`).screenshot({ path: path.join(dir, `product-${String(i + 1).padStart(2, "0")}-${id}.jpg`), type: "jpeg", quality: 72 });
+    }
+    for (const [name, route] of [["security", "/security"], ["docs", "/docs"]]) {
       await page.goto(route);
       await page.waitForLoadState("networkidle");
       await page.evaluate(() => document.fonts.ready);
