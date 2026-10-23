@@ -19,6 +19,16 @@ Only data we are allowed to use commercially:
 - Never use EPIC-KITCHENS, Ego4D or Ego-Exo4D (non-commercial licenses).
 - Customer data only for orgs with `training_opt_in = true`.
 
+## Third-person test set (`test_sets/third_person_pexels.jsonl`)
+
+All other tests are first-person. This set holds Pexels clips filmed from the side or front
+(Pexels License, free commercial use) to measure that gap: links, author, viewpoint
+(`third_person`) and what the worker returned on the day (`observed`, an observation, not a
+label; `truth` stays null until a person labels the clip). The videos are never committed and
+never shown on the site. It is written by `python -m quellix_eval.site_clips --third-person`
+(the `Site clips` workflow does it); schema in `datasets/third_person.py`. The landing page's
+one first-person clip is a separate flow (`--pexels`).
+
 ## Synthetic defects
 
 From a clean clip, generate labelled bad variants: hand pushed out of frame (crop/shift), task cut before its end, motion blur, under/over-exposure, overlaid document/face/screen, re-encoded/cropped/mirrored/speed-changed duplicates. Each variant records which check should fail and why, so labels are free.

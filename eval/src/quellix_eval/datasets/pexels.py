@@ -50,6 +50,12 @@ LANDING_CLIPS: tuple[Pick, ...] = (
          "Whipping cream with an electric mixer", "landscape"),
     Pick(7658012, "putting-ground-coffee-in-a-filter", "Putting ground coffee in a filter",
          "landscape"),
+    # Added by the founder (PR #75): a portrait clip, candidate for the mobile hero next to the
+    # hero's 4:5 crop, and a top-down two-hand shot.
+    Pick(27917233, "manual-coffee-grinder", "Grinding coffee by hand", "portrait",
+         "mobile hero candidate"),
+    Pick(6693828, "person-crushing-the-coffee-powder", "Crushing coffee with a pestle",
+         "landscape"),
 )
 LANDING = LANDING_CLIPS[0]
 

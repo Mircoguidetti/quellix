@@ -10,8 +10,9 @@ export default function MediaPreviewPage() {
       <header className="grid gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Example footage, analysed by Ormes</h1>
         <p className="text-muted-foreground">
-          Real first-person clips picked by the worker: no face, document or screen, both hands working. Press play to
-          see what the hands model saw in each frame.
+          The first-person footage chosen for the site. The first clip (the hero) also has its 4:5 mobile crop and
+          two synthetic defective copies, with the worker&apos;s own decision, reasons and hints, unedited. Press play to see what the hands
+          model saw in each frame.
         </p>
       </header>
       <ClipPreview />
