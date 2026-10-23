@@ -18,7 +18,8 @@ from .clips import scene, write_clip
 OFF = {"enabled": False}
 BASE = {"id": "r1", "version": 1, "name": "t", "task": {"description": "d"}, "checks": {
     "technical": OFF, "framing": OFF, "privacy": OFF, "originality": OFF,
-    "task_completed": OFF, "hands_visible": {"min_ratio": 0.8}}}
+    # viewpoint (#79) reads the same landmarks; its own tests are in test_viewpoint.py
+    "task_completed": OFF, "hands_visible": {"min_ratio": 0.8}, "viewpoint": OFF}}
 
 
 def rubric(**hands_cfg):

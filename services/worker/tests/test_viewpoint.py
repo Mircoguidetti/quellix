@@ -8,10 +8,9 @@ import pytest
 from quellix_worker import feedback, pipeline
 from quellix_worker import rubric as rubric_module
 from quellix_worker.checks import viewpoint as vp
-from quellix_worker.contracts import load_example
+from quellix_worker.contracts import load_example, validate_decision, validate_rubric
 from quellix_worker.rubric import CheckOutput, evaluate
 
-from . import contract_patch
 from .test_rubric import good_outputs
 
 RUBRIC = load_example("rubric.load_dishwasher.json")
@@ -100,8 +99,8 @@ def decide(view: str | None, required: str = "first_person", critical: bool = Tr
                                   "confidence": 0.9} if view else {"hand_frames": 0})
     d = feedback.annotate(evaluate("v", rubric, o, ALL), rubric)
     if validate:
-        contract_patch.validate_rubric(rubric)
-        contract_patch.validate_decision(d)
+        validate_rubric(rubric)
+        validate_decision(d)
     return d
 
 
@@ -149,7 +148,7 @@ def test_disabled_viewpoint_is_skipped():
     assert d["decision"] == "accept" and d["checks"]["viewpoint"]["status"] == "skipped"
 
 
-def test_the_pipeline_leaves_the_check_out_until_the_contract_knows_it(monkeypatch):
+def test_the_pipeline_runs_the_check_only_when_the_contract_knows_it(monkeypatch):
     known = pipeline.known_checks()
     assert ("viewpoint" in pipeline.active_checks()) == ("viewpoint" in known)
     monkeypatch.setattr(pipeline, "known_checks", lambda: frozenset(ALL))
@@ -184,7 +183,6 @@ def test_pipeline_runs_the_check_once_the_contract_knows_it(monkeypatch, tmp_pat
             return []
 
     monkeypatch.setattr(pipeline, "known_checks", lambda: frozenset(ALL))
-    monkeypatch.setattr(pipeline, "validate_decision", contract_patch.validate_decision)
     clip = write_clip(tmp_path / "c.mp4", scene(1, 60), fps=15)
     r = run_pipeline(clip, RUBRIC, "v1", PipelineConfig(),
                      Dependencies(hands_model=Hands(), face_detector=NoFaces()))
