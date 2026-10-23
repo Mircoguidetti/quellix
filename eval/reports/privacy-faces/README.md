@@ -1,17 +1,18 @@
 # Privacy face test set: contact sheets (#83)
 
-run 39930243383 on `agent/privacy-fix` (commit `4ff16dc`) · 161 clips (57 proposed `face`, 104 proposed `no_face`), 107 dev / 54 held-out. Each row: 6 frames across the clip, the clip id, its split, its group and query, and the proposed label (red = face, green = no face). **Veto:** name any clip whose label is wrong (or that should be dropped).
+run 39932284135 on `agent/privacy-fix` (commit `1cc6118`) · 297 clips (133 proposed `face`, 164 proposed `no_face`), 189 dev / 108 held-out. Each row: 6 frames across the clip, the clip id, its split, its group and query, and the proposed label (red = face, green = no face). **Veto:** name any clip whose label is wrong (or that should be dropped).
 
 | group | proposed | clips |
 |---|---|---|
-| at work | face | 16 |
+| at work | face | 32 |
 | first-person | no_face | 6 |
-| first-person work | no_face | 48 |
-| frontal | face | 16 |
-| hands at work | no_face | 28 |
-| small | face | 12 |
+| first-person work | no_face | 64 |
+| frontal | face | 48 |
+| hands at work | no_face | 40 |
+| round things | no_face | 32 |
+| small | face | 24 |
 | third-person | no_face | 6 |
-| turned | face | 13 |
+| turned | face | 29 |
 | worktop | no_face | 16 |
 
 ![sheet-01.jpg](sheet-01.jpg)
@@ -55,4 +56,38 @@ run 39930243383 on `agent/privacy-fix` (commit `4ff16dc`) · 161 clips (57 propo
 ![sheet-20.jpg](sheet-20.jpg)
 
 ![sheet-21.jpg](sheet-21.jpg)
+
+![sheet-22.jpg](sheet-22.jpg)
+
+![sheet-23.jpg](sheet-23.jpg)
+
+![sheet-24.jpg](sheet-24.jpg)
+
+![sheet-25.jpg](sheet-25.jpg)
+
+![sheet-26.jpg](sheet-26.jpg)
+
+![sheet-27.jpg](sheet-27.jpg)
+
+![sheet-28.jpg](sheet-28.jpg)
+
+![sheet-29.jpg](sheet-29.jpg)
+
+![sheet-30.jpg](sheet-30.jpg)
+
+![sheet-31.jpg](sheet-31.jpg)
+
+![sheet-32.jpg](sheet-32.jpg)
+
+![sheet-33.jpg](sheet-33.jpg)
+
+![sheet-34.jpg](sheet-34.jpg)
+
+![sheet-35.jpg](sheet-35.jpg)
+
+![sheet-36.jpg](sheet-36.jpg)
+
+![sheet-37.jpg](sheet-37.jpg)
+
+![sheet-38.jpg](sheet-38.jpg)
 
