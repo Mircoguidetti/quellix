@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProductPage } from "@/components/site/product/product-page";
+import { Product } from "@/components/site/landing/product";
 
 export const metadata: Metadata = {
   title: { absolute: "Ormes Product" },
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ProductPage />;
+  return <Product />;
 }

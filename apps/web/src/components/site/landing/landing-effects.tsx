@@ -6,14 +6,13 @@ type Box = [number, number, number, number, number]; // t, x, y, w, h (normalise
 type Frame = { t: number; left: { box_xywh: number[] | null }; right: { box_xywh: number[] | null } };
 
 /**
- * Navbar gets its scrolled state past half the hero; the product timeline playhead follows its video;
+ * Navbar turns dark as soon as the page scrolls; the product timeline playhead follows its video;
  * the hero draws the hands model's real boxes for its clip (from the clip's sidecar), synced to the video.
  */
 export function LandingEffects() {
   useEffect(() => {
     const nav = document.querySelector<HTMLElement>(".ormes-landing .nav");
-    const hero = document.querySelector<HTMLElement>(".ormes-landing .hero");
-    const onScroll = () => nav?.classList.toggle("scrolled", window.scrollY > (hero?.offsetHeight ?? 0) / 2);
+    const onScroll = () => nav?.classList.toggle("scrolled", window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
 
@@ -26,7 +25,7 @@ export function LandingEffects() {
     let srcW = 720;
     let srcH = 1280;
 
-    fetch("/media/clips/hero-lemons.json")
+    if (hv) fetch("/media/clips/hero-lemons.json")
       .then((r) => r.json())
       .then((d: { video?: { width?: number; height?: number }; hands?: { frames?: Frame[] } }) => {
         srcW = d.video?.width ?? srcW;

@@ -47,7 +47,7 @@
 .ormes-landing .btn-dark { background: var(--ink); color: #fff; }
 
 /* nav: always dark */
-.ormes-landing .nav { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,.06); transition: background .3s ease, border-color .3s ease; }
+.ormes-landing .nav { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); z-index: 20; background: transparent; border-bottom: 1px solid transparent; transition: background .3s ease, border-color .3s ease; }
 .ormes-landing .nav.scrolled { background: rgba(11,13,18,.92); backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); border-bottom-color: rgba(255,255,255,.06); }
 .ormes-landing .nav .wrap { display: flex; align-items: center; gap: 40px; height: 72px; max-width: 1320px; }
 .ormes-landing .nav .actions { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 15px; color: #D7DAE0; }
@@ -206,3 +206,56 @@
 .ormes-landing footer a { text-decoration: none; } .ormes-landing footer a:hover { color: #fff; }
 
 @media (prefers-reduced-motion: reduce) { .ormes-landing html { scroll-behavior: auto; } .ormes-landing * { transition: none !important; } }
+
+/* ---- product page ---- */
+.ormes-landing .p-intro { padding-block: calc(72px + clamp(56px, 10vh, 112px)) clamp(40px, 7vh, 72px); }
+.ormes-landing .p-intro h1 { font-size: clamp(36px, 5vw, 60px); line-height: 1.04; letter-spacing: -0.035em; max-width: 16ch; }
+.ormes-landing .p-intro .lede { color: var(--muted-dark); max-width: 56ch; }
+.ormes-landing .p-intro nav { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 40px; font-size: 14px; color: var(--muted-dark); }
+.ormes-landing .p-intro nav a { text-decoration: none; } .ormes-landing .p-intro nav a:hover { color: #fff; }
+.ormes-landing .panel .box { position: absolute; border: 1px solid rgba(110,231,168,.9); border-radius: 8px; }
+.ormes-landing .seg { position: absolute; top: 0; bottom: 0; background: rgba(210,73,63,.95); }
+.ormes-landing .decision.rej::before { background: var(--no); }
+.ormes-landing .decision.rev::before { background: #E0A33B; }
+.ormes-landing .decision.acc::before { background: var(--ok); }
+.ormes-landing .flow3 { margin-top: clamp(28px, 4vh, 44px); display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 4vw, 48px); }
+.ormes-landing .flow3 div { border-top: 1px solid var(--text); padding-top: 14px; }
+.ormes-landing .flow3 .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ormes-landing .flow3 h3 { font-size: 19px; margin-top: 6px; }
+.ormes-landing .flow3 p { color: var(--muted); font-size: 15px; margin-top: 6px; }
+.ormes-landing .outcomes { margin-top: 28px; display: flex; gap: 10px 28px; flex-wrap: wrap; font-size: 15px; color: var(--muted); }
+.ormes-landing .outcomes span { display: inline-flex; gap: 8px; align-items: baseline; }
+.ormes-landing .outcomes b { color: var(--text); font-weight: 500; }
+@media (max-width: 760px) { .ormes-landing .flow3 { grid-template-columns: 1fr; } }
+.ormes-landing .tbl { margin-top: clamp(28px, 4vh, 40px); overflow-x: auto; }
+.ormes-landing .tbl table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 15px; }
+.ormes-landing .tbl th { text-align: left; font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: .04em; padding: 0 16px 12px 0; }
+.ormes-landing .tbl td { padding: 16px 16px 16px 0; border-top: 1px solid var(--rule); vertical-align: top; color: var(--muted); }
+.ormes-landing .tbl td:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
+.ormes-landing .tbl td:last-child { white-space: nowrap; font-family: var(--font-mono); font-size: 13px; }
+.ormes-landing .two { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(32px, 6vw, 80px); align-items: start; }
+.ormes-landing .two ul { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; }
+.ormes-landing .two li { padding-left: 18px; position: relative; color: var(--muted); font-size: 16px; }
+.ormes-landing .two li::before { content: ""; position: absolute; left: 0; top: .7em; width: 8px; height: 1px; background: var(--text); }
+.ormes-landing .two li b { color: var(--text); font-weight: 500; }
+@media (max-width: 860px) { .ormes-landing .two { grid-template-columns: 1fr; } }
+.ormes-landing .spec { border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; font-size: 14px; }
+.ormes-landing .spec .line { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--rule); }
+.ormes-landing .spec .line:first-child { border-top: 0; }
+.ormes-landing .spec q { quotes: none; color: var(--muted); font-style: italic; }
+.ormes-landing .spec code { font-family: var(--font-mono); font-size: 12.5px; color: var(--text); white-space: nowrap; }
+.ormes-landing .spec .head { background: #F7F8FA; font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 10px 18px; display: flex; justify-content: space-between; }
+.ormes-landing .rv { border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; display: grid; grid-template-columns: 1.3fr 1fr; }
+.ormes-landing .rv .media { position: relative; aspect-ratio: 16 / 9; background: #0B0D12; min-width: 0; }
+.ormes-landing .rv .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ormes-landing .rv .side { padding: clamp(20px, 3vw, 28px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ormes-landing .mom { border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+.ormes-landing .mom .when { margin-bottom: 4px; }
+.ormes-landing .acts { display: flex; gap: 10px; margin-top: auto; }
+.ormes-landing .acts span { flex: 1; text-align: center; border: 1px solid var(--rule); border-radius: 999px; padding: 10px; font-size: 14px; }
+.ormes-landing .acts span.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+@media (max-width: 860px) { .ormes-landing .rv { grid-template-columns: 1fr; } }
+.ormes-landing .stat { display: grid; grid-template-columns: auto 1fr; gap: clamp(24px, 5vw, 64px); align-items: end; }
+.ormes-landing .stat .big { color: var(--text); font-size: clamp(88px, 13vw, 168px); }
+.ormes-landing .stat .big small { color: var(--muted); }
+@media (max-width: 760px) { .ormes-landing .stat { grid-template-columns: 1fr; } }
