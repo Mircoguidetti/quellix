@@ -59,8 +59,8 @@
 .ormes-landing .nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--muted-dark); }
 .ormes-landing .nav ul a { text-decoration: none; }
 .ormes-landing .nav ul a:hover { color: #fff; }
-.ormes-landing .nav .btn { height: 42px; padding: 0 20px; font-size: 15px; background: var(--accent); color: #fff; }
-.ormes-landing .nav .btn:hover { background: #5577F5; }
+.ormes-landing .nav .btn { height: 42px; padding: 0 20px; font-size: 15px; background: #F3F4F6; color: var(--ink); }
+.ormes-landing .nav .btn:hover { background: #fff; }
 @media (max-width: 760px) { .ormes-landing .nav ul, .ormes-landing .nav .actions a.link { display: none; } }
 
 /* 1. hero: showcase, 100vh, card fading into the background */
@@ -73,6 +73,37 @@
 .ormes-landing .stage .card { position: absolute; inset: 0; border-radius: 24px 24px 0 0; overflow: hidden;
   -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
 .ormes-landing .stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* hero analysis scene: portrait clip in the middle, live readouts around it */
+.ormes-landing .hero, .ormes-landing .hero .stage-wrap, .ormes-landing .scene { background: var(--ink); }
+.ormes-landing .scene { position: relative; margin: clamp(32px, 6vh, 56px) auto 0; width: min(100%, 1080px, calc(68vh * 1.6)); }
+.ormes-landing .portrait { position: relative; width: 100%; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 24px 24px 0 0; overflow: hidden; background: var(--ink);
+  -webkit-mask-image: linear-gradient(#000 85%, transparent); mask-image: linear-gradient(#000 85%, transparent); }
+.ormes-landing .portrait img, .ormes-landing .portrait video { width: 100%; height: 100%; object-fit: cover; object-position: 50% 88%; display: block; }
+.ormes-landing .box { position: absolute; border: 1px solid rgba(110,231,168,.85); border-radius: 8px; transition: opacity .2s ease; }
+.ormes-landing .box span { position: absolute; left: -1.5px; top: -24px; font-family: var(--font-mono); font-size: 11px; color: #0B0D12; background: #6EE7A8; padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
+.ormes-landing .box.obj { border-color: rgba(255,255,255,.75); box-shadow: none; border-style: dashed; }
+.ormes-landing .box.obj span { background: rgba(255,255,255,.85); left: auto; right: -1.5px; }
+.ormes-landing .inside { position: absolute; left: 14px; right: 14px; bottom: 16%; display: flex; flex-wrap: wrap; gap: 6px; }
+.ormes-landing .inside span { font-family: var(--font-mono); font-size: 11px; color: #F3F4F6; background: rgba(11,13,18,.72); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 5px 9px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ormes-landing .inside span b { color: #6EE7A8; font-weight: 500; }
+.ormes-landing .scan { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #6EE7A8, transparent); box-shadow: 0 0 18px 4px rgba(110,231,168,.35); animation: ol-scan 3.6s ease-in-out infinite; }
+@keyframes ol-scan { 0% { top: 4%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 96%; opacity: 0; } }
+.ormes-landing .readout { position: absolute; display: flex; flex-direction: column; gap: 14px; width: 230px; text-align: left; }
+.ormes-landing .readout.l { right: calc(50% + var(--h) * 0.4327 + 32px); top: 14%; }
+.ormes-landing .readout.r { left: calc(50% + var(--h) * 0.4327 + 32px); top: 24%; }
+.ormes-landing .tag { background: rgba(21,24,33,.78); border: 1px solid var(--rule-dark); border-radius: 12px; padding: 12px 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.ormes-landing .tag .k { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); letter-spacing: .04em; display: flex; justify-content: space-between; }
+.ormes-landing .tag .k b { color: #6EE7A8; font-weight: 500; }
+.ormes-landing .tag .v { font-size: 15px; color: #F3F4F6; margin-top: 4px; }
+.ormes-landing .tag .bar { height: 3px; border-radius: 3px; background: #262A35; margin-top: 10px; overflow: hidden; }
+.ormes-landing .tag .bar i { display: block; height: 100%; background: #6EE7A8; width: 0; animation: ol-fill 4s ease-out infinite; }
+@keyframes ol-fill { 0% { width: 0; } 70%, 100% { width: var(--to); } }
+.ormes-landing .status { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 12px; color: #F3F4F6; background: rgba(11,13,18,.7); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ormes-landing .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #6EE7A8; animation: ol-pulse 1.2s ease-in-out infinite; }
+@keyframes ol-pulse { 50% { opacity: .3; } }
+@media (max-width: 1000px) { .ormes-landing .readout { display: none; } }
+
+@media (prefers-reduced-motion: reduce) { .ormes-landing .scan, .ormes-landing .tag .bar i, .ormes-landing .status::before { animation: none; } .ormes-landing .tag .bar i { width: var(--to); } }
 .ormes-landing .chip { position: absolute; top: 18px; right: 18px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .02em; padding: 5px 10px; border-radius: 999px; background: rgba(11,13,18,.72); color: #8BE0B4; border: 1px solid rgba(139,224,180,.25); }
 
 /* 2. problem: statement, dark, one number */

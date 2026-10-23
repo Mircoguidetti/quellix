@@ -90,19 +90,17 @@ export function Landing() {
             </div>
           </div>
           <div className="stage-wrap">
-            <div className="stage">
-              <div className="card">
-                <video
-                  src="/media/clips/clip-02.mp4"
-                  poster="/media/clips/clip-02.jpg"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  aria-label="A person making a salad, filmed first-person"
-                />
+            <div className="scene" aria-label="Ormes analysing a first-person video of someone cutting a lemon">
+              <div className="portrait">
+                <video id="hv" muted autoPlay loop playsInline poster="/media/clips/hero-lemons.jpg">
+                  <source src="/media/clips/hero-lemons.webm" type="video/webm" />
+                  <source src="/media/clips/hero-lemons.mp4" type="video/mp4" />
+                </video>
+                <div className="scan" />
+                <div className="box" id="bl" style={{ opacity: 0 }} />
+                <div className="box" id="br" style={{ opacity: 0 }} />
+                <span className="status" id="hs">analysing · 0:00 / 0:08</span>
               </div>
-              <span className="chip">accept</span>
             </div>
           </div>
         </section>
