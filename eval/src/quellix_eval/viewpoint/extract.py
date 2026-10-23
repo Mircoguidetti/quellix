@@ -199,6 +199,54 @@ def holoassist_clips(n: int, work: Path, extract) -> list[ClipFeatures]:  # prag
     return out
 
 
+# Pixabay searches (#79): third-person household scenes, and some first-person ones so the
+# held-out set has first-person clips from the same source. The query is NOT the label: a
+# person labels every clip from its contact sheet (test_sets/viewpoint_pixabay.jsonl).
+PIXABAY_THIRD = (
+    "woman cooking kitchen", "man washing dishes", "person folding laundry", "cleaning house",
+    "woman chopping vegetables", "man cooking", "woman baking", "ironing clothes",
+    "woman cleaning table", "man repairing", "woman sewing", "barista making coffee",
+    "person washing dishes", "woman kneading dough", "man cutting wood", "woman washing hands",
+)
+PIXABAY_FIRST = (
+    "pov hands cooking", "pov cooking", "first person view hands", "pov washing dishes",
+    "pov hands", "point of view cutting",
+)
+
+
+def pixabay_clips(net, key: str, work: Path, sheets: Path, extract, per_third: int,
+                  per_first: int, skip: set[int]) -> tuple[list[ClipFeatures], list[dict]]:
+    """Search, download, extract and sheet every hit. Returns (features, candidate rows)."""
+    from ..datasets import pixabay as pb
+
+    hits: list = []
+    for queries, n in ((PIXABAY_THIRD, per_third), (PIXABAY_FIRST, per_first)):
+        for q in queries:
+            try:  # never print the URL: it carries the API key
+                hits += pb.search(net, key, [q], n, skip | {h.pixabay_id for h in hits})
+            except Exception as e:  # noqa: BLE001
+                print(f"pixabay search {q!r}: {type(e).__name__}", file=sys.stderr)
+            time.sleep(0.8)
+    clips, rows = [], []
+    for hit in hits:
+        clip = ClipFeatures(hit.clip_id, "pixabay:candidate", hit.clip_id, None,
+                            split_of(hit.clip_id), note=hit.query)
+        try:
+            path = pb.download(net, hit, work)
+            extract(path, clip)
+            contact_sheet(path, sheets / f"{hit.clip_id}.jpg",
+                          f"{hit.pixabay_id} q: {hit.query}"[:60], width=180)
+            path.unlink(missing_ok=True)
+        except Exception as e:  # noqa: BLE001
+            clip.error = f"{type(e).__name__}: {e}"[:300].replace(key, "***") if key else str(e)
+        print(f"{clip.clip_id} ({hit.query}) frames={len(clip.frames)} {clip.error or ''}")
+        clips.append(clip)
+        rows.append({"clip_id": hit.clip_id, "pixabay_id": hit.pixabay_id, "page_url": hit.page,
+                     "query": hit.query, "tags": hit.tags, "duration_s": hit.duration_s,
+                     "license": pb.LICENSE, "split": clip.split, "error": clip.error})
+    return clips, rows
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--out", type=Path, required=True)
@@ -207,12 +255,33 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     ap.add_argument("--ego10k", type=int, default=60)
     ap.add_argument("--holoassist", type=int, default=30)
     ap.add_argument("--candidates", type=int, default=30)
+    ap.add_argument("--pixabay-third", type=int, default=0, help="hits per third-person query")
+    ap.add_argument("--pixabay-first", type=int, default=0, help="hits per first-person query")
+    ap.add_argument("--candidates-out", type=Path, default=None,
+                    help="JSONL of the Pixabay candidates (ids, queries, tags)")
     a = ap.parse_args(argv)
     from ..datasets import pexels as px
 
     a.out.mkdir(parents=True, exist_ok=True)
     extract = Extractor()
     net = px.UrllibNet()
+    if a.pixabay_third or a.pixabay_first:
+        # Added to the existing feature file: the other sources are not extracted again.
+        from .data import load
+
+        existing = load(a.features) if a.features.exists() else []
+        skip = {int(c.clip_id.split("_")[1]) for c in existing if c.source.startswith("pixabay")}
+        new, rows = pixabay_clips(net, os.environ["PIXABAY_API_KEY"], a.out / "pixabay",
+                                  a.sheets, extract, a.pixabay_third, a.pixabay_first, skip)
+        ids = {c.clip_id for c in new}
+        save(a.features, [c for c in existing if c.clip_id not in ids] + new)
+        if a.candidates_out:
+            import json
+
+            a.candidates_out.parent.mkdir(parents=True, exist_ok=True)
+            a.candidates_out.write_text("".join(json.dumps(r) + "\n" for r in rows))
+        print(f"{sum(not c.error for c in new)}/{len(new)} Pixabay clips extracted")
+        return 0
     key = os.environ.get("PEXELS_API_KEY", "")
     clips = pexels_clips(net, (*PEXELS_FOUNDER, *PEXELS_EXTRA), a.out / "pexels", key, extract)
     known = {lab.pexels_id for lab in (*PEXELS_FOUNDER, *PEXELS_EXTRA)}
