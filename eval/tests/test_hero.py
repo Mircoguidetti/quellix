@@ -183,3 +183,26 @@ def test_near_misses_are_hands_only_drops_between_30_and_60():
     assert hero.near_misses(recs, 0) == []
     text = hero.comment(recs, hero.survivors(recs), "B", {}, hero.near_misses(recs, 5))
     assert "Near misses (NOT passing" in text and "![pixabay_1](B/pixabay_1.jpg)" in text
+
+
+def _f(t, left, right):
+    obs = lambda st: SimpleNamespace(state=st)  # noqa: E731
+    sides = {"left": obs(left), "right": obs(right)}
+    return SimpleNamespace(t_s=t, hand=lambda s, d=sides: d[s])
+
+
+def test_presence_window_picks_the_stretch_with_most_hands_in_view():
+    ts = np.arange(0, 12, 0.25)
+    frames = [_f(t, "truncated" if t >= 2.5 else "absent", "truncated") for t in ts]
+    a, b = hero.presence_window(frames, 9.0)
+    assert a >= 2.5 and b - a == pytest.approx(9.0, abs=0.3)
+    assert hero.presence_window(frames[:1], 9.0) is None
+
+
+def test_boxes_also_get_xywh_without_changing_the_format():
+    side = {"hands": {"frames": [{"t": 0.0, "left": {"state": "full", "box": [0.1, 0.2, 0.4, 0.6]},
+                                  "right": {"state": "absent", "box": None}}]}}
+    out = hero.with_xywh(side)["hands"]["frames"][0]
+    assert out["left"]["box"] == [0.1, 0.2, 0.4, 0.6]
+    assert out["left"]["box_xywh"] == [0.1, 0.2, 0.3, 0.4]
+    assert out["right"]["box_xywh"] is None

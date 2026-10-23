@@ -453,6 +453,98 @@ def site_clip(  # pragma: no cover - models, encoding
     }
 
 
+# --- the chosen hero clip (founder decision on #87) ----------------------------------------
+
+
+def presence_window(per_frame: Sequence[Any], window_s: float) -> tuple[float, float] | None:
+    """The `window_s` stretch where the most hands are in view (whole or cut by the edge), for
+    clips where hands come in from the frame edges, so `both hands whole` is 0 everywhere and
+    the site-clips score cannot tell windows apart (Pexels 11142458)."""
+    if len(per_frame) < 2:
+        return None
+    ts = [f.t_s for f in per_frame]
+    present = [sum(f.hand(s).state != "absent" for s in ("left", "right")) for f in per_frame]
+    best: tuple[float, float, float] | None = None
+    j = 0
+    for i, t0 in enumerate(ts):
+        while j < len(ts) and ts[j] <= t0 + window_s + 1e-6:
+            j += 1
+        if ts[j - 1] - t0 < window_s * 0.9:
+            break
+        score = float(np.mean(present[i:j]))
+        if best is None or score > best[0]:
+            best = (score, t0, min(t0 + window_s, ts[j - 1]))
+    return None if best is None else (best[1], best[2])
+
+
+def xywh(box: Sequence[float] | None) -> list[float] | None:
+    """[x0, y0, x1, y1] (site-clips sidecars) -> [x, y, w, h], all normalised."""
+    if box is None:
+        return None
+    x0, y0, x1, y1 = box
+    return [round(x0, 3), round(y0, 3), round(x1 - x0, 3), round(y1 - y0, 3)]
+
+
+def with_xywh(sidecar: dict[str, Any]) -> dict[str, Any]:
+    """Add `box_xywh` next to every hand `box` in a sidecar (the format stays the same)."""
+    for row in sidecar.get("hands", {}).get("frames", []):
+        for side in ("left", "right"):
+            if isinstance(row.get(side), dict):
+                row[side]["box_xywh"] = xywh(row[side].get("box"))
+    return sidecar
+
+
+MAX_HERO_BYTES = 2_000_000      # mp4 + webm + poster + sidecar (coordinator, #87)
+HERO_BUDGETS = (1_000_000, 650_000, 100_000)   # mp4, webm, poster: the rest is the sidecar
+
+
+def render_hero(  # pragma: no cover - network, models, encoding
+    pexels_id: int, name: str, final_dir: Path, work: Path,
+) -> dict[str, Any]:
+    """Download one founder pick, cut its best 9 s (most hands in view), encode mp4 / webm /
+    poster under `name`, run the worker on the delivered mp4 and write the sidecar."""
+    from quellix_hands.model import HandsModel
+
+    from . import site_clips as sc
+
+    pick = next(p for p in founder_picks() if p.pexels_id == pexels_id)
+    got, errors = sc.fetch_pexels(pexels_net(), work, [pick],
+                                  os.environ.get("PEXELS_API_KEY", ""))
+    if not got:
+        raise RuntimeError("download failed: " + "; ".join(errors))
+    item = got[0]
+    hands, worker = HandsModel(), sc.worker_check_via_cli()
+    cand = sc.analyse(item.clip_id, item.path, hands, worker, sc.DEFAULT_RUBRIC, source=item.source)
+    samples = list(sc.iter_frames(item.path, sc.SCORE_FPS))
+    per_frame = hands.frames([f for _, f in samples], [t for t, _ in samples])
+    win = presence_window(per_frame, sc.WINDOW_S)
+    if win is None:
+        raise RuntimeError("clip too short for a 9 s window")
+    both, working = window_stats(per_frame, *win)
+    cand.window = sc.Window(win[0], win[1], both, working, 0.7 * working + 0.3 * both)
+    final_dir.mkdir(parents=True, exist_ok=True)
+    files = sc.render_clip(cand, name, final_dir, budgets=sc.Budgets(*HERO_BUDGETS))
+    mp4 = final_dir / files["mp4"]
+    decision = worker(mp4, sc.DEFAULT_RUBRIC)
+    sidecar = with_xywh(sc.build_sidecar(cand, name, files, hands, decision, mp4))
+    sidecar["selection"]["window_choice"] = "most hands in view (both hands are never whole)"
+    side = final_dir / f"{name}.json"
+    side.write_text(json.dumps(sidecar, separators=(",", ":")))
+    sizes = {**files["bytes"], "json": side.stat().st_size}
+    total = sum(sizes.values())
+    if total > MAX_HERO_BYTES:
+        raise RuntimeError(f"{name}: {total} bytes, over {MAX_HERO_BYTES}")
+    return {"name": name, "window_s": [round(win[0], 2), round(win[1], 2)],
+            "decision": (decision or {}).get("decision"), "bytes": sizes,
+            "reasons": [r.get("message") for r in (decision or {}).get("reasons", [])]}
+
+
+def pexels_net() -> Any:  # pragma: no cover
+    from .datasets import pexels
+
+    return pexels.UrllibNet()
+
+
 # --- the comment ---------------------------------------------------------------------------
 
 
@@ -514,7 +606,9 @@ def comment(records: Sequence[Record], top: Sequence[Record], image_base: str,
 
 def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - network, models
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="run", choices=["run", "viewpoint"])
+    ap.add_argument("cmd", nargs="?", default="run", choices=["run", "viewpoint", "clip"])
+    ap.add_argument("--pexels-id", type=int, default=11142458)
+    ap.add_argument("--name", default="hero-lemons")
     ap.add_argument("path", nargs="?", type=Path)
     ap.add_argument("--out", type=Path, default=Path("out/hero"))
     ap.add_argument("--sheets", type=Path, default=Path("reports/hero-candidates"))
@@ -527,6 +621,9 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     a = ap.parse_args(argv)
     if a.cmd == "viewpoint":
         return _viewpoint_child(a.path)
+    if a.cmd == "clip":
+        print(json.dumps(render_hero(a.pexels_id, a.name, a.final_dir, a.out / "work"), indent=1))
+        return 0
 
     from quellix_hands.model import HandsModel
 

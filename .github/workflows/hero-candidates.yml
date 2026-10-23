@@ -57,6 +57,7 @@ jobs:
           git add -A eval/reports/hero-candidates eval/test_sets/hero_candidates.jsonl
           if ! git diff --cached --quiet; then
             git commit -q -m "eval: hero candidates, contact sheets and posters (run ${{ github.run_id }})"
+            git pull -q --rebase origin "${{ github.ref_name }}"
             git push -q origin "HEAD:${{ github.ref_name }}"
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
