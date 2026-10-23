@@ -6,6 +6,7 @@
   "hand_scale_median": 0.311,
   "face_share": 0.0,
   "still_share": 0.118,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -16,6 +17,7 @@
   "hand_scale_median": 0.297,
   "face_share": 0.0,
   "still_share": 0.273,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -27,6 +29,7 @@
   "hand_scale_median": 0.348,
   "face_share": 0.0,
   "still_share": 0.562,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -37,6 +40,7 @@
   "hand_scale_median": 0.091,
   "face_share": 0.0,
   "still_share": 0.712,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -48,6 +52,7 @@
   "hand_scale_median": 0.142,
   "face_share": 0.0,
   "still_share": 0.364,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -58,6 +63,7 @@
   "hand_scale_median": 0.153,
   "face_share": 0.0,
   "still_share": 0.438,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -69,6 +75,7 @@
   "hand_scale_median": 0.145,
   "face_share": 0.0,
   "still_share": 0.091,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -80,6 +87,7 @@
   "hand_scale_median": 0.233,
   "face_share": 0.059,
   "still_share": 0.03,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -90,6 +98,7 @@
   "hand_scale_median": 0.199,
   "face_share": 0.0,
   "still_share": 0.444,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -101,6 +110,7 @@
   "hand_scale_median": 0.11,
   "face_share": 0.0,
   "still_share": 0.069,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.83
  },
@@ -111,6 +121,7 @@
   "hand_scale_median": 0.154,
   "face_share": 0.0,
   "still_share": 0.071,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.72
  },
@@ -121,6 +132,7 @@
   "hand_scale_median": 0.225,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -132,6 +144,7 @@
   "hand_scale_median": 0.241,
   "face_share": 0.0,
   "still_share": 0.087,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.85
  },
@@ -142,6 +155,7 @@
   "hand_scale_median": 0.238,
   "face_share": 0.0,
   "still_share": 0.076,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.9
  },
@@ -152,6 +166,7 @@
   "hand_scale_median": 0.255,
   "face_share": 0.0,
   "still_share": 0.087,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -162,6 +177,7 @@
   "hand_scale_median": 0.388,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -173,6 +189,7 @@
   "hand_scale_median": 0.298,
   "face_share": 0.0,
   "still_share": 0.037,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -183,6 +200,7 @@
   "hand_scale_median": 0.357,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -193,6 +211,7 @@
   "hand_scale_median": 0.282,
   "face_share": 0.0,
   "still_share": 0.037,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -203,6 +222,7 @@
   "hand_scale_median": 0.228,
   "face_share": 0.0,
   "still_share": 0.037,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -213,6 +233,7 @@
   "hand_scale_median": 0.257,
   "face_share": 0.0,
   "still_share": 0.125,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.97
  },
@@ -223,6 +244,7 @@
   "hand_scale_median": 0.224,
   "face_share": 0.0,
   "still_share": 0.101,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -233,6 +255,7 @@
   "hand_scale_median": 0.277,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -243,6 +266,7 @@
   "hand_scale_median": 0.259,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -254,6 +278,7 @@
   "hand_scale_median": 0.203,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -264,6 +289,7 @@
   "hand_scale_median": 0.192,
   "face_share": 0.0,
   "still_share": 0.141,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.83
  },
@@ -274,6 +300,7 @@
   "hand_scale_median": 0.328,
   "face_share": 0.0,
   "still_share": 0.026,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.64
  },
@@ -284,6 +311,7 @@
   "hand_scale_median": 0.196,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.94
  },
@@ -294,6 +322,7 @@
   "hand_scale_median": 0.276,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -304,6 +333,7 @@
   "hand_scale_median": 0.256,
   "face_share": 0.0,
   "still_share": 0.051,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -315,6 +345,7 @@
   "hand_scale_median": 0.381,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -325,6 +356,7 @@
   "hand_scale_median": 0.284,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -335,6 +367,7 @@
   "hand_scale_median": 0.242,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -345,6 +378,7 @@
   "hand_scale_median": 0.301,
   "face_share": 0.0,
   "still_share": 0.037,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -355,6 +389,7 @@
   "hand_scale_median": 0.248,
   "face_share": 0.0,
   "still_share": 0.063,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.97
  },
@@ -365,6 +400,7 @@
   "hand_scale_median": 0.284,
   "face_share": 0.0,
   "still_share": 0.05,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -375,6 +411,7 @@
   "hand_scale_median": 0.288,
   "face_share": 0.0,
   "still_share": 0.101,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.99
  },
@@ -385,6 +422,7 @@
   "hand_scale_median": 0.418,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.93
  },
@@ -395,6 +433,7 @@
   "hand_scale_median": 0.16,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.94
  },
@@ -405,6 +444,7 @@
   "hand_scale_median": 0.151,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.94
  },
@@ -415,6 +455,7 @@
   "hand_scale_median": 0.171,
   "face_share": 0.0,
   "still_share": 0.038,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.97
  },
@@ -425,6 +466,7 @@
   "hand_scale_median": 0.173,
   "face_share": 0.0,
   "still_share": 0.038,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.94
  },
@@ -435,6 +477,7 @@
   "hand_scale_median": 0.239,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -445,6 +488,7 @@
   "hand_scale_median": 0.057,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -456,6 +500,7 @@
   "hand_scale_median": 0.139,
   "face_share": 0.0,
   "still_share": 0.026,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -467,6 +512,7 @@
   "hand_scale_median": 0.157,
   "face_share": 0.0,
   "still_share": 0.014,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -477,6 +523,7 @@
   "hand_scale_median": 0.144,
   "face_share": 0.0,
   "still_share": 0.138,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -487,6 +534,7 @@
   "hand_scale_median": 0.129,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -498,6 +546,7 @@
   "hand_scale_median": 0.11,
   "face_share": 0.05,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -509,6 +558,7 @@
   "hand_scale_median": 0.18,
   "face_share": 0.0,
   "still_share": 0.113,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -519,6 +569,7 @@
   "hand_scale_median": 0.152,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -529,6 +580,7 @@
   "hand_scale_median": 0.173,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -539,6 +591,7 @@
   "hand_scale_median": 0.209,
   "face_share": 0.0,
   "still_share": 0.138,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.99
  },
@@ -549,6 +602,7 @@
   "hand_scale_median": 0.213,
   "face_share": 0.0,
   "still_share": 0.212,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -559,6 +613,7 @@
   "hand_scale_median": 0.265,
   "face_share": 0.0,
   "still_share": 0.026,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -569,6 +624,7 @@
   "hand_scale_median": 0.251,
   "face_share": 0.0,
   "still_share": 0.064,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -579,6 +635,7 @@
   "hand_scale_median": 0.166,
   "face_share": 0.0,
   "still_share": 0.256,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.93
  },
@@ -589,6 +646,7 @@
   "hand_scale_median": 0.192,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -599,6 +657,7 @@
   "hand_scale_median": 0.252,
   "face_share": 0.0,
   "still_share": 0.177,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.93
  },
@@ -609,6 +668,7 @@
   "hand_scale_median": 0.213,
   "face_share": 0.0,
   "still_share": 0.215,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.66
  },
@@ -619,6 +679,7 @@
   "hand_scale_median": 0.157,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -629,6 +690,7 @@
   "hand_scale_median": 0.208,
   "face_share": 0.0,
   "still_share": 0.1,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.86
  },
@@ -639,6 +701,7 @@
   "hand_scale_median": 0.239,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.92
  },
@@ -649,6 +712,7 @@
   "hand_scale_median": 0.217,
   "face_share": 0.0,
   "still_share": 0.113,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -659,6 +723,7 @@
   "hand_scale_median": 0.209,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -669,6 +734,7 @@
   "hand_scale_median": 0.132,
   "face_share": 0.0,
   "still_share": 0.775,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -680,6 +746,7 @@
   "hand_scale_median": 0.106,
   "face_share": 0.0,
   "still_share": 0.887,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -691,6 +758,7 @@
   "hand_scale_median": 0.18,
   "face_share": 0.0,
   "still_share": 0.039,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -701,6 +769,7 @@
   "hand_scale_median": 0.181,
   "face_share": 0.0,
   "still_share": 0.062,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -711,6 +780,7 @@
   "hand_scale_median": 0.257,
   "face_share": 0.0,
   "still_share": 0.113,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.97
  },
@@ -721,6 +791,7 @@
   "hand_scale_median": 0.148,
   "face_share": 0.0,
   "still_share": 0.038,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -731,6 +802,7 @@
   "hand_scale_median": 0.202,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -741,6 +813,7 @@
   "hand_scale_median": 0.181,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.99
  },
@@ -751,6 +824,7 @@
   "hand_scale_median": 0.215,
   "face_share": 0.0,
   "still_share": 0.138,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -761,6 +835,7 @@
   "hand_scale_median": 0.215,
   "face_share": 0.0,
   "still_share": 0.138,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -771,6 +846,7 @@
   "hand_scale_median": 0.187,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -782,6 +858,7 @@
   "hand_scale_median": 0.235,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -792,6 +869,7 @@
   "hand_scale_median": 0.251,
   "face_share": 0.0,
   "still_share": 0.138,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -802,6 +880,7 @@
   "hand_scale_median": 0.26,
   "face_share": 0.0,
   "still_share": 0.25,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -812,6 +891,7 @@
   "hand_scale_median": 0.129,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.94
  },
@@ -822,6 +902,7 @@
   "hand_scale_median": 0.13,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.92
  },
@@ -832,6 +913,7 @@
   "hand_scale_median": 0.208,
   "face_share": 0.0,
   "still_share": 0.295,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -842,6 +924,7 @@
   "hand_scale_median": 0.168,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -852,6 +935,7 @@
   "hand_scale_median": 0.125,
   "face_share": 0.0,
   "still_share": 0.062,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -862,6 +946,7 @@
   "hand_scale_median": 0.142,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -872,6 +957,7 @@
   "hand_scale_median": 0.19,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.95
  },
@@ -882,6 +968,7 @@
   "hand_scale_median": 0.176,
   "face_share": 0.0,
   "still_share": 0.013,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -892,6 +979,7 @@
   "hand_scale_median": 0.07,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -903,6 +991,7 @@
   "hand_scale_median": 0.074,
   "face_share": 0.0,
   "still_share": 0.125,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -914,6 +1003,7 @@
   "hand_scale_median": 0.228,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -924,6 +1014,7 @@
   "hand_scale_median": 0.217,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.97
  },
@@ -934,6 +1025,7 @@
   "hand_scale_median": 0.074,
   "face_share": 0.0,
   "still_share": 0.41,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.96
  },
@@ -944,6 +1036,7 @@
   "hand_scale_median": 0.064,
   "face_share": 0.05,
   "still_share": 0.241,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -955,6 +1048,7 @@
   "hand_scale_median": 0.193,
   "face_share": 0.0,
   "still_share": 0.188,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -965,6 +1059,7 @@
   "hand_scale_median": 0.209,
   "face_share": 0.0,
   "still_share": 0.212,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -975,6 +1070,7 @@
   "hand_scale_median": 0.102,
   "face_share": 0.25,
   "still_share": 0.354,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -986,6 +1082,7 @@
   "hand_scale_median": 0.126,
   "face_share": 0.0,
   "still_share": 0.025,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.9
  },
@@ -996,6 +1093,7 @@
   "hand_scale_median": 0.166,
   "face_share": 0.0,
   "still_share": 0.087,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.98
  },
@@ -1006,6 +1104,7 @@
   "hand_scale_median": 0.07,
   "face_share": 0.759,
   "still_share": 0.632,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.94
  },
@@ -1016,6 +1115,7 @@
   "hand_scale_median": 0.141,
   "face_share": 0.0,
   "still_share": 0.423,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1027,6 +1127,7 @@
   "hand_scale_median": 0.461,
   "face_share": 0.0,
   "still_share": 0.181,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -1038,6 +1139,7 @@
   "hand_scale_median": 0.437,
   "face_share": 0.0,
   "still_share": 0.125,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -1049,6 +1151,7 @@
   "hand_scale_median": 0.173,
   "face_share": 0.0,
   "still_share": 0.329,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -1060,6 +1163,7 @@
   "hand_scale_median": 0.133,
   "face_share": 0.0,
   "still_share": 0.15,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1071,6 +1175,7 @@
   "hand_scale_median": 0.095,
   "face_share": 0.0,
   "still_share": 0.868,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1082,6 +1187,7 @@
   "hand_scale_median": 0.103,
   "face_share": 0.455,
   "still_share": 0.697,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.74
  },
@@ -1092,6 +1198,7 @@
   "hand_scale_median": 0.315,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.72
  },
@@ -1102,6 +1209,7 @@
   "hand_scale_median": 0.083,
   "face_share": 0.0,
   "still_share": 0.896,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1113,6 +1221,7 @@
   "hand_scale_median": 0.086,
   "face_share": 0.0,
   "still_share": 0.729,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1124,6 +1233,7 @@
   "hand_scale_median": 0.107,
   "face_share": 0.0,
   "still_share": 0.848,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1134,6 +1244,7 @@
   "hand_scale_median": 0.4,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1144,6 +1255,7 @@
   "hand_scale_median": 0.553,
   "face_share": 0.0,
   "still_share": 0.5,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1155,6 +1267,7 @@
   "hand_scale_median": 0.384,
   "face_share": 0.0,
   "still_share": 0.191,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.67
  },
@@ -1165,6 +1278,7 @@
   "hand_scale_median": 0.444,
   "face_share": 0.0,
   "still_share": 0.276,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.64
  },
@@ -1175,17 +1289,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 1.0,
-  "viewpoint": "uncertain",
-  "confidence": 0.0,
-  "uncertain_why": "too few frames with a hand"
- },
- "pixabay_11605": {
-  "hand_frames": 4,
-  "first_person_ratio": 0.0,
-  "pointing_up_median": 0.095,
-  "hand_scale_median": 0.33,
-  "face_share": 0.0,
-  "still_share": 0.479,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1197,6 +1301,7 @@
   "hand_scale_median": 0.194,
   "face_share": 0.0,
   "still_share": 0.659,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1207,6 +1312,7 @@
   "hand_scale_median": 0.197,
   "face_share": 0.0,
   "still_share": 0.933,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1218,6 +1324,7 @@
   "hand_scale_median": 0.18,
   "face_share": 0.0,
   "still_share": 0.783,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.94
  },
@@ -1228,6 +1335,7 @@
   "hand_scale_median": 0.084,
   "face_share": 0.772,
   "still_share": 0.509,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -1239,6 +1347,7 @@
   "hand_scale_median": 0.046,
   "face_share": 0.037,
   "still_share": 0.157,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -1250,6 +1359,7 @@
   "hand_scale_median": 0.044,
   "face_share": 0.14,
   "still_share": 0.786,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.69
  },
@@ -1260,6 +1370,7 @@
   "hand_scale_median": 0.354,
   "face_share": 0.0,
   "still_share": 0.377,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.73
  },
@@ -1270,6 +1381,7 @@
   "hand_scale_median": 0.196,
   "face_share": 0.0,
   "still_share": 0.238,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1281,6 +1393,7 @@
   "hand_scale_median": 0.346,
   "face_share": 0.0,
   "still_share": 0.274,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1291,6 +1404,7 @@
   "hand_scale_median": 0.096,
   "face_share": 0.0,
   "still_share": 0.718,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1302,6 +1416,7 @@
   "hand_scale_median": 0.029,
   "face_share": 0.0,
   "still_share": 0.154,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -1313,6 +1428,7 @@
   "hand_scale_median": 0.145,
   "face_share": 0.0,
   "still_share": 0.683,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.77
  },
@@ -1323,6 +1439,7 @@
   "hand_scale_median": 0.104,
   "face_share": 0.143,
   "still_share": 0.889,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 0.89
  },
@@ -1333,6 +1450,7 @@
   "hand_scale_median": 0.105,
   "face_share": 1.0,
   "still_share": 0.176,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1344,6 +1462,7 @@
   "hand_scale_median": 0.084,
   "face_share": 0.0,
   "still_share": 0.931,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1355,6 +1474,7 @@
   "hand_scale_median": 0.139,
   "face_share": 0.0,
   "still_share": 0.721,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1366,6 +1486,7 @@
   "hand_scale_median": 0.154,
   "face_share": 0.0,
   "still_share": 0.1,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1377,6 +1498,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.069,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1388,6 +1510,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.12,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1399,6 +1522,7 @@
   "hand_scale_median": 0.169,
   "face_share": 0.1,
   "still_share": 1.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point up in some frames and not in others"
@@ -1410,6 +1534,7 @@
   "hand_scale_median": 0.177,
   "face_share": 0.0,
   "still_share": 0.65,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.88
  },
@@ -1420,6 +1545,7 @@
   "hand_scale_median": 0.243,
   "face_share": 0.0,
   "still_share": 0.411,
+  "head_share": null,
   "viewpoint": "first_person",
   "confidence": 1.0
  },
@@ -1430,6 +1556,7 @@
   "hand_scale_median": 0.197,
   "face_share": 0.0,
   "still_share": 0.333,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1441,19 +1568,9 @@
   "hand_scale_median": 0.076,
   "face_share": 1.0,
   "still_share": 0.895,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
- },
- "pixabay_47245": {
-  "hand_frames": 0,
-  "first_person_ratio": null,
-  "pointing_up_median": null,
-  "hand_scale_median": null,
-  "face_share": 0.0,
-  "still_share": 0.922,
-  "viewpoint": "uncertain",
-  "confidence": 0.0,
-  "uncertain_why": "too few frames with a hand"
  },
  "pixabay_51807": {
   "hand_frames": 166,
@@ -1462,6 +1579,7 @@
   "hand_scale_median": 0.383,
   "face_share": 0.0,
   "still_share": 0.515,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1472,6 +1590,7 @@
   "hand_scale_median": 0.193,
   "face_share": 0.0,
   "still_share": 0.053,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -1483,6 +1602,7 @@
   "hand_scale_median": 0.333,
   "face_share": 0.0,
   "still_share": 0.657,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1494,6 +1614,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.212,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1505,6 +1626,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.186,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1516,6 +1638,7 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.97,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1527,6 +1650,7 @@
   "hand_scale_median": 0.013,
   "face_share": 0.0,
   "still_share": 0.0,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
@@ -1538,6 +1662,7 @@
   "hand_scale_median": 0.147,
   "face_share": 0.0,
   "still_share": 0.828,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
@@ -1549,6 +1674,7 @@
   "hand_scale_median": 0.239,
   "face_share": 0.0,
   "still_share": 0.857,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.93
  },
@@ -1559,6 +1685,7 @@
   "hand_scale_median": 0.331,
   "face_share": 0.0,
   "still_share": 0.041,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.72
  },
@@ -1569,6 +1696,7 @@
   "hand_scale_median": 0.384,
   "face_share": 0.0,
   "still_share": 0.385,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.87
  },
@@ -1579,6 +1707,7 @@
   "hand_scale_median": 0.423,
   "face_share": 0.0,
   "still_share": 0.566,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
  },
@@ -1589,6 +1718,7 @@
   "hand_scale_median": 0.368,
   "face_share": 0.0,
   "still_share": 0.884,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 0.95
  },
@@ -1599,18 +1729,9 @@
   "hand_scale_median": 0.162,
   "face_share": 0.0,
   "still_share": 0.525,
+  "head_share": null,
   "viewpoint": "third_person",
   "confidence": 1.0
- },
- "pixabay_211185": {
-  "hand_frames": 39,
-  "first_person_ratio": 0.026,
-  "pointing_up_median": -0.399,
-  "hand_scale_median": 0.153,
-  "face_share": 0.0,
-  "still_share": 0.895,
-  "viewpoint": "third_person",
-  "confidence": 0.97
  },
  "pixabay_10822": {
   "hand_frames": 0,
@@ -1619,20 +1740,10 @@
   "hand_scale_median": null,
   "face_share": 0.0,
   "still_share": 0.646,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
- },
- "pixabay_31654": {
-  "hand_frames": 121,
-  "first_person_ratio": 0.0,
-  "pointing_up_median": -0.721,
-  "hand_scale_median": 0.178,
-  "face_share": 0.0,
-  "still_share": 0.223,
-  "viewpoint": "uncertain",
-  "confidence": 0.0,
-  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
  },
  "pixabay_19600": {
   "hand_frames": 10,
@@ -1641,6 +1752,7 @@
   "hand_scale_median": 0.192,
   "face_share": 0.0,
   "still_share": 0.6,
+  "head_share": null,
   "viewpoint": "uncertain",
   "confidence": 0.0,
   "uncertain_why": "too few frames with a hand"
