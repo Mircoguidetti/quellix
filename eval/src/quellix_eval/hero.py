@@ -541,35 +541,49 @@ def render_hero(  # pragma: no cover - network, models, encoding
 
 # --- the Product page pair (founder decision on #87, 12:08 UTC) ---------------------------
 
-EXIT_RAMP_S = 0.25     # how fast the framing moves in and out of the hand-exit crop
+EXIT_RAMP_S = 0.25     # how fast the camera moves in and back out
 EXIT_HOLD_S = 3.0      # how long one hand stays out of the frame
-EXIT_MARGIN = 0.03     # clearance between the leaving hand and the crop edge (share of width)
-MAX_EXIT_ZOOM = 2.2
+EXIT_SHIFTS = (0.3, 0.35, 0.4, 0.45, 0.5, 0.55)   # share of the width cut off on the exit side
 
 
-def exit_plans(rows: Sequence[dict[str, Any]], a: float, b: float) -> list[dict[str, Any]]:
-    """Crops (no black bars) that take one hand fully out of the frame between a and b while the
-    other stays in, from a sidecar's per-frame boxes ([x0, y0, x1, y1], normalised). Smallest
-    zoom first. The crop is anchored to the side of the hand that stays."""
-    inside = [r for r in rows if a <= r["t"] <= b]
-    boxes = {s: [r[s]["box"] for r in inside if r.get(s, {}).get("box")] for s in ("left", "right")}
-    if not boxes["left"] or not boxes["right"]:
-        return []
-    plans = []
-    lx1 = max(bx[2] for bx in boxes["left"]) + EXIT_MARGIN    # left hand leaves: crop starts here
-    rx0 = min(bx[0] for bx in boxes["right"]) - EXIT_MARGIN   # right hand leaves: crop ends here
-    for leaving, stays, ok, zoom in (
-        ("left", "right", lx1 < min(bx[0] for bx in boxes["right"]), 1 / max(1e-6, 1 - lx1)),
-        ("right", "left", rx0 > max(bx[2] for bx in boxes["left"]), 1 / max(1e-6, rx0)),
-    ):
-        if not ok or zoom > MAX_EXIT_ZOOM:
+def _inside(box: Sequence[float], x0: float, y0: float, size: float) -> bool:
+    return box[0] >= x0 and box[2] <= x0 + size and box[1] >= y0 and box[3] <= y0 + size
+
+
+def exit_plan(rows: Sequence[dict[str, Any]], duration: float) -> dict[str, Any] | None:
+    """The camera moves in (no black bars, no invented pixels): a crop of 1 - shift of the frame,
+    anchored to one side, so the hand on the other side leaves. Picks when, which side, how far
+    and the crop's height, to maximise the hold frames where the leaving hand is fully out and the
+    other fully in, from a sidecar's per-frame boxes ([x0, y0, x1, y1], normalised). Ties go to
+    the smaller shift, then the more central start."""
+    span = 2 * EXIT_RAMP_S + EXIT_HOLD_S
+    best: tuple[tuple[float, float, float], dict[str, Any]] | None = None
+    for start in np.arange(0.0, max(0.0, duration - span) + 1e-6, 0.125):
+        a, b = start + EXIT_RAMP_S, start + EXIT_RAMP_S + EXIT_HOLD_S
+        rows_in = [r for r in rows if a <= r["t"] <= b and r.get("left", {}).get("box")
+                   and r.get("right", {}).get("box")]
+        if not rows_in:
             continue
-        cy = float(np.mean([(bx[1] + bx[3]) / 2 for bx in boxes[stays]]))
-        y0 = min(max(cy - 0.5 / zoom, 0.0), 1 - 1 / zoom)
-        x0 = 1 - 1 / zoom if leaving == "left" else 0.0
-        plans.append({"leaving": leaving, "zoom": round(zoom, 3), "x0": round(x0, 4),
-                      "y0": round(y0, 4)})
-    return sorted(plans, key=lambda p: p["zoom"])
+        for shift in EXIT_SHIFTS:
+            size = 1 - shift
+            for leaving in ("left", "right"):
+                x0 = shift if leaving == "left" else 0.0
+                stays = "right" if leaving == "left" else "left"
+                for y0 in np.arange(0.0, shift + 1e-6, 0.025):
+                    ok = 0
+                    for r in rows_in:
+                        lv, st = r[leaving]["box"], r[stays]["box"]
+                        out = lv[2] < x0 if leaving == "left" else lv[0] > x0 + size
+                        ok += out and _inside(st, x0, y0, size)
+                    share = ok / len(rows_in)
+                    key = (round(share, 3), -shift, -abs(start + span / 2 - duration / 2))
+                    if best is None or key > best[0]:
+                        best = (key, {"leaving": leaving, "zoom": round(1 / size, 3),
+                                      "x0": round(x0, 4), "y0": round(float(y0), 4),
+                                      "start_s": round(float(start), 3),
+                                      "clean_share": round(float(share), 3),
+                                      "frames": len(rows_in)})
+    return None if best is None else best[1]
 
 
 def exit_progress(t: float, start: float) -> float:
@@ -588,19 +602,18 @@ def exit_progress(t: float, start: float) -> float:
 
 
 def exit_crop(img: np.ndarray, plan: dict[str, Any], p: float) -> np.ndarray:
-    """The part of `img` the camera sees at progress p, scaled back to the full frame size.
-    Zoom grows linearly with p and the corner moves linearly to the plan's corner: the crop
-    stays inside the frame all the way (1 - 1/z is concave in p)."""
+    """What the camera sees at progress p, scaled back to the full frame size. Zoom grows
+    linearly with p and the corner moves linearly to the plan's corner, so the crop stays inside
+    the frame all the way (1 - 1/z is concave in p)."""
     if p <= 0:
         return img
     h, w = img.shape[:2]
     z = 1 + (plan["zoom"] - 1) * p
     cw, ch = w / z, h / z
-    x0 = min(plan["x0"] * p * w, w - cw)
-    y0 = min(plan["y0"] * p * h, h - ch)
-    x, y = int(round(x0)), int(round(y0))
+    x = int(round(min(plan["x0"] * p * w, w - cw)))
+    y = int(round(min(plan["y0"] * p * h, h - ch)))
     crop = img[y:y + int(round(ch)), x:x + int(round(cw))]
-    return cv2.resize(crop, (w, h), interpolation=cv2.INTER_CUBIC)
+    return cv2.resize(crop, (w, h), interpolation=cv2.INTER_AREA)
 
 
 def render_product(  # pragma: no cover - network, models, encoding
@@ -640,37 +653,35 @@ def render_product(  # pragma: no cover - network, models, encoding
                                            "within 90% of the best hands score)")
     out[name] = _write_sidecar(final_dir, name, files, clean, decision)
 
-    # The defective copy: same window, one hand leaves for ~3 s through a crop (no black bars).
+    # The defective copy: same window, the camera moves in so one hand leaves for ~3 s.
     hname = f"{name}-hand"
-    dur = files["duration_s"]
+    plan = exit_plan(clean["hands"]["frames"], files["duration_s"])
+    if plan is None:
+        raise RuntimeError("no hand boxes to plan the exit from")
+    start = plan["start_s"]
+    w = cand.window
+    _, src_w, src_h, src_fps = sc.video_info(cand.path)
+    fps = min(src_fps, 30.0)
+    width = min(sc.OUT_WIDTH, sc.PORTRAIT_WIDTH) if src_h > src_w else sc.OUT_WIDTH
+
+    def frames() -> Any:
+        raw = sc.iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None)
+        return sc._scaled(((t, exit_crop(f, plan, exit_progress(t - w.start_s, start)))
+                           for t, f in raw), width)
+
+    poster_t = w.start_s + start + EXIT_RAMP_S + EXIT_HOLD_S / 2
+    poster = next(sc._scaled(((t, exit_crop(f, plan, 1.0)) for t, f in sc.iter_frames(
+        cand.path, 8, poster_t, poster_t + 0.2, max_width=None)), width))
+    hfiles = sc.encode_set(frames, poster, hname, final_dir, fps, budgets)
+    hdecision = worker(final_dir / hfiles["mp4"], rubric)
     span = 2 * EXIT_RAMP_S + EXIT_HOLD_S
-    start = max(0.0, (dur - span) / 2)
-    plans = exit_plans(clean["hands"]["frames"], start, start + span)
-    if plans:
-        plan = plans[0]
-        w = cand.window
-        _, src_w, src_h, src_fps = sc.video_info(cand.path)
-        fps = min(src_fps, 30.0)
-        width = min(sc.OUT_WIDTH, sc.PORTRAIT_WIDTH) if src_h > src_w else sc.OUT_WIDTH
-
-        def frames() -> Any:
-            raw = sc.iter_frames(cand.path, fps, w.start_s, w.end_s, max_width=None)
-            return sc._scaled(((t, exit_crop(f, plan, exit_progress(t - w.start_s, start)))
-                               for t, f in raw), width)
-
-        poster_t = w.start_s + start + EXIT_RAMP_S + EXIT_HOLD_S / 2
-        poster = next(sc._scaled(((t, exit_crop(f, plan, 1.0)) for t, f in sc.iter_frames(
-            cand.path, 8, poster_t, poster_t + 0.2, max_width=None)), width))
-        hfiles = sc.encode_set(frames, poster, hname, final_dir, fps, budgets)
-        hdecision = worker(final_dir / hfiles["mp4"], rubric)
-        info = {"kind": "hand", "recipe": f"crop: the {plan['leaving']} hand leaves the frame "
-                f"(zoom up to x{plan['zoom']}, eased in/out over {EXIT_RAMP_S} s, no black bars)",
-                "interval_s": [round(start, 2), round(start + span, 2)],
-                "hand_out_s": [round(start + EXIT_RAMP_S, 2),
-                               round(start + EXIT_RAMP_S + EXIT_HOLD_S, 2)],
-                "plan": plan, "tried": [p["leaving"] for p in plans]}
-    else:   # no crop can drop one hand and keep the other: the existing recipes (black strip)
-        hfiles, hdecision, info = sc.make_variant(mp4, "hand", hname, final_dir, worker, rubric)
+    info = {"kind": "hand",
+            "recipe": (f"crop: the camera moves in (x{plan['zoom']}, eased over {EXIT_RAMP_S} s) "
+                       f"so the {plan['leaving']} hand leaves the frame; no black bars"),
+            "interval_s": [round(start, 2), round(start + span, 2)],
+            "hand_out_s": [round(start + EXIT_RAMP_S, 2),
+                           round(start + EXIT_RAMP_S + EXIT_HOLD_S, 2)],
+            "plan": plan}
     hside = with_xywh(sc.build_sidecar(cand, hname, hfiles, hands, hdecision,
                                        final_dir / hfiles["mp4"], variant=info))
     out[hname] = _write_sidecar(final_dir, hname, hfiles, hside, hdecision)

@@ -212,18 +212,17 @@ def _row(t, left, right):
     return {"t": t, "left": {"box": left}, "right": {"box": right}}
 
 
-def test_exit_plans_take_one_hand_out_and_keep_the_other():
+def test_exit_plan_takes_one_hand_out_and_keeps_the_other_whole():
     rows = [_row(t, [0.15, 0.5, 0.35, 0.8], [0.6, 0.5, 0.8, 0.8]) for t in np.arange(0, 9, 0.125)]
-    plans = hero.exit_plans(rows, 3.0, 6.5)
-    assert {p["leaving"] for p in plans} == {"left", "right"}
-    left = next(p for p in plans if p["leaving"] == "left")
-    crop_x0 = 1 - 1 / left["zoom"]
-    assert crop_x0 > 0.35 and crop_x0 < 0.6                  # left hand out, right hand in
-    right = next(p for p in plans if p["leaving"] == "right")
-    assert 0.35 < 1 / right["zoom"] < 0.6
-    assert plans[0]["zoom"] <= plans[1]["zoom"]
-    overlapping = [_row(t, [0.2, 0.5, 0.7, 0.8], [0.4, 0.5, 0.9, 0.8]) for t in (3.0, 4.0)]
-    assert hero.exit_plans(overlapping, 3.0, 6.5) == []
+    plan = hero.exit_plan(rows, 9.0)
+    assert plan["clean_share"] == 1.0
+    size = 1 / plan["zoom"]
+    if plan["leaving"] == "left":
+        assert 0.35 < plan["x0"] <= 0.6 and plan["x0"] + size >= 0.8
+    else:
+        assert plan["x0"] == 0.0 and 0.35 < size <= 0.6
+    assert plan["y0"] <= 0.5 and plan["y0"] + size >= 0.8 - 1e-3   # the staying hand is whole
+    assert hero.exit_plan([_row(0.0, None, None)], 9.0) is None
 
 
 def test_exit_progress_and_crop_keep_the_frame_size():
