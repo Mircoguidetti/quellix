@@ -51,7 +51,7 @@ describe("stepAt", () => {
 
 describe("stepAt with ends and labels", () => {
   const steps = [
-    { name: "grab lens", t_s: 0, end_s: 2, source: "HoloAssist annotation" },
+    { name: "grab lens", t_s: 0, end_s: 2, source: "task annotation" },
     { name: "turn dial", t_s: 5, end_s: 9 },
   ];
 
@@ -65,8 +65,8 @@ describe("stepAt with ends and labels", () => {
 
 describe("sourcesLabel", () => {
   it("joins datasets with their licenses", () => {
-    expect(sourcesLabel([{ dataset: "Build AI Egocentric-10K", license: "Apache-2.0" }, { dataset: "HoloAssist", license: "CDLA-Permissive-2.0" }])).toBe(
-      "Build AI Egocentric-10K (Apache-2.0) and HoloAssist (CDLA-Permissive-2.0)",
+    expect(sourcesLabel([{ dataset: "Pexels", license: "Pexels License" }, { dataset: "Own capture", license: "CC BY 4.0" }])).toBe(
+      "Pexels (Pexels License) and Own capture (CC BY 4.0)",
     );
     expect(sourcesLabel([])).toBe("");
   });

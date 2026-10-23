@@ -1,90 +1,76 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BellRing, CalendarClock, Clock, LoaderCircle, ScanLine, Video, XCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { BellRing, CalendarClock, CircleCheck, Clock, LoaderCircle, ScanLine, UserRoundSearch, Video, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ClipPlayer, useClip, type ClipSidecar } from "../clip-player";
+import { CLIP_BASE, ClipPlayer, useClips, type ClipSidecar } from "../clip-player";
 import { SITE_CLIPS } from "../clips";
-import { Example, ICON, MoreLink } from "../primitives";
+import { ICON, MoreLink } from "../primitives";
 import { usePlayback } from "../use-playback";
 
 /**
- * Home §5, "Why aren't my reviewers enough?": the same video, side by side, in sync. Today a person
- * watches it for three minutes and the verdict arrives tomorrow with no reason. With Ormes the
- * decision and its reason arrive in seconds, pinned to the moment, and the contributor gets a fix.
+ * Home §5, "Why aren't my reviewers enough?": the same video, side by side. Today a person watches
+ * it for three minutes and the verdict arrives tomorrow with no reason. With Ormes the decision and
+ * its reason arrive in seconds, pinned to the moment, and the contributor knows what to fix.
  *
- * With a real clip (SITE_CLIPS.why, a clip whose real decision is a reject) both sides play it and
- * the reason comes from its sidecar; until then a drawn example scene plays.
+ * Three real clips (issue #69): the original and two copies with a defect added. Each shows the
+ * worker's output as it is, so all three outcomes appear: accept, review and reject.
  */
+
+type Outcome = "accept" | "review" | "reject";
 
 const CYCLE = 12_000;
 const T = {
   decided: 1300, // Ormes decision on screen
-  hint: 3400, // contributor receives the fix
+  hint: 3400, // contributor hears back
   watched: 7000, // reviewer reaches 3:00
   tomorrow: 7400,
-  rejected: 9200, // contributor hears back, no reason
+  told: 9200, // contributor hears back, no reason
 };
-const VIDEO_S = 164; // the example video is 2:44 long
 
-const EXAMPLE = {
-  verdict: "reject" as const,
-  reason: "Right hand out of frame",
-  segment: { start_s: 41, end_s: 52 },
-  hint: "Hold the phone lower and record again.",
+/** The cards, left to right. The scene plays them reject first, the one that matters most. */
+const CARDS: { outcome: Outcome; label: string }[] = [
+  { outcome: "accept", label: "Original" },
+  { outcome: "review", label: "Copy: right hand leaves for 3 s" },
+  { outcome: "reject", label: "Copy: too dark for 3 s" },
+];
+const PLAY_ORDER = [2, 1, 0];
+
+const LOOK: Record<Outcome, { icon: LucideIcon; text: string; chip: string; bar: string }> = {
+  accept: { icon: CircleCheck, text: "text-ok", chip: "bg-ok/12 text-ok", bar: "bg-ok" },
+  review: { icon: UserRoundSearch, text: "text-brand", chip: "bg-brand/12 text-brand", bar: "bg-brand" },
+  reject: { icon: XCircle, text: "text-no", chip: "bg-no/12 text-no", bar: "bg-no" },
+};
+
+/** What the contributor hears today, a day later and with no reason. */
+const TODAY: Record<Outcome, string> = {
+  accept: "Your video was accepted.",
+  review: "Your video is still in review.",
+  reject: "Your video was rejected.",
 };
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
-/** Drawn stand-in for the clip: two hands over a counter; the right one drifts out of frame. */
-function Scene({ t, boxes }: { t: number; boxes: boolean }) {
-  const s = (t % 6000) / 6000;
-  // 0 in frame, 1 out of frame; the scene covers 0:30–1:00, so this is 0:41–0:52.
-  const out = smooth((s - 0.355) / 0.05) - smooth((s - 0.69) / 0.05);
-  const lx = 30 + 4 * Math.sin(s * Math.PI * 4);
-  const ly = 58 + 3 * Math.cos(s * Math.PI * 4);
-  const rx = 63 + 3 * Math.sin(s * Math.PI * 4 + 1) + 31 * out; // half the hand past the edge: cut, not gone
-  const ry = 60 + 3 * Math.cos(s * Math.PI * 4 + 1) + 8 * out;
-  const cut = rx + 9 > 100;
-  return (
-    <div className="absolute inset-0 overflow-hidden bg-[linear-gradient(170deg,#2b2f37,#16191e_55%,#1d2128)]" aria-hidden="true">
-      <div className="absolute inset-x-[-5%] bottom-0 h-[42%] rounded-t-[40%] bg-white/[0.06]" />
-      <div className="absolute bottom-[16%] left-[40%] h-[16%] w-[22%] rounded-[50%] border border-white/15 bg-white/[0.07]" />
-      {[
-        { x: lx, y: ly, key: "l" },
-        { x: rx, y: ry, key: "r" },
-      ].map((h) => (
-        <span key={h.key} className="absolute h-[22%] w-[13%] -translate-x-1/2 -translate-y-1/2 rounded-[45%] bg-[#c9a68a]/40" style={{ left: `${h.x}%`, top: `${h.y}%` }} />
-      ))}
-      {boxes ? (
-        <>
-          <span className="absolute -translate-x-1/2 -translate-y-1/2 border-[1.5px] border-ok" style={{ left: `${lx}%`, top: `${ly}%`, width: "17%", height: "28%" }} />
-          {rx < 104 ? (
-            <span
-              className={cn("absolute -translate-y-1/2 border-[1.5px]", cut ? "border-no" : "border-ok")}
-              style={{ left: `${rx - 8.5}%`, top: `${ry}%`, width: `${Math.min(17, 100 - (rx - 8.5))}%`, height: "28%" }}
-            />
-          ) : null}
-          {cut ? <span className="absolute right-2 top-[30%] rounded bg-no px-1.5 py-0.5 font-mono text-[10px] text-black">right hand · cut</span> : null}
-        </>
-      ) : null}
-    </div>
-  );
+function reasonOf(side: ClipSidecar | null) {
+  const r = side?.decision?.reasons[0];
+  if (!r) return { text: "No reasons: every check passed", segment: null, hint: null };
+  return { text: r.message, segment: r.segments?.[0] ?? null, hint: r.hint ?? null };
 }
 
-function Player({ t, boxes, side }: { t: number; boxes: boolean; side: ClipSidecar | null }) {
-  const at = 30 + ((t % 6000) / 6000) * 30; // the example scene covers 0:30–1:00
+function Player({ id, side, boxes }: { id: string; side: ClipSidecar | null; boxes: boolean }) {
   return (
     <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-black">
-      {side ? <ClipPlayer side={side} overlay={boxes} /> : <Scene t={t} boxes={boxes} />}
-      {!side ? <span className="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 font-mono text-[10.5px] text-white/75">{clock(at)} / 2:44</span> : null}
+      {/* eslint-disable-next-line @next/next/no-img-element -- a plain poster, served as is */}
+      <img src={`${CLIP_BASE}/${id}.jpg`} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+      {side ? <ClipPlayer key={side.id} side={side} overlay={boxes} /> : null}
     </div>
   );
 }
 
 /** The top of a contributor's phone with one notification. */
-function PhoneBanner({ show, tone, title, body, action }: { show: boolean; tone: "plain" | "fix"; title: string; body?: string; action?: string }) {
+function PhoneBanner({ show, tone, title, body, action }: { show: boolean; tone: "plain" | Outcome; title: string; body?: string; action?: string }) {
+  const color = tone === "reject" ? "text-[#b5321f]" : tone === "review" ? "text-[#2a5bc9]" : tone === "accept" ? "text-[#13783f]" : "text-[#0b0c0e]";
   return (
     <div className="relative mt-4 h-[176px] overflow-hidden sm:h-[150px]" aria-hidden={!show}>
       <div className="absolute inset-x-6 top-0 h-[210px] rounded-t-[30px] border border-b-0 border-white/15 bg-[#f4f5f7] px-3 pt-2.5">
@@ -99,7 +85,7 @@ function PhoneBanner({ show, tone, title, body, action }: { show: boolean; tone:
           <p className="flex items-center gap-1.5 text-[11px] text-[#5c626b]">
             <BellRing {...ICON} className="size-3" /> Your collector app
           </p>
-          <p className={cn("mt-1 text-[13.5px] font-medium", tone === "plain" ? "text-[#0b0c0e]" : "text-[#b5321f]")}>{title}</p>
+          <p className={cn("mt-1 text-[13.5px] font-medium", color)}>{title}</p>
           {body ? <p className="text-[12.5px] leading-snug text-[#5c626b]">{body}</p> : null}
           {action ? (
             <span className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-full bg-[#0b0c0e] px-3 text-[12px] font-medium text-white">
@@ -112,37 +98,53 @@ function PhoneBanner({ show, tone, title, body, action }: { show: boolean; tone:
   );
 }
 
+/** What the contributor hears from Ormes, in seconds. */
+function ormesMessage(outcome: Outcome, reason: ReturnType<typeof reasonOf>) {
+  const at = reason.segment ? ` at ${clock(reason.segment.start_s)}` : "";
+  if (outcome === "reject") return { title: `Rejected${at}: ${reason.text}`, body: reason.hint ?? undefined, action: "Record again" };
+  if (outcome === "review") return { title: "A person will check your video.", body: reason.hint ? `Next time: ${reason.hint}` : undefined };
+  return { title: "Your video was accepted.", body: "Nothing to fix." };
+}
+
 export function WhyOrmes() {
   const ref = useRef<HTMLDivElement>(null);
   const playing = usePlayback(ref);
   const [tick, setTick] = useState(0);
-  const clip = useClip(SITE_CLIPS.why);
-  const side = clip && clip !== "missing" && clip.decision?.decision === "reject" && clip.decision.reasons.length > 0 ? clip : null;
+  const [step, setStep] = useState(0);
+  const [pinned, setPinned] = useState<number | null>(null);
+  const clips = useClips([SITE_CLIPS.why.accept, SITE_CLIPS.why.review, SITE_CLIPS.why.reject]);
 
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
-    const start = performance.now();
+    let start = performance.now();
     const loop = (now: number) => {
-      setTick((now - start) % CYCLE);
+      if (now - start >= CYCLE) {
+        start = now;
+        if (pinned === null) setStep((s) => (s + 1) % PLAY_ORDER.length);
+      }
+      setTick(now - start);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [playing]);
+  }, [playing, pinned]);
 
-  // At rest the scene shows its end state: both stories told.
+  // At rest the scene shows its end state (both stories told) for the reject.
   const t = playing ? tick : CYCLE - 1;
-  // The still frame shows the moment that matters: the right hand cut by the edge.
-  const sceneT = playing ? tick : 3000;
-  const reason = side ? side.decision!.reasons[0] : null;
-  const verdict = {
-    text: reason ? reason.message : EXAMPLE.reason,
-    segment: reason?.segments?.[0] ?? (side ? null : EXAMPLE.segment),
-    hint: reason ? (reason.hint ?? null) : EXAMPLE.hint,
-  };
-  const duration = side?.video.duration_s ?? VIDEO_S;
+  const index = pinned ?? PLAY_ORDER[playing ? step : 0];
+  const card = CARDS[index];
+  const id = SITE_CLIPS.why[card.outcome];
+  const raw = clips[id];
+  const side = raw && raw !== "missing" ? raw : null;
+  // The outcome shown is always the worker's; the card's slot only says which clip to play.
+  const outcome: Outcome = side?.decision?.decision ?? card.outcome;
+  const reason = reasonOf(side);
+  const look = LOOK[outcome];
+  const duration = side?.video.duration_s ?? 8.5;
   const watching = Math.min(180, (t / T.watched) * 180);
+  const segments = side?.decision?.reasons.flatMap((r) => r.segments ?? []) ?? [];
+  const msg = ormesMessage(outcome, reason);
 
   return (
     <div ref={ref}>
@@ -155,7 +157,7 @@ export function WhyOrmes() {
             </span>
             <span className="tabular font-mono text-[13px] text-muted-foreground">watched {clock(watching)}</span>
           </figcaption>
-          <Player t={sceneT} boxes={false} side={side} />
+          <Player id={id} side={side} boxes={false} />
           <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.06]">
             <span className="block h-full rounded-full bg-white/40" style={{ width: `${(watching / 180) * 100}%` }} />
           </div>
@@ -164,7 +166,7 @@ export function WhyOrmes() {
             Decision: <b className="font-medium">tomorrow</b>
             <span className="hidden text-muted-foreground sm:inline">· after a person watches every minute</span>
           </p>
-          <PhoneBanner show={t >= T.rejected} tone="plain" title="Your video was rejected." />
+          <PhoneBanner show={t >= T.told} tone="plain" title={TODAY[outcome]} />
         </figure>
 
         {/* With Ormes */}
@@ -173,26 +175,27 @@ export function WhyOrmes() {
             <span className="inline-flex items-center gap-2 text-[16px] font-medium">
               <ScanLine {...ICON} className="size-[18px] text-brand" /> With Ormes
             </span>
-            <span className="tabular font-mono text-[13px] text-brand">{t >= T.decided ? (side ? "decided in seconds" : "decided in 0:28") : "analysing…"}</span>
+            <span className="tabular font-mono text-[13px] text-brand">{t >= T.decided ? "decided in seconds" : "analysing…"}</span>
           </figcaption>
-          <Player t={sceneT} boxes side={side} />
+          <Player id={id} side={side} boxes />
           <div className="relative mt-3 h-1 rounded-full bg-white/[0.06]">
-            {verdict.segment ? (
+            {segments.map((s) => (
               <i
-                className={cn("absolute -top-0.5 h-2 rounded-full bg-no transition-opacity duration-500", t >= T.decided ? "opacity-100" : "opacity-0")}
-                style={{ left: `${(verdict.segment.start_s / duration) * 100}%`, width: `${Math.max(1.5, ((verdict.segment.end_s - verdict.segment.start_s) / duration) * 100)}%` }}
+                key={`${s.start_s}-${s.end_s}`}
+                className={cn("absolute -top-0.5 h-2 rounded-full transition-opacity duration-500", look.bar, t >= T.decided ? "opacity-100" : "opacity-0")}
+                style={{ left: `${(s.start_s / duration) * 100}%`, width: `${Math.max(1.5, ((s.end_s - s.start_s) / duration) * 100)}%` }}
               />
-            ) : null}
+            ))}
           </div>
-          <div className="mt-4 min-h-[22px] text-[14.5px]">
+          <div className="mt-4 min-h-[44px] text-[14.5px]">
             {t >= T.decided ? (
               <p className="flex flex-wrap items-center gap-2 motion-safe:animate-in motion-safe:fade-in">
-                <XCircle {...ICON} className="size-4 text-no" />
-                <span className="rounded-md bg-no/12 px-1.5 font-mono text-[13px] text-no">reject</span>
-                {verdict.text}
-                {verdict.segment ? (
+                <look.icon {...ICON} className={cn("size-4", look.text)} />
+                <span className={cn("rounded-md px-1.5 font-mono text-[13px]", look.chip)}>{outcome}</span>
+                {reason.text}
+                {reason.segment ? (
                   <span className="font-mono text-[13px] text-muted-foreground">
-                    · {clock(verdict.segment.start_s)}–{clock(verdict.segment.end_s)}
+                    · {clock(reason.segment.start_s)}–{clock(reason.segment.end_s)}
                   </span>
                 ) : null}
               </p>
@@ -202,19 +205,55 @@ export function WhyOrmes() {
               </p>
             )}
           </div>
-          <PhoneBanner
-            show={t >= T.hint && !!verdict.hint}
-            tone="fix"
-            title={`${verdict.text}${verdict.segment ? ` at ${clock(verdict.segment.start_s)}` : ""}.`}
-            body={verdict.hint ?? undefined}
-            action="Record again"
-          />
+          <PhoneBanner show={t >= T.hint} tone={outcome} title={msg.title} body={msg.body} action={msg.action} />
         </figure>
       </div>
+
+      {/* The three clips: pick one to play it above. */}
+      <ul className="mt-4 grid gap-3 md:grid-cols-3" aria-label="Three versions of the same video">
+        {CARDS.map((c, i) => {
+          const cid = SITE_CLIPS.why[c.outcome];
+          const cs = clips[cid];
+          const s = cs && cs !== "missing" ? cs : null;
+          const o: Outcome = s?.decision?.decision ?? c.outcome;
+          const r = reasonOf(s);
+          const L = LOOK[o];
+          const on = i === index;
+          return (
+            <li key={c.outcome}>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => setPinned(i)}
+                className={cn(
+                  "flex h-full w-full items-start gap-3 rounded-2xl border p-3 text-left transition-colors md:flex-col",
+                  on ? "border-foreground/40 bg-foreground/[0.06]" : "border-hairline hover:border-foreground/25",
+                )}
+              >
+                <span className="relative block aspect-video w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 md:w-full">
+                              {/* eslint-disable-next-line @next/next/no-img-element -- a plain poster, served as is */}
+                              <img src={`${CLIP_BASE}/${cid}.jpg`} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2 text-[14px] font-medium">
+                    {c.label}
+                    <span className={cn("rounded-md px-1.5 font-mono text-[12.5px] font-normal", L.chip)}>{o}</span>
+                  </span>
+                  <span className="mt-1 block text-[13px] leading-snug text-muted-foreground">
+                    {r.text}
+                    {r.segment ? ` · ${clock(r.segment.start_s)}–${clock(r.segment.end_s)}` : ""}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-        <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          {side ? null : <Example>Example video</Example>}
-          Same video, same spec. Doubtful cases still go to a person.
+        <p className="max-w-[70ch] text-[13px] text-muted-foreground">
+          One real video (Pexels) and two copies with a defect added. Decisions and reasons are Ormes’s output, unedited. Doubtful cases go to a
+          person.
         </p>
         <MoreLink href="/product">How it works</MoreLink>
       </div>

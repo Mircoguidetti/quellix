@@ -4,43 +4,41 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { LucideIcon } from "lucide-react";
 import { CircleCheck, CircleX, Copy, Crosshair, Gauge, Hand, ListChecks, Play, ScanFace, UserRoundSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Example, ICON } from "../primitives";
-import { ClipPlayer, useClip } from "../clip-player";
+import { ICON } from "../primitives";
+import { ClipPlayer, useClips } from "../clip-player";
 import { SITE_CLIPS } from "../clips";
 import { usePlayback } from "../use-playback";
 
 /**
  * Product's orchestrated moment: checks on the left, the reasons they can raise in the middle, the
  * three outcomes on the right. Hover, focus or tap a check to light its path; on its own the
- * diagram plays three example videos through it.
+ * diagram plays real clips through it (SITE_CLIPS.decision), each with the worker's output as it is.
  */
 
 type Outcome = "reject" | "review" | "accept";
 type CheckKey = "hands" | "task" | "privacy" | "originality" | "framing" | "technical";
 
 const CHECKS: { key: CheckKey; icon: LucideIcon; label: string; reason: string; code: string; outcome: Outcome; why: string }[] = [
-  { key: "hands", icon: Hand, label: "Hands", reason: "Hands below minimum", code: "hands_visible.below_min", outcome: "reject", why: "Critical check failed with a clear measurement" },
+  { key: "hands", icon: Hand, label: "Hands", reason: "Hands not clearly visible", code: "hands_visible.below_min", outcome: "review", why: "The hands check sends to review until it is validated" },
   { key: "task", icon: ListChecks, label: "Task", reason: "Step not confirmed", code: "task_completed.uncertain", outcome: "review", why: "A critical check the model is not sure about goes to a person" },
   { key: "privacy", icon: ScanFace, label: "Privacy", reason: "Document in view", code: "privacy.document", outcome: "review", why: "Your rubric sends documents to review" },
   { key: "originality", icon: Copy, label: "Delivered", reason: "Already delivered", code: "originality.duplicate", outcome: "reject", why: "Similarity above your threshold, set to reject" },
   { key: "framing", icon: Crosshair, label: "Framing", reason: "Off target too long", code: "framing.off_target", outcome: "review", why: "A non-critical check failed" },
-  { key: "technical", icon: Gauge, label: "Technical", reason: "Too blurry", code: "technical.blur", outcome: "reject", why: "Critical check failed with a clear measurement" },
+  { key: "technical", icon: Gauge, label: "Technical", reason: "Too dark or blurry", code: "technical.bad_exposure", outcome: "reject", why: "Critical check failed with a clear measurement" },
 ];
 
-const OUTCOMES: { key: Outcome; label: string; icon: LucideIcon; color: string; bg: string }[] = [
-  { key: "reject", label: "Reject", icon: CircleX, color: "#ff8a7a", bg: "rgba(255,138,122,0.12)" },
-  { key: "review", label: "Review", icon: UserRoundSearch, color: "#8fb4ff", bg: "rgba(143,180,255,0.12)" },
-  { key: "accept", label: "Accept", icon: CircleCheck, color: "#7ed6a8", bg: "rgba(126,214,168,0.12)" },
+// Surface tokens, so the tints pass contrast on the light page.
+const COLOR: Record<Outcome, string> = { reject: "var(--brand-no)", review: "var(--brand)", accept: "var(--brand-ok)" };
+const tint = (o: Outcome) => `color-mix(in srgb, ${COLOR[o]} 12%, transparent)`;
+const OUTCOMES: { key: Outcome; label: string; icon: LucideIcon }[] = [
+  { key: "reject", label: "Reject", icon: CircleX },
+  { key: "review", label: "Review", icon: UserRoundSearch },
+  { key: "accept", label: "Accept", icon: CircleCheck },
 ];
-const COLOR: Record<Outcome, string> = { reject: "#ff8a7a", review: "#8fb4ff", accept: "#7ed6a8" };
+const OUTCOME_KEYS = OUTCOMES.map((o) => o.key);
 
-const EXAMPLES: { id: string; failing: CheckKey[]; outcome: Outcome; line: string }[] = [
-  { id: "v_88214", failing: ["hands"], outcome: "reject", line: "hands visible 61% · minimum 80% · critical" },
-  { id: "v_89163", failing: ["privacy"], outcome: "review", line: "readable document at 00:27 · documents: review" },
-  { id: "v_88213", failing: [], outcome: "accept", line: "every enabled check passed · no reasons" },
-];
-
-type Active = { kind: "check"; key: CheckKey } | { kind: "example"; failing: CheckKey[] };
+/** Nothing lit: a clip that has not loaded yet. */
+type Active = { kind: "check"; key: CheckKey } | { kind: "example"; failing: CheckKey[]; passing: CheckKey[]; outcome: Outcome } | { kind: "none" };
 
 /** Decision check names (decision.schema.json) to the diagram's checks. */
 const CHECK_OF: Record<string, CheckKey> = {
@@ -51,12 +49,13 @@ const CHECK_OF: Record<string, CheckKey> = {
   framing: "framing",
   technical: "technical",
 };
-type Edge = { id: string; from: string; to: string };
+type Edge = { id: string; from: string; to: string; quiet?: boolean };
 
 const EDGES: Edge[] = [
   ...CHECKS.map((c) => ({ id: `c-${c.key}`, from: `check-${c.key}`, to: `reason-${c.key}` })),
   ...CHECKS.map((c) => ({ id: `n-${c.key}`, from: `check-${c.key}`, to: "reason-none" })),
-  ...CHECKS.map((c) => ({ id: `r-${c.key}`, from: `reason-${c.key}`, to: `out-${c.outcome}` })),
+  // Every reason can reach every outcome (a rubric can change each path); unlit, only the default shows.
+  ...CHECKS.flatMap((c) => OUTCOME_KEYS.map((o) => ({ id: `r-${c.key}-${o}`, from: `reason-${c.key}`, to: `out-${o}`, quiet: o !== c.outcome }))),
   { id: "r-none", from: "reason-none", to: "out-accept" },
 ];
 
@@ -65,9 +64,12 @@ function lit(active: Active) {
   const nodes = new Set<string>();
   const pass = new Set<string>();
   const edges = new Map<string, string>();
+  if (active.kind === "none") return { nodes, pass, edges };
   const failing = active.kind === "check" ? [active.key] : active.failing;
   if (active.kind === "example" && failing.length === 0) {
+    // Only checks that ran and passed light up; skipped ones stay dim.
     for (const c of CHECKS) {
+      if (!active.passing.includes(c.key)) continue;
       pass.add(`check-${c.key}`);
       edges.set(`n-${c.key}`, COLOR.accept);
     }
@@ -78,12 +80,14 @@ function lit(active: Active) {
   }
   for (const c of CHECKS) {
     if (failing.includes(c.key)) {
+      // A real video's path ends at its real decision, not at the check's default.
+      const out = active.kind === "example" ? active.outcome : c.outcome;
       nodes.add(`check-${c.key}`);
       nodes.add(`reason-${c.key}`);
-      nodes.add(`out-${c.outcome}`);
-      edges.set(`c-${c.key}`, COLOR[c.outcome]);
-      edges.set(`r-${c.key}`, COLOR[c.outcome]);
-    } else if (active.kind === "example") pass.add(`check-${c.key}`);
+      nodes.add(`out-${out}`);
+      edges.set(`c-${c.key}`, COLOR[out]);
+      edges.set(`r-${c.key}-${out}`, COLOR[out]);
+    } else if (active.kind === "example" && active.passing.includes(c.key)) pass.add(`check-${c.key}`);
   }
   return { nodes, pass, edges };
 }
@@ -138,32 +142,38 @@ export function DecisionDiagram() {
   const interacting = hovered ?? pinned;
   useEffect(() => {
     if (!playing || interacting) return;
-    const t = window.setInterval(() => setExample((i) => (i + 1) % EXAMPLES.length), 3600);
+    const t = window.setInterval(() => setExample((i) => (i + 1) % SITE_CLIPS.decision.length), 3600);
     return () => clearInterval(t);
   }, [playing, interacting]);
 
-  // Real clips for the three examples, when #60's footage is configured.
-  const clips = { reject: useClip(SITE_CLIPS.decision.reject), review: useClip(SITE_CLIPS.decision.review), accept: useClip(SITE_CLIPS.decision.accept) };
-
-  const ex = EXAMPLES[example];
-  const exClip = clips[ex.outcome];
+  const clips = useClips(SITE_CLIPS.decision);
+  const exId = SITE_CLIPS.decision[example];
+  const exClip = clips[exId];
   const exSide = exClip && exClip !== "missing" && exClip.decision ? exClip : null;
-  // With a real clip, its own reasons light the path.
-  const exFailing = exSide ? [...new Set(exSide.decision!.reasons.map((r) => CHECK_OF[r.check]).filter(Boolean))] : ex.failing;
-  const exLine = exSide ? (exSide.decision!.reasons[0]?.message ?? "every enabled check passed · no reasons") : ex.line;
+  // The clip's own reasons light the path, and its own decision ends it.
+  const exFailing = exSide ? [...new Set(exSide.decision!.reasons.map((r) => CHECK_OF[r.check]).filter(Boolean))] : [];
+  const exPassing = Object.entries(exSide?.decision?.checks ?? {})
+    .filter(([, v]) => v.status === "pass")
+    .map(([k]) => CHECK_OF[k])
+    .filter(Boolean);
+  const exLine = exSide ? (exSide.decision!.reasons[0]?.message ?? "Every enabled check passed · no reasons") : "Loading…";
 
-  const active: Active = interacting ? { kind: "check", key: interacting } : { kind: "example", failing: exFailing };
+  const active: Active = interacting
+    ? { kind: "check", key: interacting }
+    : exSide
+      ? { kind: "example", failing: exFailing, passing: exPassing, outcome: exSide.decision!.decision }
+      : { kind: "none" };
   const { nodes, pass, edges } = lit(active);
   const check = interacting ? CHECKS.find((c) => c.key === interacting)! : null;
 
   return (
     <div ref={rootRef} className="rounded-[24px] border border-hairline bg-panel">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4 sm:px-7">
-        <div className="flex min-w-0 items-center gap-3" aria-live="polite">
+        <div className="flex min-h-9 min-w-0 basis-full items-center gap-3 sm:flex-1 sm:basis-auto" aria-live="polite">
           {check ? (
             <>
               <check.icon {...ICON} className="size-4 shrink-0 text-muted-foreground" />
-              <p className="min-w-0 text-[14px]">
+              <p className="min-w-0 text-[14px] sm:truncate">
                 <span className="font-mono text-[12.5px] text-muted-foreground">{check.code}</span>
                 <span className="mx-2 text-muted-foreground">→</span>
                 <span style={{ color: COLOR[check.outcome] }}>{check.outcome}</span>
@@ -173,26 +183,27 @@ export function DecisionDiagram() {
           ) : (
             <>
               {exSide ? (
-                <span className="relative block aspect-video w-24 shrink-0 overflow-hidden rounded-md border border-hairline">
+                <span className="relative block h-9 w-16 shrink-0 overflow-hidden rounded-md border border-hairline">
                   <ClipPlayer key={exSide.id} side={exSide} />
                 </span>
               ) : (
                 <Play {...ICON} className="size-4 shrink-0 text-muted-foreground" />
               )}
-              <p className="min-w-0 text-[14px]">
-                <span className="font-mono text-[13px]">{exSide ? exSide.id : ex.id}</span>
+              <p className="min-w-0 text-[14px] sm:truncate">
+                <span className="text-[13.5px]">{exSide?.source?.task ?? exId}</span>
+                {exSide ? <span className="ml-2 font-mono text-[12.5px]" style={{ color: COLOR[exSide.decision!.decision] }}>{exSide.decision!.decision}</span> : null}
                 <span className="mx-2 text-muted-foreground">·</span>
-                <span className="font-mono text-[12.5px] text-muted-foreground">{exLine}</span>
+                <span className="text-[13px] text-muted-foreground">{exLine}</span>
               </p>
             </>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {EXAMPLES.map((e, i) => (
+          {SITE_CLIPS.decision.map((id, i) => (
             <button
-              key={e.id}
+              key={id}
               type="button"
-              aria-label={`Play example ${e.id}`}
+              aria-label={`Play video ${i + 1}`}
               aria-pressed={!interacting && i === example}
               onClick={() => {
                 setPinned(null);
@@ -203,7 +214,7 @@ export function DecisionDiagram() {
               <span className={cn("block h-1.5 rounded-full transition-all", !interacting && i === example ? "w-6 bg-foreground" : "w-1.5 bg-foreground/25")} />
             </button>
           ))}
-          <Example className="ml-2">Examples</Example>
+          <span className="ml-2 whitespace-nowrap text-[12px] text-muted-foreground">Real clips</span>
         </div>
       </div>
 
@@ -213,12 +224,13 @@ export function DecisionDiagram() {
             const d = paths[e.id];
             if (!d) return null;
             const color = edges.get(e.id);
+            if (e.quiet && !color) return null;
             return (
               <path
                 key={e.id}
                 d={d}
                 fill="none"
-                stroke={color ?? "rgba(255,255,255,0.08)"}
+                stroke={color ?? "var(--hairline)"}
                 strokeWidth={color ? 1.75 : 1}
                 strokeDasharray={e.id.startsWith("n-") && !color ? "2 4" : undefined}
                 className="transition-[stroke,stroke-width] duration-300"
@@ -258,6 +270,7 @@ export function DecisionDiagram() {
         <ul className="relative flex flex-col justify-between gap-1.5" aria-label="Reasons">
           {CHECKS.map((c) => {
             const on = nodes.has(`reason-${c.key}`);
+            const o = active.kind === "example" ? active.outcome : c.outcome;
             return (
               <li key={c.key} className="flex flex-1 items-center">
                 <span
@@ -266,7 +279,7 @@ export function DecisionDiagram() {
                     "inline-block max-w-full truncate rounded-md border px-2 py-1 text-[11.5px] transition-colors duration-300 sm:text-[13px]",
                     on ? "text-foreground" : "border-transparent text-muted-foreground/70",
                   )}
-                  style={on ? { borderColor: COLOR[c.outcome], background: `${COLOR[c.outcome]}1f` } : undefined}
+                  style={on ? { borderColor: COLOR[o], background: tint(o) } : undefined}
                 >
                   {c.reason}
                 </span>
@@ -297,7 +310,7 @@ export function DecisionDiagram() {
                     "flex items-center gap-2 rounded-xl border px-2.5 py-2.5 text-[13px] font-medium transition-all duration-300 sm:px-4 sm:py-3 sm:text-[16px]",
                     on ? "scale-[1.04]" : "border-hairline text-muted-foreground",
                   )}
-                  style={on ? { borderColor: o.color, background: o.bg, color: o.color } : undefined}
+                  style={on ? { borderColor: COLOR[o.key], background: tint(o.key), color: COLOR[o.key] } : undefined}
                 >
                   <o.icon {...ICON} className="size-4 shrink-0 sm:size-5" />
                   {o.label}

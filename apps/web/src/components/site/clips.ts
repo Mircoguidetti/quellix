@@ -1,19 +1,13 @@
 /**
- * Which real clips (issue #60, files in public/media/clips) the marketing pages show. Leave an
- * entry null to keep the drawn placeholder. Each id is a clip's sidecar name, without ".json"; its
- * poster is expected at <id>.jpg (the hero renders posters before the sidecars load).
+ * Which real clips (public/media/clips, from PR #75) the marketing pages show. Each id is a clip's
+ * sidecar name without ".json"; its poster is at <id>.jpg. Every clip is first-person Pexels footage
+ * analysed by the worker; the pages show its sidecar output as it is, never edited.
  */
-export const SITE_CLIPS: {
-  /** Home hero: a landscape clip from 640 px up, a portrait (9:16) clip below. */
-  hero: { landscape: string | null; portrait: string | null };
-  /** The "Why Ormes" split scene on Home: a clip whose real decision is a reject with a hint. */
-  why: string | null;
-  /** One clip per example video in the Product decision diagram. */
-  decision: { reject: string | null; review: string | null; accept: string | null };
-} = {
-  // The landing uses domestic Pexels footage (founder, #60): shirts (landscape) and cups (portrait)
-  // once that PR is merged. Factory footage stays for eval only.
-  hero: { landscape: null, portrait: null },
-  why: null,
-  decision: { reject: null, review: null, accept: null },
-};
+export const SITE_CLIPS = {
+  /** Home hero: the full 16:9 clip at every width (the 4:5 crop cuts the hands, so it is not used). */
+  hero: "clip-01",
+  /** Home "Why Ormes": the same task three ways, so all three outcomes appear. */
+  why: { accept: "clip-01", review: "clip-01-hand", reject: "clip-01-dark" },
+  /** Product decision diagram: the videos it plays through the checks, in order. */
+  decision: ["clip-02", "clip-03", "clip-04", "clip-01-dark"],
+} as const;

@@ -110,11 +110,18 @@ test.describe("marketing site", () => {
     // Problem sources are cited.
     await expect(page.locator("#problem").getByRole("link", { name: /Market Xcel/ })).toBeVisible();
     await expect(page.locator("#problem").getByRole("link", { name: /Unidata/ })).toBeVisible();
-    // Why Ormes, at rest: the reviewer's verdict tomorrow vs Ormes's reason and the contributor's fix.
+    // Why Ormes, at rest: the reviewer's verdict tomorrow vs Ormes's real reason and the contributor's fix,
+    // then the three real clips with all three outcomes, as the worker wrote them.
     const why = page.locator("#why");
     await expect(why.getByText("tomorrow")).toBeVisible();
     await expect(why.getByText("Your video was rejected.")).toBeVisible();
-    await expect(why.getByText("Hold the phone lower and record again.")).toBeVisible();
+    await expect(why.getByText(/^Film in even light/)).toBeVisible();
+    const cards = why.getByRole("list", { name: "Three versions of the same video" }).getByRole("button");
+    await expect(cards).toHaveCount(3);
+    for (const [i, outcome] of ["accept", "review", "reject"].entries()) await expect(cards.nth(i)).toContainText(outcome);
+    await expect(cards.nth(2)).toHaveAttribute("aria-pressed", "true");
+    await cards.nth(1).click();
+    await expect(why.getByText("A person will check your video.")).toBeVisible();
     await expect(why.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/product");
     // FAQ keeps the five questions and adds the sixth.
     await expect(page.locator("#faq details")).toHaveCount(6);
@@ -126,6 +133,15 @@ test.describe("marketing site", () => {
     const review = page.locator("#review");
     await expect(review.getByRole("img", { name: /The Ormes review screen/ })).toBeVisible();
     await expect(review.getByLabel("Review shortcuts")).toContainText("Replay the current moment");
+  });
+
+  test("Product: the decision diagram plays real clips, each ending at the worker's decision", async ({ page }) => {
+    await page.goto("/product");
+    const diagram = page.locator("#decision");
+    await diagram.getByRole("button", { name: "Play video 4" }).click();
+    await expect(diagram.getByText(/^Too dark or too bright 35% of the time/)).toBeVisible();
+    await diagram.getByRole("button", { name: "Play video 3" }).click();
+    await expect(diagram.getByText("Hand visibility could not be measured (ratio_both_manipulation).")).toBeVisible();
   });
 
   test("Product: hovering a check lights its path to an outcome", async ({ page, isMobile }) => {
@@ -188,9 +204,14 @@ test.describe("marketing site", () => {
       expect(await surface("main section"), route).toBe("light");
       expect(await surface("footer"), route).toBe("dark");
     }
-    // The hero has no trust row any more, and the clip sits in a contained card.
+    // The hero has no trust row any more; the real clip sits in a 16:9 card with the worker's decision.
     await page.goto("/");
     await expect(page.getByText("Videos deleted after analysis")).toHaveCount(0);
+    const card = page.locator("#top img[src='/media/clips/clip-01.jpg']");
+    await expect(card).toBeVisible();
+    const box = (await card.boundingBox())!;
+    expect(box.width / box.height).toBeCloseTo(16 / 9, 1);
+    await expect(page.locator("#top").getByText("accept", { exact: true })).toBeVisible();
   });
 
   test("screenshots: every Home section, and the other pages above the fold", async ({ page }, info) => {

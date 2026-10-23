@@ -49,6 +49,28 @@ export function useClip(id: string | null) {
   return state?.id === id ? state.side : null;
 }
 
+/** Loads several sidecars at once: id → sidecar, `"missing"`, or undefined while loading. */
+export function useClips(ids: readonly string[]) {
+  const key = ids.join(",");
+  const [state, setState] = useState<{ key: string; byId: Record<string, ClipSidecar | "missing"> }>({ key: "", byId: {} });
+  useEffect(() => {
+    let cancelled = false;
+    const list = key.split(",").filter(Boolean);
+    void Promise.all(
+      list.map((id) =>
+        fetch(`${CLIP_BASE}/${id}.json`)
+          .then((r) => (r.ok ? (r.json() as Promise<ClipSidecar>) : Promise.reject(new Error(String(r.status)))))
+          .then((side): [string, ClipSidecar | "missing"] => [id, side])
+          .catch((): [string, ClipSidecar | "missing"] => [id, "missing"]),
+      ),
+    ).then((pairs) => !cancelled && setState({ key, byId: Object.fromEntries(pairs) }));
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+  return state.key === key ? state.byId : {};
+}
+
 function frameAt(frames: ClipSidecar["hands"]["frames"], t: number) {
   let best = frames[0];
   for (const f of frames) if (Math.abs(f.t - t) < Math.abs(best.t - t)) best = f;
