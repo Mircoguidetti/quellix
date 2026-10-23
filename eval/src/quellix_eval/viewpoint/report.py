@@ -22,7 +22,7 @@ from quellix_worker.checks import privacy
 from quellix_worker.checks import viewpoint as vp
 
 from ..benchmark.stats import wilson
-from .data import KEEP, ClipFeatures, load
+from .data import KEEP, ClipFeatures, apply_labels, load
 
 KP_INDEX = {k: i for i, k in enumerate(KEEP)}
 
@@ -90,7 +90,8 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
     L = ["# Viewpoint check (#79)", "",
          f"{run} · worker `{vp.MODEL}` applied to the stored features. Labels come from the "
          "sources (Egocentric-10K and HoloAssist are head-mounted; the Pexels clips are the "
-         "founder's picks), never from Ormes. Constants fitted on `dev` only; `held_out` was "
+         "founder's picks; Pixabay clips are labelled by eye from their contact sheets, "
+         "founder veto on #79), never from Ormes. Constants fitted on `dev` only; `held_out` was "
          "not looked at while fitting. For now both a wrong viewpoint and `uncertain` send the "
          "video to review (the check cannot reject yet).",
          "", "**Before:** Ormes had no viewpoint check: every third-person video went through "
@@ -136,12 +137,21 @@ def draw_overlays(clips: Sequence[ClipFeatures], work: Path, out: Path) -> dict[
     net = px.UrllibNet()
     names: dict[str, str] = {}
     for c in clips:
-        if not c.source.startswith("pexels") or c.error or not c.label:
+        if not c.source.startswith(("pexels", "pixabay")) or c.error or not c.label:
             continue
         pid = int(c.clip_id.split("_")[1])
         try:
-            path, _ = px.fetch_pick(net, px.Pick(pid, c.note or "video", "", "landscape"), work,
-                                    os.environ.get("PEXELS_API_KEY", ""))
+            if c.source.startswith("pixabay"):
+                from ..datasets import pixabay as pb
+
+                key = os.environ.get("PIXABAY_API_KEY", "")
+                hit = pb.by_id(net, key, pid) if key else None
+                if hit is None:
+                    continue
+                path = pb.download(net, hit, work)
+            else:
+                path, _ = px.fetch_pick(net, px.Pick(pid, c.note or "video", "", "landscape"),
+                                        work, os.environ.get("PEXELS_API_KEY", ""))
             v = media.decode(path)
             m = measure(c)
             hands = hands_of(c)
@@ -185,7 +195,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--work", type=Path, default=Path("out/viewpoint"))
     ap.add_argument("--run", default="local run")
     a = ap.parse_args(argv)
-    clips = load(a.features)
+    clips = apply_labels(load(a.features))
     overlays = draw_overlays(clips, a.work, a.out / "overlays") if a.overlays else {}
     overlays = {k: f"overlays/{v}" for k, v in overlays.items()}
     md = render(clips, a.run, overlays)

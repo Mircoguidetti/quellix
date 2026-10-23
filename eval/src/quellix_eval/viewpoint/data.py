@@ -148,3 +148,32 @@ def hand_feats(frame_hands: Any) -> list[HandFeat]:
         out.append(HandFeat(obs.side, obs.state, round(float(obs.confidence), 3),
                             [[round(float(x), 3), round(float(y), 3)] for x, y in kp]))
     return out
+
+
+# Pixabay clips labelled by eye from their contact sheets (#79). One JSON per line:
+# {"clip_id", "label": "first_person" | "third_person" | "exclude", "labelled_by", "note",
+#  "vetoed": bool}. Excluded and vetoed clips never count.
+PIXABAY_LABELS = Path(__file__).resolve().parents[3] / "test_sets" / "viewpoint_pixabay.jsonl"
+
+
+def apply_labels(clips: Sequence[ClipFeatures], path: Path = PIXABAY_LABELS) -> list[ClipFeatures]:
+    """Clips with the hand labels applied; unlabelled, excluded or vetoed candidates dropped."""
+    labels: dict[str, dict[str, Any]] = {}
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if line.strip():
+                row = json.loads(line)
+                labels[row["clip_id"]] = row
+    out = []
+    for c in clips:
+        if not c.source.startswith("pixabay"):
+            out.append(c)
+            continue
+        row = labels.get(c.clip_id)
+        if row is None or row.get("vetoed") or row.get("label") not in ("first_person",
+                                                                         "third_person"):
+            continue
+        c.label = row["label"]
+        c.source = f"pixabay:{row.get('labelled_by', 'unknown')}"
+        out.append(c)
+    return out

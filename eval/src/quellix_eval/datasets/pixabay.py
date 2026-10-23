@@ -88,3 +88,10 @@ def download(net, hit: Hit, out_dir: Path) -> Path:
     if dst.stat().st_size < 20_000:
         raise RuntimeError(f"file too small ({dst.stat().st_size} bytes)")
     return dst
+
+
+def by_id(net, key: str, pixabay_id: int) -> Hit | None:
+    """The hit for one video id (download URLs expire, so they are looked up again)."""
+    q = urllib.parse.urlencode({"key": key, "id": pixabay_id})
+    hits = parse_hits(net.get(f"{API}?{q}"), "", max_duration_s=1e9)
+    return hits[0] if hits else None

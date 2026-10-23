@@ -40,3 +40,19 @@ def test_search_page_links():
     html = ('<a href="/video/woman-cooking-3195650/">a</a><a href="/video/woman-cooking-3195650/">'
             '<a href="https://www.pexels.com/video/pov-hands-7654321/">')
     assert search_ids(html) == [("woman-cooking", 3195650), ("pov-hands", 7654321)]
+
+
+def test_hand_labels_applied_and_vetoes_dropped(tmp_path):
+    def c(cid, src="pixabay:candidate"):
+        return data.ClipFeatures(cid, src, cid, None, "dev")
+
+    labels = tmp_path / "l.jsonl"
+    labels.write_text(
+        '{"clip_id": "pixabay_1", "label": "third_person", "labelled_by": "agent"}\n'
+        '{"clip_id": "pixabay_2", "label": "exclude", "labelled_by": "agent"}\n'
+        '{"clip_id": "pixabay_3", "label": "first_person", "labelled_by": "agent", '
+        '"vetoed": true}\n')
+    out = data.apply_labels([c("pixabay_1"), c("pixabay_2"), c("pixabay_3"), c("pixabay_4"),
+                             c("ego", "egocentric10k")], labels)
+    assert [(x.clip_id, x.label, x.source) for x in out] == [
+        ("pixabay_1", "third_person", "pixabay:agent"), ("ego", None, "egocentric10k")]
