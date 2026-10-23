@@ -76,16 +76,18 @@ export function Product() {
             </div>
             <div className="panel">
               <div className="media">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/media/clips/product-dough.jpg" alt="Kneading dough on a checked tablecloth, filmed first-person" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                <div className="box" style={{ left: "41%", top: "48%", width: "16%", height: "37%" }} />
-                <div className="box" style={{ left: "54%", top: "56%", width: "13%", height: "43%" }} />
+                <video muted autoPlay loop playsInline poster="/media/clips/product-dough.jpg" data-sidecar="/media/clips/product-dough.json" data-pos-y="0.5" aria-label="Kneading dough on a checked tablecloth, filmed first-person">
+                  <source src="/media/clips/product-dough.webm" type="video/webm" />
+                  <source src="/media/clips/product-dough.mp4" type="video/mp4" />
+                </video>
+                <div className="box" data-side="left" style={{ opacity: 0 }} />
+                <div className="box" data-side="right" style={{ opacity: 0 }} />
               </div>
               <div className="read">
                 <span className="label">Decision</span>
                 <span className="decision acc">accept</span>
                 <p className="reason">Every check passed.</p>
-                <p className="when">both hands in view 93% · first-person · light even · no faces</p>
+                <p className="when">both hands in view 82% · first-person · light even · no faces</p>
                 <p className="hint">
                   <strong>If a hand leaves the frame,</strong> the same video goes to review, with the moment and a hint for the contributor.
                 </p>
@@ -170,13 +172,17 @@ export function Product() {
             </div>
             <div className="rv" style={{ marginTop: "clamp(28px, 5vh, 48px)" }}>
               <div className="media">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/media/clips/product-dough.jpg" alt="The video a reviewer opens" />
+                <video muted autoPlay loop playsInline poster="/media/clips/product-dough-hand.jpg" data-sidecar="/media/clips/product-dough-hand.json" data-pos-y="0.5" data-flag="1.75-6.01,7.26-7.51,8.51-8.59" aria-label="The same video with one hand leaving the frame">
+                  <source src="/media/clips/product-dough-hand.webm" type="video/webm" />
+                  <source src="/media/clips/product-dough-hand.mp4" type="video/mp4" />
+                </video>
+                <div className="box" data-side="left" style={{ opacity: 0 }} />
+                <div className="box" data-side="right" style={{ opacity: 0 }} />
               </div>
               <div className="side">
-                <span className="label">To check · example</span>
-                <div className="mom"><p className="when">0:03 – 0:06 · hands_visible</p><p>One hand out of frame while handling.</p></div>
-                <p className="note" style={{ color: "var(--muted)", fontSize: 14 }}>Everything else passed: light, privacy, first-person, task.</p>
+                <span className="label">To check · review</span>
+                <div className="mom"><p className="when">0:01 – 0:06 · hands_visible</p><p>Both hands visible 57% of the time during manipulation, just under the minimum (60%).</p></div>
+                <p className="note" style={{ color: "var(--muted)", fontSize: 14 }}>Ormes’s real output for this copy, where one hand leaves the frame. Everything else passed.</p>
                 <div className="acts"><span className="on">Accept</span><span>Reject</span></div>
               </div>
             </div>
