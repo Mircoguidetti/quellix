@@ -74,6 +74,7 @@ class CheckName(Enum):
     technical = "technical"
     privacy = "privacy"
     originality = "originality"
+    viewpoint = "viewpoint"
 
 
 class Status(Enum):
