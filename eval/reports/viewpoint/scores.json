@@ -11,7 +11,7 @@
  },
  "pexels_7418650": {
   "hand_frames": 82,
-  "first_person_ratio": 0.439,
+  "first_person_ratio": 0.402,
   "pointing_up_median": 0.416,
   "hand_scale_median": 0.297,
   "face_share": 0.0,
@@ -43,13 +43,13 @@
  },
  "pexels_7308220": {
   "hand_frames": 33,
-  "first_person_ratio": 0.03,
+  "first_person_ratio": 0.0,
   "pointing_up_median": -0.304,
   "hand_scale_median": 0.142,
   "face_share": 0.0,
   "still_share": 0.364,
   "viewpoint": "third_person",
-  "confidence": 0.97
+  "confidence": 1.0
  },
  "pexels_4520150": {
   "hand_frames": 24,
@@ -69,18 +69,19 @@
   "hand_scale_median": 0.145,
   "face_share": 0.0,
   "still_share": 0.091,
-  "viewpoint": "third_person",
-  "confidence": 1.0
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "pexels_5592524": {
   "hand_frames": 44,
-  "first_person_ratio": 0.045,
+  "first_person_ratio": 0.0,
   "pointing_up_median": -0.282,
   "hand_scale_median": 0.233,
   "face_share": 0.059,
   "still_share": 0.03,
   "viewpoint": "third_person",
-  "confidence": 0.95
+  "confidence": 1.0
  },
  "pexels_4440711": {
   "hand_frames": 10,
@@ -89,29 +90,29 @@
   "hand_scale_median": 0.199,
   "face_share": 0.0,
   "still_share": 0.444,
-  "viewpoint": "first_person",
-  "confidence": 0.7
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "pexels_7641501": {
   "hand_frames": 29,
-  "first_person_ratio": 0.276,
+  "first_person_ratio": 0.172,
   "pointing_up_median": 0.026,
   "hand_scale_median": 0.11,
   "face_share": 0.0,
   "still_share": 0.069,
   "viewpoint": "third_person",
-  "confidence": 0.72
+  "confidence": 0.83
  },
  "pexels_9141844": {
   "hand_frames": 46,
-  "first_person_ratio": 0.37,
+  "first_person_ratio": 0.283,
   "pointing_up_median": 0.045,
   "hand_scale_median": 0.154,
   "face_share": 0.0,
   "still_share": 0.071,
-  "viewpoint": "uncertain",
-  "confidence": 0.0,
-  "uncertain_why": "hands point up in some frames and not in others"
+  "viewpoint": "third_person",
+  "confidence": 0.72
  },
  "holo_R201-7Nov-Belt": {
   "hand_frames": 11,
@@ -120,28 +121,29 @@
   "hand_scale_median": 0.225,
   "face_share": 0.0,
   "still_share": 0.013,
-  "viewpoint": "first_person",
-  "confidence": 0.91
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "holo_R100-1Aug-Coffee": {
   "hand_frames": 39,
-  "first_person_ratio": 0.974,
+  "first_person_ratio": 0.846,
   "pointing_up_median": 0.966,
   "hand_scale_median": 0.241,
   "face_share": 0.0,
   "still_share": 0.087,
   "viewpoint": "first_person",
-  "confidence": 0.97
+  "confidence": 0.85
  },
  "holo_z155-aug-26-22-dslr": {
   "hand_frames": 71,
-  "first_person_ratio": 0.944,
+  "first_person_ratio": 0.901,
   "pointing_up_median": 0.947,
   "hand_scale_median": 0.238,
   "face_share": 0.0,
   "still_share": 0.076,
   "viewpoint": "first_person",
-  "confidence": 0.94
+  "confidence": 0.9
  },
  "holo_z034-june-23-22-espresso": {
   "hand_frames": 56,
@@ -160,8 +162,9 @@
   "hand_scale_median": 0.388,
   "face_share": 0.0,
   "still_share": 0.0,
-  "viewpoint": "first_person",
-  "confidence": 0.9
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "holo_z170-sep-03-22-gladom_disassemble": {
   "hand_frames": 58,
@@ -205,13 +208,13 @@
  },
  "holo_z035-june-23-22-marius_assemble": {
   "hand_frames": 77,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.974,
   "pointing_up_median": 0.868,
   "hand_scale_median": 0.257,
   "face_share": 0.0,
   "still_share": 0.125,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.97
  },
  "holo_z075-july-01-22-marius_disassemble": {
   "hand_frames": 69,
@@ -240,18 +243,19 @@
   "hand_scale_median": 0.259,
   "face_share": 0.0,
   "still_share": 0.013,
-  "viewpoint": "first_person",
-  "confidence": 1.0
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "holo_z125-aug-10-22-printer_big": {
   "hand_frames": 37,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.946,
   "pointing_up_median": 0.935,
   "hand_scale_median": 0.203,
   "face_share": 0.0,
   "still_share": 0.0,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.95
  },
  "holo_z204-sep-25-22-printer_small": {
   "hand_frames": 18,
@@ -265,23 +269,23 @@
  },
  "holo_z201-sep-22-22-rashult_assemble": {
   "hand_frames": 22,
-  "first_person_ratio": 0.727,
+  "first_person_ratio": 0.636,
   "pointing_up_median": 0.568,
   "hand_scale_median": 0.328,
   "face_share": 0.0,
   "still_share": 0.026,
   "viewpoint": "first_person",
-  "confidence": 0.73
+  "confidence": 0.64
  },
  "holo_z155-aug-26-22-rashult_disassemble": {
   "hand_frames": 49,
-  "first_person_ratio": 0.98,
+  "first_person_ratio": 0.939,
   "pointing_up_median": 0.903,
   "hand_scale_median": 0.196,
   "face_share": 0.0,
   "still_share": 0.0,
   "viewpoint": "first_person",
-  "confidence": 0.98
+  "confidence": 0.94
  },
  "holo_z127-aug-10-22-switch": {
   "hand_frames": 62,
@@ -300,8 +304,9 @@
   "hand_scale_median": 0.256,
   "face_share": 0.0,
   "still_share": 0.051,
-  "viewpoint": "first_person",
-  "confidence": 1.0
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "holo_R089-27July-Coffee": {
   "hand_frames": 22,
@@ -365,23 +370,23 @@
  },
  "holo_z093-july-11-22-knarrevik_assemble": {
   "hand_frames": 70,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.986,
   "pointing_up_median": 0.933,
   "hand_scale_median": 0.288,
   "face_share": 0.0,
   "still_share": 0.101,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.99
  },
  "holo_z092-july-11-22-knarrevik_disassemble": {
   "hand_frames": 60,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.933,
   "pointing_up_median": 0.943,
   "hand_scale_median": 0.418,
   "face_share": 0.0,
   "still_share": 0.013,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.93
  },
  "ego10k_factory001_worker001_00000": {
   "hand_frames": 16,
@@ -415,13 +420,13 @@
  },
  "ego10k_factory003_worker001_00000": {
   "hand_frames": 35,
-  "first_person_ratio": 0.971,
+  "first_person_ratio": 0.943,
   "pointing_up_median": 0.919,
   "hand_scale_median": 0.173,
   "face_share": 0.0,
   "still_share": 0.038,
   "viewpoint": "first_person",
-  "confidence": 0.97
+  "confidence": 0.94
  },
  "ego10k_factory004_worker001_00000": {
   "hand_frames": 56,
@@ -482,8 +487,9 @@
   "hand_scale_median": 0.129,
   "face_share": 0.0,
   "still_share": 0.025,
-  "viewpoint": "first_person",
-  "confidence": 0.92
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "ego10k_factory010_worker001_00001": {
   "hand_frames": 2,
@@ -548,23 +554,23 @@
  },
  "ego10k_factory013_worker001_00008": {
   "hand_frames": 42,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.976,
   "pointing_up_median": 0.862,
   "hand_scale_median": 0.265,
   "face_share": 0.0,
   "still_share": 0.026,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.98
  },
  "ego10k_factory013_worker001_00006": {
   "hand_frames": 51,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.98,
   "pointing_up_median": 0.845,
   "hand_scale_median": 0.251,
   "face_share": 0.0,
   "still_share": 0.064,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.98
  },
  "ego10k_factory014_worker001_00000": {
   "hand_frames": 44,
@@ -588,23 +594,23 @@
  },
  "ego10k_factory015_worker001_00006": {
   "hand_frames": 54,
-  "first_person_ratio": 0.944,
+  "first_person_ratio": 0.926,
   "pointing_up_median": 0.966,
   "hand_scale_median": 0.252,
   "face_share": 0.0,
   "still_share": 0.177,
   "viewpoint": "first_person",
-  "confidence": 0.94
+  "confidence": 0.93
  },
  "ego10k_factory015_worker001_00000": {
   "hand_frames": 50,
-  "first_person_ratio": 0.72,
+  "first_person_ratio": 0.66,
   "pointing_up_median": 0.583,
   "hand_scale_median": 0.213,
   "face_share": 0.0,
   "still_share": 0.215,
   "viewpoint": "first_person",
-  "confidence": 0.72
+  "confidence": 0.66
  },
  "ego10k_factory016_worker001_00000": {
   "hand_frames": 18,
@@ -618,23 +624,23 @@
  },
  "ego10k_factory017_worker001_00002": {
   "hand_frames": 50,
-  "first_person_ratio": 0.88,
+  "first_person_ratio": 0.86,
   "pointing_up_median": 0.867,
   "hand_scale_median": 0.208,
   "face_share": 0.0,
   "still_share": 0.1,
   "viewpoint": "first_person",
-  "confidence": 0.88
+  "confidence": 0.86
  },
  "ego10k_factory017_worker001_00001": {
   "hand_frames": 62,
-  "first_person_ratio": 0.935,
+  "first_person_ratio": 0.919,
   "pointing_up_median": 0.94,
   "hand_scale_median": 0.239,
   "face_share": 0.0,
   "still_share": 0.0,
   "viewpoint": "first_person",
-  "confidence": 0.94
+  "confidence": 0.92
  },
  "ego10k_factory018_worker001_00001": {
   "hand_frames": 53,
@@ -700,23 +706,23 @@
  },
  "ego10k_factory021_worker001_00005": {
   "hand_frames": 58,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.966,
   "pointing_up_median": 0.918,
   "hand_scale_median": 0.257,
   "face_share": 0.0,
   "still_share": 0.113,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.97
  },
  "ego10k_factory021_worker001_00009": {
   "hand_frames": 41,
-  "first_person_ratio": 0.976,
+  "first_person_ratio": 0.951,
   "pointing_up_median": 0.952,
   "hand_scale_median": 0.148,
   "face_share": 0.0,
   "still_share": 0.038,
   "viewpoint": "first_person",
-  "confidence": 0.98
+  "confidence": 0.95
  },
  "ego10k_factory022_worker001_00001": {
   "hand_frames": 54,
@@ -760,7 +766,7 @@
  },
  "ego10k_factory024_worker001_00002": {
   "hand_frames": 4,
-  "first_person_ratio": 0.75,
+  "first_person_ratio": 0.5,
   "pointing_up_median": 0.641,
   "hand_scale_median": 0.187,
   "face_share": 0.0,
@@ -811,13 +817,13 @@
  },
  "ego10k_factory026_worker001_00000": {
   "hand_frames": 24,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.917,
   "pointing_up_median": 0.891,
   "hand_scale_median": 0.13,
   "face_share": 0.0,
   "still_share": 0.013,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.92
  },
  "ego10k_factory027_worker001_00006": {
   "hand_frames": 59,
@@ -861,13 +867,13 @@
  },
  "ego10k_factory029_worker001_00000": {
   "hand_frames": 21,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.952,
   "pointing_up_median": 0.962,
   "hand_scale_median": 0.19,
   "face_share": 0.0,
   "still_share": 0.0,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.95
  },
  "ego10k_factory029_worker001_00004": {
   "hand_frames": 52,
@@ -892,13 +898,14 @@
  },
  "ego10k_factory030_worker001_00004": {
   "hand_frames": 14,
-  "first_person_ratio": 0.786,
+  "first_person_ratio": 0.714,
   "pointing_up_median": 0.865,
   "hand_scale_median": 0.074,
   "face_share": 0.0,
   "still_share": 0.125,
-  "viewpoint": "first_person",
-  "confidence": 0.79
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  },
  "ego10k_factory031_worker001_00000": {
   "hand_frames": 56,
@@ -912,13 +919,13 @@
  },
  "ego10k_factory031_worker001_00001": {
   "hand_frames": 65,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.969,
   "pointing_up_median": 0.674,
   "hand_scale_median": 0.217,
   "face_share": 0.0,
   "still_share": 0.0,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.97
  },
  "ego10k_factory032_worker001_00002": {
   "hand_frames": 23,
@@ -943,13 +950,13 @@
  },
  "ego10k_factory033_worker001_00000": {
   "hand_frames": 65,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.985,
   "pointing_up_median": 0.807,
   "hand_scale_median": 0.193,
   "face_share": 0.0,
   "still_share": 0.188,
   "viewpoint": "first_person",
-  "confidence": 1.0
+  "confidence": 0.98
  },
  "ego10k_factory033_worker001_00002": {
   "hand_frames": 78,
@@ -970,7 +977,7 @@
   "still_share": 0.354,
   "viewpoint": "uncertain",
   "confidence": 0.0,
-  "uncertain_why": "hands seen first-person, but a face is in view"
+  "uncertain_why": "too few frames with a hand"
  },
  "ego10k_factory034_worker001_00002": {
   "hand_frames": 19,
@@ -984,12 +991,658 @@
  },
  "ego10k_factory035_worker001_00006": {
   "hand_frames": 66,
-  "first_person_ratio": 1.0,
+  "first_person_ratio": 0.985,
   "pointing_up_median": 0.931,
   "hand_scale_median": 0.166,
   "face_share": 0.0,
   "still_share": 0.087,
   "viewpoint": "first_person",
+  "confidence": 0.98
+ },
+ "pixabay_148542": {
+  "hand_frames": 34,
+  "first_person_ratio": 0.059,
+  "pointing_up_median": 0.054,
+  "hand_scale_median": 0.07,
+  "face_share": 0.759,
+  "still_share": 0.632,
+  "viewpoint": "third_person",
+  "confidence": 0.94
+ },
+ "pixabay_43653": {
+  "hand_frames": 2,
+  "first_person_ratio": 0.5,
+  "pointing_up_median": 0.112,
+  "hand_scale_median": 0.141,
+  "face_share": 0.0,
+  "still_share": 0.423,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_11638": {
+  "hand_frames": 126,
+  "first_person_ratio": 0.452,
+  "pointing_up_median": 0.36,
+  "hand_scale_median": 0.461,
+  "face_share": 0.0,
+  "still_share": 0.181,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point up in some frames and not in others"
+ },
+ "pixabay_11596": {
+  "hand_frames": 132,
+  "first_person_ratio": 0.409,
+  "pointing_up_median": 0.339,
+  "hand_scale_median": 0.437,
+  "face_share": 0.0,
+  "still_share": 0.125,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point up in some frames and not in others"
+ },
+ "pixabay_8702": {
+  "hand_frames": 22,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.936,
+  "hand_scale_median": 0.173,
+  "face_share": 0.0,
+  "still_share": 0.329,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
+ },
+ "pixabay_166519": {
+  "hand_frames": 5,
+  "first_person_ratio": 0.4,
+  "pointing_up_median": -0.671,
+  "hand_scale_median": 0.133,
+  "face_share": 0.0,
+  "still_share": 0.15,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_9520": {
+  "hand_frames": 8,
+  "first_person_ratio": 1.0,
+  "pointing_up_median": 0.807,
+  "hand_scale_median": 0.095,
+  "face_share": 0.0,
+  "still_share": 0.868,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_9631": {
+  "hand_frames": 51,
+  "first_person_ratio": 0.255,
+  "pointing_up_median": 0.219,
+  "hand_scale_median": 0.103,
+  "face_share": 0.455,
+  "still_share": 0.697,
+  "viewpoint": "third_person",
+  "confidence": 0.74
+ },
+ "pixabay_34091": {
+  "hand_frames": 93,
+  "first_person_ratio": 0.28,
+  "pointing_up_median": -0.199,
+  "hand_scale_median": 0.315,
+  "face_share": 0.0,
+  "still_share": 0.0,
+  "viewpoint": "third_person",
+  "confidence": 0.72
+ },
+ "pixabay_143161": {
+  "hand_frames": 7,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.528,
+  "hand_scale_median": 0.083,
+  "face_share": 0.0,
+  "still_share": 0.896,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_5629": {
+  "hand_frames": 1,
+  "first_person_ratio": 1.0,
+  "pointing_up_median": 0.665,
+  "hand_scale_median": 0.086,
+  "face_share": 0.0,
+  "still_share": 0.729,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_1108": {
+  "hand_frames": 23,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.32,
+  "hand_scale_median": 0.107,
+  "face_share": 0.0,
+  "still_share": 0.848,
+  "viewpoint": "third_person",
   "confidence": 1.0
+ },
+ "pixabay_38115": {
+  "hand_frames": 92,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.518,
+  "hand_scale_median": 0.4,
+  "face_share": 0.0,
+  "still_share": 0.0,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_111832": {
+  "hand_frames": 14,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.029,
+  "hand_scale_median": 0.553,
+  "face_share": 0.0,
+  "still_share": 0.5,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_11597": {
+  "hand_frames": 96,
+  "first_person_ratio": 0.333,
+  "pointing_up_median": 0.231,
+  "hand_scale_median": 0.384,
+  "face_share": 0.0,
+  "still_share": 0.191,
+  "viewpoint": "third_person",
+  "confidence": 0.67
+ },
+ "pixabay_11606": {
+  "hand_frames": 59,
+  "first_person_ratio": 0.356,
+  "pointing_up_median": 0.271,
+  "hand_scale_median": 0.444,
+  "face_share": 0.0,
+  "still_share": 0.276,
+  "viewpoint": "third_person",
+  "confidence": 0.64
+ },
+ "pixabay_192743": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 1.0,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_11605": {
+  "hand_frames": 4,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": 0.095,
+  "hand_scale_median": 0.33,
+  "face_share": 0.0,
+  "still_share": 0.479,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_11291": {
+  "hand_frames": 76,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.06,
+  "hand_scale_median": 0.194,
+  "face_share": 0.0,
+  "still_share": 0.659,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_11290": {
+  "hand_frames": 3,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.694,
+  "hand_scale_median": 0.197,
+  "face_share": 0.0,
+  "still_share": 0.933,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_42861": {
+  "hand_frames": 18,
+  "first_person_ratio": 0.056,
+  "pointing_up_median": -0.315,
+  "hand_scale_median": 0.18,
+  "face_share": 0.0,
+  "still_share": 0.783,
+  "viewpoint": "third_person",
+  "confidence": 0.94
+ },
+ "pixabay_322794": {
+  "hand_frames": 113,
+  "first_person_ratio": 0.549,
+  "pointing_up_median": 0.11,
+  "hand_scale_median": 0.084,
+  "face_share": 0.772,
+  "still_share": 0.509,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point up in some frames and not in others"
+ },
+ "pixabay_263703": {
+  "hand_frames": 38,
+  "first_person_ratio": 0.316,
+  "pointing_up_median": -0.83,
+  "hand_scale_median": 0.046,
+  "face_share": 0.037,
+  "still_share": 0.157,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
+ },
+ "pixabay_263697": {
+  "hand_frames": 65,
+  "first_person_ratio": 0.308,
+  "pointing_up_median": -0.312,
+  "hand_scale_median": 0.044,
+  "face_share": 0.14,
+  "still_share": 0.786,
+  "viewpoint": "third_person",
+  "confidence": 0.69
+ },
+ "pixabay_42040": {
+  "hand_frames": 15,
+  "first_person_ratio": 0.267,
+  "pointing_up_median": 0.18,
+  "hand_scale_median": 0.354,
+  "face_share": 0.0,
+  "still_share": 0.377,
+  "viewpoint": "third_person",
+  "confidence": 0.73
+ },
+ "pixabay_75700": {
+  "hand_frames": 3,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.403,
+  "hand_scale_median": 0.196,
+  "face_share": 0.0,
+  "still_share": 0.238,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_34772": {
+  "hand_frames": 33,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.322,
+  "hand_scale_median": 0.346,
+  "face_share": 0.0,
+  "still_share": 0.274,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_1006": {
+  "hand_frames": 12,
+  "first_person_ratio": 0.833,
+  "pointing_up_median": 0.573,
+  "hand_scale_median": 0.096,
+  "face_share": 0.0,
+  "still_share": 0.718,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_43238": {
+  "hand_frames": 95,
+  "first_person_ratio": 0.537,
+  "pointing_up_median": 0.458,
+  "hand_scale_median": 0.029,
+  "face_share": 0.0,
+  "still_share": 0.154,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point up in some frames and not in others"
+ },
+ "pixabay_2339": {
+  "hand_frames": 31,
+  "first_person_ratio": 0.226,
+  "pointing_up_median": -0.349,
+  "hand_scale_median": 0.145,
+  "face_share": 0.0,
+  "still_share": 0.683,
+  "viewpoint": "third_person",
+  "confidence": 0.77
+ },
+ "pixabay_115792": {
+  "hand_frames": 28,
+  "first_person_ratio": 0.893,
+  "pointing_up_median": 0.852,
+  "hand_scale_median": 0.104,
+  "face_share": 0.143,
+  "still_share": 0.889,
+  "viewpoint": "first_person",
+  "confidence": 0.89
+ },
+ "pixabay_172686": {
+  "hand_frames": 14,
+  "first_person_ratio": 0.857,
+  "pointing_up_median": 0.656,
+  "hand_scale_median": 0.105,
+  "face_share": 1.0,
+  "still_share": 0.176,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_83178": {
+  "hand_frames": 7,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.869,
+  "hand_scale_median": 0.084,
+  "face_share": 0.0,
+  "still_share": 0.931,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_7376": {
+  "hand_frames": 3,
+  "first_person_ratio": 0.667,
+  "pointing_up_median": 0.949,
+  "hand_scale_median": 0.139,
+  "face_share": 0.0,
+  "still_share": 0.721,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_11305": {
+  "hand_frames": 8,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.206,
+  "hand_scale_median": 0.154,
+  "face_share": 0.0,
+  "still_share": 0.1,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_177415": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.069,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_177412": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.12,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_115790": {
+  "hand_frames": 20,
+  "first_person_ratio": 0.5,
+  "pointing_up_median": 0.398,
+  "hand_scale_median": 0.169,
+  "face_share": 0.1,
+  "still_share": 1.0,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point up in some frames and not in others"
+ },
+ "pixabay_115793": {
+  "hand_frames": 25,
+  "first_person_ratio": 0.12,
+  "pointing_up_median": -0.468,
+  "hand_scale_median": 0.177,
+  "face_share": 0.0,
+  "still_share": 0.65,
+  "viewpoint": "third_person",
+  "confidence": 0.88
+ },
+ "pixabay_35007": {
+  "hand_frames": 37,
+  "first_person_ratio": 1.0,
+  "pointing_up_median": 0.671,
+  "hand_scale_median": 0.243,
+  "face_share": 0.0,
+  "still_share": 0.411,
+  "viewpoint": "first_person",
+  "confidence": 1.0
+ },
+ "pixabay_1111": {
+  "hand_frames": 4,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.258,
+  "hand_scale_median": 0.197,
+  "face_share": 0.0,
+  "still_share": 0.333,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_177164": {
+  "hand_frames": 39,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.523,
+  "hand_scale_median": 0.076,
+  "face_share": 1.0,
+  "still_share": 0.895,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_47245": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.922,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_51807": {
+  "hand_frames": 166,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.501,
+  "hand_scale_median": 0.383,
+  "face_share": 0.0,
+  "still_share": 0.515,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_26366": {
+  "hand_frames": 31,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.954,
+  "hand_scale_median": 0.193,
+  "face_share": 0.0,
+  "still_share": 0.053,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
+ },
+ "pixabay_200157": {
+  "hand_frames": 13,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.991,
+  "hand_scale_median": 0.333,
+  "face_share": 0.0,
+  "still_share": 0.657,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_150367": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.212,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_150346": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.186,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_150365": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.97,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_150368": {
+  "hand_frames": 1,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": 0.234,
+  "hand_scale_median": 0.013,
+  "face_share": 0.0,
+  "still_share": 0.0,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_150362": {
+  "hand_frames": 28,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.746,
+  "hand_scale_median": 0.147,
+  "face_share": 0.0,
+  "still_share": 0.828,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
+ },
+ "pixabay_34537": {
+  "hand_frames": 69,
+  "first_person_ratio": 0.072,
+  "pointing_up_median": -0.245,
+  "hand_scale_median": 0.239,
+  "face_share": 0.0,
+  "still_share": 0.857,
+  "viewpoint": "third_person",
+  "confidence": 0.93
+ },
+ "pixabay_34541": {
+  "hand_frames": 25,
+  "first_person_ratio": 0.28,
+  "pointing_up_median": 0.177,
+  "hand_scale_median": 0.331,
+  "face_share": 0.0,
+  "still_share": 0.041,
+  "viewpoint": "third_person",
+  "confidence": 0.72
+ },
+ "pixabay_35005": {
+  "hand_frames": 76,
+  "first_person_ratio": 0.132,
+  "pointing_up_median": 0.128,
+  "hand_scale_median": 0.384,
+  "face_share": 0.0,
+  "still_share": 0.385,
+  "viewpoint": "third_person",
+  "confidence": 0.87
+ },
+ "pixabay_34818": {
+  "hand_frames": 17,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.397,
+  "hand_scale_median": 0.423,
+  "face_share": 0.0,
+  "still_share": 0.566,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_33742": {
+  "hand_frames": 63,
+  "first_person_ratio": 0.048,
+  "pointing_up_median": -0.539,
+  "hand_scale_median": 0.368,
+  "face_share": 0.0,
+  "still_share": 0.884,
+  "viewpoint": "third_person",
+  "confidence": 0.95
+ },
+ "pixabay_175152": {
+  "hand_frames": 17,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": 0.112,
+  "hand_scale_median": 0.162,
+  "face_share": 0.0,
+  "still_share": 0.525,
+  "viewpoint": "third_person",
+  "confidence": 1.0
+ },
+ "pixabay_211185": {
+  "hand_frames": 39,
+  "first_person_ratio": 0.026,
+  "pointing_up_median": -0.399,
+  "hand_scale_median": 0.153,
+  "face_share": 0.0,
+  "still_share": 0.895,
+  "viewpoint": "third_person",
+  "confidence": 0.97
+ },
+ "pixabay_10822": {
+  "hand_frames": 0,
+  "first_person_ratio": null,
+  "pointing_up_median": null,
+  "hand_scale_median": null,
+  "face_share": 0.0,
+  "still_share": 0.646,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
+ },
+ "pixabay_31654": {
+  "hand_frames": 121,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.721,
+  "hand_scale_median": 0.178,
+  "face_share": 0.0,
+  "still_share": 0.223,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "hands point down from the top: a camera facing the person, or a head camera upside down"
+ },
+ "pixabay_19600": {
+  "hand_frames": 10,
+  "first_person_ratio": 0.0,
+  "pointing_up_median": -0.526,
+  "hand_scale_median": 0.192,
+  "face_share": 0.0,
+  "still_share": 0.6,
+  "viewpoint": "uncertain",
+  "confidence": 0.0,
+  "uncertain_why": "too few frames with a hand"
  }
 }
