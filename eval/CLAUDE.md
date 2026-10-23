@@ -29,6 +29,18 @@ never shown on the site. It is written by `python -m quellix_eval.site_clips --t
 (the `Site clips` workflow does it); schema in `datasets/third_person.py`. The landing page's
 one first-person clip is a separate flow (`--pexels`).
 
+## Privacy face test set (`test_sets/privacy_faces.jsonl`, #83)
+
+Real faces and face-free footage for the privacy check: Pixabay (Pixabay Content License, found
+by query, kept by id), the founder's Pexels clips, HoloAssist task windows and Egocentric-10K
+clips. Labels start from the source and are corrected by a person's eye on the contact sheets and
+on the detection crops (`test_sets/privacy_faces_labels.json`: `face` / `no_face` / `drop`),
+never from Ormes. A fixed hash of the clip id splits dev (60%, tune here) and held-out (40%).
+`.github/workflows/privacy-fix.yml` runs `quellix_eval.privacy_faces collect` (sheets, crops,
+per-detection features in `reports/privacy-faces/`) and `score` (the worker's own check before /
+after, `reports/privacy-faces/score.md`); `quellix_eval.privacy_diagnosis` draws every raw face
+detection on the Pexels clips. Pixabay API calls are throttled (100 per minute per key).
+
 ## Synthetic defects
 
 From a clean clip, generate labelled bad variants: hand pushed out of frame (crop/shift), task cut before its end, motion blur, under/over-exposure, overlaid document/face/screen, re-encoded/cropped/mirrored/speed-changed duplicates. Each variant records which check should fail and why, so labels are free.

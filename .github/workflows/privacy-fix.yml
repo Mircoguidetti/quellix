@@ -1,0 +1,132 @@
+name: Privacy fix
+
+# Issue #83: the privacy check reports faces that are not there (the pestle clip). Runs the
+# worker's own decode and face detector on the founder's Pexels clips (Pexels downloads only work
+# from Actions), saves every raw detection and annotated frames, commits them to
+# eval/reports/privacy-diagnosis/ on the branch it runs on and posts the report on issue #83.
+# Push eval/requests/privacy/request.json ({"stage": "diagnose" | "collect" | "score", "batch": N,
+# "holoassist": N, "egocentric": N}) to agent/privacy-fix.
+# - diagnose: every raw face detection on the Pexels clips (eval/reports/privacy-diagnosis/).
+# - collect: the real-face test set (Pixabay, Pexels, HoloAssist, Egocentric-10K), contact sheets
+#   for the labels and per-detection features (eval/reports/privacy-faces/).
+# - score: the worker's privacy check before / after the faces' second stage on the labelled set
+#   (eval/reports/privacy-faces/score.md).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/privacy-fix]
+    paths: ["eval/requests/privacy/**"]
+
+concurrency:
+  group: privacy-fix-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  diagnose:
+    name: Privacy diagnosis
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        working-directory: eval
+    env:
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --extra data
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/quellix/face_detection_yunet_2023mar.onnx
+          key: yunet-2023mar-8f2383e4
+      - name: HoloAssist tar indexes (cached; walking them takes minutes)
+        uses: actions/cache@v4
+        with:
+          path: eval/out/holo-cache
+          key: holoassist-index-v1-privacy
+          restore-keys: holoassist-index-v1-
+      - name: Stage
+        id: stage
+        run: |
+          s="$(python3 -c "import json; print(json.load(open('requests/privacy/request.json')).get('stage', 'diagnose'))" 2>/dev/null || echo diagnose)"
+          case "$s" in diagnose) d=privacy-diagnosis;; collect|score) d=privacy-faces;; *) echo "unknown stage $s" >&2; exit 1;; esac
+          echo "stage=$s" >> "$GITHUB_OUTPUT"; echo "dir=$d" >> "$GITHUB_OUTPUT"
+      - name: Run
+        run: |
+          mkdir -p out/privacy
+          set -o pipefail
+          label="run ${{ github.run_id }} on \`${{ github.ref_name }}\` (commit \`${GITHUB_SHA::7}\`)"
+          st="${{ steps.stage.outputs.stage }}"
+          if [ "$st" = collect ] || [ "$st" = score ]; then
+            get() { python3 -c "import json,sys; print(json.load(open('requests/privacy/request.json')).get(sys.argv[1], sys.argv[2]))" "$1" "$2"; }
+            b="$(get batch 1)"; h="$(get holoassist 12)"; e="$(get egocentric 16)"
+            case "$b$h$e" in ''|*[!0-9]*) echo "batch/holoassist/egocentric must be integers" >&2; exit 1;; esac
+            uv run python -m quellix_eval.privacy_faces "$st" --out out/privacy \
+              --report-dir reports/privacy-faces --batch "$b" --holoassist "$h" --egocentric "$e" \
+              --run "$label" 2>&1 | tee out/privacy/run.log
+          else
+            uv run python -m quellix_eval.privacy_diagnosis --out out/privacy \
+              --report-dir reports/privacy-diagnosis --run "$label" 2>&1 | tee out/privacy/run.log
+          fi
+      - name: Commit the report to this branch
+        id: commit
+        if: success() && github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          d="eval/reports/${{ steps.stage.outputs.dir }}"
+          git add -A "$d" eval/test_sets
+          git rm -q --cached "$d/comment.md" 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -q -m "eval: privacy ${{ steps.stage.outputs.stage }} report (run ${{ github.run_id }})"
+            git pull -q --rebase origin "${{ github.ref_name }}" || true
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Post the report on issue #83
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+          REPO: ${{ github.repository }}
+          DIR: ${{ steps.stage.outputs.dir }}
+        run: |
+          mkdir -p out
+          python3 - <<'PY'
+          import os, pathlib
+          sha, repo = os.environ.get("SHA", ""), os.environ["REPO"]
+          d = os.environ.get("DIR") or "privacy-diagnosis"
+          p = pathlib.Path(f"reports/{d}/comment.md")
+          run = f"https://github.com/{repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          if sha and p.exists():
+              base = f"https://github.com/{repo}/blob/{sha}/eval/reports/{d}/"
+              # ?raw=true makes GitHub serve the image itself (works on private repositories)
+              s = p.read_text().replace("{IMAGE_BASE}", base).replace(".jpg)", ".jpg?raw=true)")
+          else:
+              log = pathlib.Path("out/privacy/run.log")
+              lines = [x for x in (log.read_text().splitlines() if log.exists() else [])
+                       if not x.startswith(("W0000", "INFO:", "WARNING: Logging"))]
+              s = (f"Privacy {d} {run} **failed** and produced no report.\n\nLast lines:\n\n"
+                   "```\n" + "\n".join(lines[-40:]) + "\n```\n")
+          open("out/comment.md", "w").write(s[:60000])
+          PY
+          gh issue comment 83 -R "$REPO" --body-file out/comment.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: privacy-${{ steps.stage.outputs.stage }}
+          if-no-files-found: warn
+          path: |
+            eval/reports/privacy-*
+            eval/out/privacy/run.log

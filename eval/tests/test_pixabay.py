@@ -40,3 +40,44 @@ def test_search_dedupes_and_limits_per_query():
     assert [h.pixabay_id for h in hits] == [123]
     assert [h.pixabay_id for h in pb.search(net, "KEY", ["a"], 5, skip={123})] == [124]
     assert "key=KEY" in net.urls[0] and "video_type=film" in net.urls[0]
+
+
+def test_throttle_spaces_calls_and_retries_429():
+    import urllib.error
+
+    t = [0.0]
+    slept = []
+
+    def sleep(s):
+        slept.append(round(s, 2))
+        t[0] += s
+
+    class Flaky:
+        def __init__(self):
+            self.n = 0
+
+        def get(self, url):
+            self.n += 1
+            if self.n == 2:
+                raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+            return b"{}"
+
+    net = pb.Throttled(Flaky(), interval=1.0, pause=10.0, sleep=sleep, clock=lambda: t[0])
+    assert net.get("a") == b"{}"
+    assert net.get("b") == b"{}"           # 2nd call: 429, pause, retried
+    assert slept == [1.0, 10.0]
+    assert net.inner.n == 3
+
+
+def test_throttle_gives_up_after_the_retries():
+    import urllib.error
+
+    import pytest
+
+    class Always429:
+        def get(self, url):
+            raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+
+    net = pb.Throttled(Always429(), interval=0, retries=2, pause=0, sleep=lambda s: None)
+    with pytest.raises(urllib.error.HTTPError):
+        net.get("x")

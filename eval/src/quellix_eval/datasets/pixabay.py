@@ -8,6 +8,8 @@ API: https://pixabay.com/api/docs/#api_search_videos
 from __future__ import annotations
 
 import json
+import time
+import urllib.error
 import urllib.parse
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -15,6 +17,11 @@ from pathlib import Path
 from typing import Any
 
 API = "https://pixabay.com/api/videos/"
+# The API allows 100 requests per 60 s per key (#83: a run of ~140 calls got HTTP 429): with
+# Throttled, one call every MIN_INTERVAL_S stays under it and a 429 is retried after a pause.
+MIN_INTERVAL_S = 0.7
+RETRIES_429 = 5
+PAUSE_429_S = 20.0
 LICENSE = "Pixabay Content License"
 # The rendition to fetch: the worker decodes at 480 px anyway, so the smallest one >= 480 px.
 PREFERRED = ("small", "medium", "tiny", "large")
@@ -95,3 +102,32 @@ def by_id(net, key: str, pixabay_id: int) -> Hit | None:
     q = urllib.parse.urlencode({"key": key, "id": pixabay_id})
     hits = parse_hits(net.get(f"{API}?{q}"), "", max_duration_s=1e9)
     return hits[0] if hits else None
+
+
+class Throttled:
+    """Wraps a net: API calls (``get``) at most one per ``interval`` s, a 429 retried after a
+    pause. Downloads from the CDN are not rate limited and pass through."""
+
+    def __init__(self, inner: Any, interval: float = MIN_INTERVAL_S, retries: int = RETRIES_429,
+                 pause: float = PAUSE_429_S, sleep: Any = time.sleep,
+                 clock: Any = time.monotonic) -> None:
+        self.inner, self.interval, self.retries, self.pause = inner, interval, retries, pause
+        self.sleep, self.clock = sleep, clock
+        self._last = -1e9
+
+    def get(self, url: str, headers: dict[str, str] | None = None) -> bytes:
+        for attempt in range(self.retries + 1):
+            wait = self._last + self.interval - self.clock()
+            if wait > 0:
+                self.sleep(wait)
+            self._last = self.clock()
+            try:
+                return self.inner.get(url)
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or attempt == self.retries:
+                    raise
+                self.sleep(self.pause * (attempt + 1))
+        raise AssertionError("unreachable")
+
+    def download(self, url: str, dst: Path, headers: dict[str, str] | None = None) -> None:
+        self.inner.download(url, dst)

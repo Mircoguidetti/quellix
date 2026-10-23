@@ -22,7 +22,7 @@ video -> decode + sample frames -> checks (measurements only) -> rubric.evaluate
 | `hands_visible` | `ratio_both_manipulation`, `ratio_any_manipulation`, `ratio_both_whole`, `ratio_any_whole` (share of frames where hands are fully visible, wrist to fingertips, not cut by the frame edge), optional `manipulation_segments` [[start_s, end_s], ...] |
 | `framing` | `off_target_ratio`, `unstable_ratio` |
 | `task_completed` | `completed` bool or null, `confidence` 0-1, optional `start_s`, `end_s`, `steps` [{name, t_s}] |
-| `privacy` | `faces`, `documents`, `screens`: lists of `{t_s, box?}` detections |
+| `privacy` | `faces`, `documents`, `screens`: lists of `{t_s, box?, score?}` detections (faces also carry `verify`, the scale check of #83); weaker or unverified ones in `*_possible` |
 | `originality` | `max_similarity` 0-1, `match_video_id` or null |
 | `viewpoint` | `viewpoint` (`first_person` / `third_person` / `uncertain`), `confidence` 0-1, `first_person_ratio` (share of hand frames whose hands point up the frame) or null, evidence: `hand_frames`, `pointing_up_median`, `hand_scale_median`, `face_share`, `still_share`, `uncertain_why`. Runs only once `decision.schema.json` lists it (#79); reuses the hands model's landmarks and the privacy faces |
 
