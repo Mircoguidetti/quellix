@@ -32,10 +32,12 @@ type Props = {
   reviewCount: number;
   initialCollapsed: boolean;
   demo: boolean;
+  /** Shadow pilots are enabled (issue #65). */
+  pilots?: boolean;
   children: React.ReactNode;
 };
 
-export function AppShell({ user, org, memberships, reviewCount, initialCollapsed, demo, children }: Props) {
+export function AppShell({ user, org, memberships, reviewCount, initialCollapsed, demo, pilots = false, children }: Props) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -65,7 +67,7 @@ export function AppShell({ user, org, memberships, reviewCount, initialCollapsed
           aria-label="Sidebar"
         >
           <div className="sticky top-0 h-dvh">
-            <SidebarBody user={user} org={org} memberships={memberships} collapsed={collapsed} onToggle={toggle} demo={demo} />
+            <SidebarBody user={user} org={org} memberships={memberships} collapsed={collapsed} onToggle={toggle} demo={demo} pilots={pilots} />
           </div>
         </aside>
 
@@ -74,7 +76,7 @@ export function AppShell({ user, org, memberships, reviewCount, initialCollapsed
           <SheetContent side="left" className="dark border-r border-border bg-background text-foreground lg:hidden">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <SheetDescription className="sr-only">Move between sections of Ormes</SheetDescription>
-            <SidebarBody user={user} org={org} memberships={memberships} collapsed={false} onNavigate={() => setMobileOpen(false)} demo={demo} />
+            <SidebarBody user={user} org={org} memberships={memberships} collapsed={false} onNavigate={() => setMobileOpen(false)} demo={demo} pilots={pilots} />
           </SheetContent>
         </Sheet>
 
@@ -110,6 +112,7 @@ function SidebarBody({
   onToggle,
   onNavigate,
   demo,
+  pilots,
 }: {
   user: ShellUser;
   org: ShellOrg;
@@ -118,6 +121,7 @@ function SidebarBody({
   onToggle?: () => void;
   onNavigate?: () => void;
   demo: boolean;
+  pilots: boolean;
 }) {
   const pathname = usePathname();
   const { count } = useReviewCount();
@@ -150,7 +154,7 @@ function SidebarBody({
       </div>
 
       <nav aria-label="Main" className={cn("flex flex-1 flex-col gap-0.5 overflow-y-auto px-3", collapsed && "px-2")}>
-        {NAV.map((item) => {
+        {NAV.filter((item) => !item.flag || (item.flag === "pilots" && pilots)).map((item) => {
           const active = isActive(pathname, item.href);
           const Icon = item.icon;
           const badge = item.badge === "review" && count > 0 ? formatCount(count) : null;

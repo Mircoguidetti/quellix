@@ -30,6 +30,7 @@ pnpm lighthouse                            # with the demo server on :3100; home
 | `src/app/contest/[videoId]` | Public contest page (shows only `effect: reject` reasons) |
 | `src/components/ui` | Design-system components (Radix) |
 | `src/lib/domain` | Data access, always scoped by `org_id` |
+| `src/lib/pilots`, `src/lib/domain/pilots.ts` | Shadow-mode pilots (issue #65): CSV import, report math and pass/fail criteria, CSV/PDF export. Behind `QUELLIX_PILOTS=1` until the pilots migration is applied (always on in demo mode) |
 | `src/lib/domain/audit.ts` | Lab audit export (issue #25): per rubric version over a window of days. Served as JSON/CSV by `GET /api/v1/audit` and the dashboard's `/app/audit/export` |
 | `src/lib/rubric-eval.ts` | TS port of the worker's `rubric.py`, used by the rubric editor preview and the demo seed |
 | `src/lib/demo` | Demo mode: in-memory Supabase stand-in and seed |

@@ -266,6 +266,8 @@ export function seedDemo(): DemoStore {
           duration_s: status === "decided" ? duration : null,
           created_at: iso(created),
           file_deleted_at: status === "decided" && !pendingReview ? iso(decisionAt) : null,
+          shadow: false,
+          source_url: null,
         });
         if (status === "failed") {
           tables.jobs.push({
@@ -361,5 +363,101 @@ export function seedDemo(): DemoStore {
     });
   });
 
+  seedPilot(tables, now);
   return { tables, users };
+}
+
+/**
+ * One finished shadow pilot (issue #65) on the main organization: a batch the collector's reviewers
+ * had already judged, run through Ormes. Uses its own random stream, so the rest of the seed is
+ * unchanged.
+ */
+function seedPilot(tables: Record<string, Row[]>, now: number) {
+  const rand = prng(65);
+  const iso = (t: number) => new Date(t).toISOString();
+  const rubric = tables.rubrics.find((r) => r.org_id === DEMO_ORG_ID);
+  if (!rubric) return;
+  const version = tables.rubric_versions.find((v) => v.rubric_id === rubric.id && v.version === rubric.current_version);
+  const body = version?.body as Body;
+  const pilotId = randomUuid(rand);
+  const started = now - 4 * DAY;
+  tables.pilots = [
+    {
+      id: pilotId,
+      org_id: DEMO_ORG_ID,
+      name: "October batch, shadow mode",
+      rubric_id: rubric.id,
+      rubric_version: rubric.current_version,
+      criteria: [
+        { kind: "threshold", metric: "review_minutes_change", op: "<=", value: -0.4 },
+        { kind: "false_accepts_vs_lab_not_above_reviewers" },
+        { kind: "threshold", metric: "false_reject_rate", op: "<=", value: 0.08 },
+      ],
+      default_review_minutes: null,
+      created_by: DEMO_USER_ID,
+      created_at: iso(started),
+    },
+  ];
+  tables.pilot_items = [];
+  // Earlier production videos a duplicate in the batch can repeat (different contributors).
+  const earlier = tables.videos.filter((v) => v.org_id === DEMO_ORG_ID && v.status === "decided").slice(0, 40);
+  for (let i = 0; i < 64; i++) {
+    const id = randomUuid(rand);
+    const externalId = `pilot_${3100 + i}`;
+    const contributor = `c_${4000 + Math.floor(rand() * 900)}`;
+    const dup = i % 21 === 7 && earlier.length;
+    const prior = dup ? earlier[Math.floor(rand() * earlier.length)] : undefined;
+    const scenario = dup ? "duplicate" : pickScenario(rand);
+    const { outputs, duration } = makeOutputs(rand, scenario, prior?.id as string | undefined);
+    const evaluation = evaluate(body, outputs);
+    const created = started + (5 + i) * 60 * 1000;
+    // The collector's reviewers mostly agree with what the checks found, not always.
+    const truth = evaluation.decision === "review" ? (rand() < 0.62 ? "accept" : "reject") : evaluation.decision;
+    const reviewer = rand() < 0.05 ? (truth === "accept" ? "reject" : "accept") : truth;
+    // The lab judges against the truth; it occasionally disagrees with everyone.
+    const lab = rand() < 0.55 ? (rand() < 0.03 ? (truth === "accept" ? "reject" : "accept") : truth) : null;
+    tables.videos.push({
+      id,
+      org_id: DEMO_ORG_ID,
+      external_id: null,
+      contributor_ref: contributor,
+      rubric_id: rubric.id,
+      rubric_version: rubric.current_version,
+      status: "decided",
+      storage_path: null,
+      filename: `${externalId}.mp4`,
+      content_type: "video/mp4",
+      size_bytes: Math.round(duration * 1.1e6),
+      duration_s: duration,
+      created_at: iso(created),
+      file_deleted_at: iso(created + 60 * 1000),
+      shadow: true,
+      source_url: null,
+    });
+    tables.decisions.push({
+      id: randomUuid(rand),
+      video_id: id,
+      org_id: DEMO_ORG_ID,
+      decision: evaluation.decision,
+      reasons: evaluation.reasons,
+      checks: evaluation.checks,
+      rubric_id: rubric.id,
+      rubric_version: rubric.current_version,
+      engine_version: ENGINE,
+      created_at: iso(created + 50 * 1000),
+    });
+    tables.pilot_items.push({
+      id: randomUuid(rand),
+      pilot_id: pilotId,
+      org_id: DEMO_ORG_ID,
+      external_id: externalId,
+      reviewer_decision: reviewer,
+      reviewer_minutes: Math.round((1.5 + rand() * 4) * 10) / 10,
+      lab_outcome: lab,
+      contributor_ref: contributor,
+      source_url: null,
+      video_id: id,
+      created_at: iso(started),
+    });
+  }
 }
