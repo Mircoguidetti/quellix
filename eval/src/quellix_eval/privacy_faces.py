@@ -553,7 +553,7 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover - networ
     a.out.mkdir(parents=True, exist_ok=True)
     a.report_dir.mkdir(parents=True, exist_ok=True)
     key = os.environ.get("PIXABAY_API_KEY", "")
-    pnet = pb.UrllibNet()
+    pnet = pb.Throttled(pb.UrllibNet())
     xnet = px.UrllibNet()
     pkey = os.environ.get("PEXELS_API_KEY", "")
     known = ([json.loads(x) for x in MANIFEST_PATH.read_text().splitlines() if x.strip()]

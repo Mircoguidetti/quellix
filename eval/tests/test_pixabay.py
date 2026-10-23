@@ -52,3 +52,42 @@ def test_by_id_and_fetch(tmp_path):
     assert len(net.downloads) == 1  # cached
     with pytest.raises(RuntimeError, match="not found"):
         pb.by_id(net, "K", 8)
+
+
+def test_throttle_spaces_calls_and_retries_429():
+    import urllib.error
+
+    t = [0.0]
+    slept = []
+
+    def sleep(s):
+        slept.append(round(s, 2))
+        t[0] += s
+
+    class Flaky:
+        def __init__(self):
+            self.n = 0
+
+        def get(self, url):
+            self.n += 1
+            if self.n == 2:
+                raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+            return b"{}"
+
+    net = pb.Throttled(Flaky(), interval=1.0, pause=10.0, sleep=sleep, clock=lambda: t[0])
+    assert net.get("a") == b"{}"
+    assert net.get("b") == b"{}"           # 2nd call: 429, pause, retried
+    assert slept == [1.0, 10.0]
+    assert net.inner.n == 3
+
+
+def test_throttle_gives_up_after_the_retries():
+    import urllib.error
+
+    class Always429:
+        def get(self, url):
+            raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
+
+    net = pb.Throttled(Always429(), interval=0, retries=2, pause=0, sleep=lambda s: None)
+    with pytest.raises(urllib.error.HTTPError):
+        net.get("x")

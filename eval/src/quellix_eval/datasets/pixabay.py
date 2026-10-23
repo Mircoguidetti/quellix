@@ -10,12 +10,20 @@ API: https://pixabay.com/api/docs/#api_search_videos
 from __future__ import annotations
 
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
+
+# The API allows 100 requests per 60 s per key: one call every MIN_INTERVAL_S stays under it,
+# and a 429 is retried after a pause.
+MIN_INTERVAL_S = 0.7
+RETRIES_429 = 5
+PAUSE_429_S = 20.0
 
 API = "https://pixabay.com/api/videos/"
 LICENSE = "Pixabay Content License"
@@ -43,6 +51,35 @@ class UrllibNet:  # pragma: no cover - network
     def download(self, url: str, dst: Path) -> None:
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(self.get(url))
+
+
+class Throttled:
+    """Wraps a Net: API calls (``get``) at most one per ``interval`` s, a 429 retried after a
+    pause. Downloads from the CDN are not rate limited and pass through."""
+
+    def __init__(self, inner: Net, interval: float = MIN_INTERVAL_S, retries: int = RETRIES_429,
+                 pause: float = PAUSE_429_S, sleep: Any = time.sleep,
+                 clock: Any = time.monotonic) -> None:
+        self.inner, self.interval, self.retries, self.pause = inner, interval, retries, pause
+        self.sleep, self.clock = sleep, clock
+        self._last = -1e9
+
+    def get(self, url: str) -> bytes:
+        for attempt in range(self.retries + 1):
+            wait = self._last + self.interval - self.clock()
+            if wait > 0:
+                self.sleep(wait)
+            self._last = self.clock()
+            try:
+                return self.inner.get(url)
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or attempt == self.retries:
+                    raise
+                self.sleep(self.pause * (attempt + 1))
+        raise AssertionError("unreachable")
+
+    def download(self, url: str, dst: Path) -> None:
+        self.inner.download(url, dst)
 
 
 @dataclass(frozen=True)
