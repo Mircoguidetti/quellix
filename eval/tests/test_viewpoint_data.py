@@ -56,3 +56,14 @@ def test_hand_labels_applied_and_vetoes_dropped(tmp_path):
                              c("ego", "egocentric10k")], labels)
     assert [(x.clip_id, x.label, x.source) for x in out] == [
         ("pixabay_1", "third_person", "pixabay:agent"), ("ego", None, "egocentric10k")]
+
+
+def test_a_shoot_group_moves_takes_to_one_split(tmp_path):
+    labels = tmp_path / "l.jsonl"
+    labels.write_text(
+        '{"clip_id": "pixabay_1", "label": "third_person", "group": "pixabay_saw"}\n'
+        '{"clip_id": "pixabay_2", "label": "third_person", "group": "pixabay_saw"}\n')
+    a, b = data.apply_labels([data.ClipFeatures(f"pixabay_{i}", "pixabay:candidate",
+                                                f"pixabay_{i}", None, "x") for i in (1, 2)],
+                             labels)
+    assert a.split == b.split == data.split_of("pixabay_saw") and a.group == "pixabay_saw"

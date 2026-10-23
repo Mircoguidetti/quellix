@@ -152,7 +152,7 @@ def hand_feats(frame_hands: Any) -> list[HandFeat]:
 
 # Pixabay clips labelled by eye from their contact sheets (#79). One JSON per line:
 # {"clip_id", "label": "first_person" | "third_person" | "exclude", "labelled_by", "note",
-#  "vetoed": bool}. Excluded and vetoed clips never count.
+#  "group" (takes of one shoot share it), "vetoed": bool}. Excluded and vetoed clips never count.
 PIXABAY_LABELS = Path(__file__).resolve().parents[3] / "test_sets" / "viewpoint_pixabay.jsonl"
 
 
@@ -175,5 +175,8 @@ def apply_labels(clips: Sequence[ClipFeatures], path: Path = PIXABAY_LABELS) -> 
             continue
         c.label = row["label"]
         c.source = f"pixabay:{row.get('labelled_by', 'unknown')}"
+        if row.get("group"):  # takes of one shoot stay on the same side of the split
+            c.group = row["group"]
+            c.split = split_of(c.group)
         out.append(c)
     return out

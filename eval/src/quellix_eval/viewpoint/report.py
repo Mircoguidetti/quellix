@@ -124,8 +124,23 @@ def render(clips: Sequence[ClipFeatures], run: str, overlays: dict[str, str]) ->
     return "\n".join(L) + "\n"
 
 
+def overlay_picks(clips: Sequence[ClipFeatures], pixabay_max: int = 14) -> list[ClipFeatures]:
+    """Every labelled Pexels clip, and up to `pixabay_max` Pixabay ones: wrong verdicts first,
+    then held-out ones."""
+    ok = [c for c in clips if c.label and not c.error and c.frames]
+    pexels = [c for c in ok if c.source.startswith("pexels")]
+    pix = [c for c in ok if c.source.startswith("pixabay")]
+
+    def rank(c: ClipFeatures) -> tuple[int, int, str]:
+        v = measure(c)["viewpoint"]
+        return (0 if v not in (c.label, "uncertain") else 1, 0 if c.split == "held_out" else 1,
+                c.clip_id)
+
+    return pexels + sorted(pix, key=rank)[:pixabay_max]
+
+
 def draw_overlays(clips: Sequence[ClipFeatures], work: Path, out: Path) -> dict[str, str]:
-    """Annotated frames for the Pexels clips (downloaded again; nothing else is re-fetched)."""
+    """Annotated frames for some Pexels / Pixabay clips (downloaded again)."""
     import os
 
     import cv2
@@ -196,7 +211,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover
     ap.add_argument("--run", default="local run")
     a = ap.parse_args(argv)
     clips = apply_labels(load(a.features))
-    overlays = draw_overlays(clips, a.work, a.out / "overlays") if a.overlays else {}
+    overlays = (draw_overlays(overlay_picks(clips), a.work, a.out / "overlays")
+                if a.overlays else {})
     overlays = {k: f"overlays/{v}" for k, v in overlays.items()}
     md = render(clips, a.run, overlays)
     (a.out / "README.md").write_text(md.replace("{IMAGE_BASE}", ""))

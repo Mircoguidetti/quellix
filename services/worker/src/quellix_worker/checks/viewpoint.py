@@ -26,26 +26,27 @@ from ..jsonable import to_py
 from ..media import DecodedVideo
 from ..rubric import CheckOutput
 
-MODEL = "viewpoint@0.1.0"
+MODEL = "viewpoint@0.2.0"
 
 WRIST, MIDDLE_MCP = 0, 9
 
 # --- constants, set on the dev split of eval/reports/viewpoint (features.jsonl.gz) only.
-# Dev (63 head-mounted + 2 founder first-person Pexels clips, 3 founder third-person clips) showed:
-# - first-person clips with enough hands point up in >= 72% of their hand frames (one Pexels
-#   clip 44%); the third-person ones 0-70%: the ratio alone does not separate them, so the
-#   region between the two thresholds is `uncertain` (review), not a guess;
-# - a still camera is NOT a tripod sign: two head-mounted factory clips are still 78-89% of the
-#   time and the founder's first-person Pexels clips are stabilised. Stillness is measured and
-#   reported, never used for the verdict;
-# - hands pointing *down* from the top of the frame happen on a tripod facing the person AND on
-#   a head camera mounted upside down (Egocentric-10K factory 19): that case is `uncertain`;
-# - faces: none in the third-person clips, some coworkers in the factory ones. A face blocks a
-#   first-person verdict (-> uncertain) but never makes a third-person one on its own.
-MIN_HAND_FRAMES = 6         # fewer frames with a hand: cannot tell
-UP_MIN = 0.3                # a hand "points up" when wrist->knuckles is within ~70 deg of up
+# v0.2 (#79): grid search on dev (66 first-person clips: Egocentric-10K, HoloAssist, founder and
+# Pixabay picks; 35 third-person: 3 founder Pexels + 32 Pixabay, labelled by eye), with the
+# constraint "no first-person clip called third-person", then fewest third-person clips called
+# first-person, then fewest first-person clips sent to review. What dev showed:
+# - the share of hand frames pointing up separates the two well only with enough frames: under
+#   MIN_HAND_FRAMES the verdict is `uncertain` (a few frames of a third-person clip can all point
+#   up);
+# - a still camera is NOT a tripod sign: head-mounted factory clips are still 78-89% of the time
+#   and stabilised first-person clips too. Stillness is reported, never used for the verdict;
+# - hands pointing *down* from the top happen on a tripod facing the person AND on a head camera
+#   mounted upside down (Egocentric-10K factory 19): that case is `uncertain`;
+# - a face blocks a first-person verdict but never makes a third-person one on its own.
+MIN_HAND_FRAMES = 15        # fewer frames with a hand: cannot tell
+UP_MIN = 0.4                # a hand "points up" when wrist->knuckles is within ~66 deg of up
 FIRST_PERSON_MIN = 0.6      # first_person_ratio at or above (and no face): first-person
-THIRD_PERSON_MAX = 0.3      # at or below: third-person, unless the hands point straight down
+THIRD_PERSON_MAX = 0.4      # at or below: third-person, unless the hands point straight down
 INVERTED_UP_MAX = -0.7      # median pointing-up at or below: down from the top (ambiguous)
 FACE_SHARE_MAX = 0.2        # a face in more than this share of the analysed frames
 STILL_SHIFT = 0.0015        # a 0.1 s pair moving less than this share of the width is "still"
