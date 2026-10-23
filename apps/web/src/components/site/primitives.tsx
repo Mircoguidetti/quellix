@@ -24,7 +24,7 @@ export function Section({
   label?: string;
 }) {
   return (
-    <section id={id} aria-label={label} className={cn("scroll-mt-28 py-20 sm:py-28", className)}>
+    <section id={id} aria-label={label} className={cn("scroll-mt-28 py-12 sm:py-20", className)}>
       <Wrap>{children}</Wrap>
     </section>
   );
@@ -32,14 +32,26 @@ export function Section({
 
 export function H2({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <h2 id={id} className={cn("max-w-[22ch] text-balance text-[clamp(30px,4.2vw,48px)] font-medium leading-[1.05] tracking-[-0.03em]", className)}>
+    <h2 id={id} className={cn("max-w-[24ch] text-balance text-[clamp(28px,3.6vw,44px)] font-medium leading-[1.06] tracking-[-0.03em]", className)}>
       {children}
     </h2>
   );
 }
 
 export function Lead({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("mt-5 max-w-[60ch] text-pretty text-[17px] leading-relaxed text-muted-foreground", className)}>{children}</p>;
+  return <p className={cn("mt-3 max-w-[62ch] text-pretty text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]", className)}>{children}</p>;
+}
+
+/**
+ * Between two consecutive light sections (issue #85): a 1 px line, 80% of the content width,
+ * centred, fading to transparent at both ends.
+ */
+export function Divider() {
+  return (
+    <Wrap>
+      <hr aria-hidden="true" className="mx-auto h-px w-4/5 border-0 bg-[linear-gradient(90deg,transparent,var(--hairline)_20%,var(--hairline)_80%,transparent)]" />
+    </Wrap>
+  );
 }
 
 /** Small tag for features that are not built yet. */
