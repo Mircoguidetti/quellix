@@ -1,1 +1,1 @@
-{"stage": "collect", "batch": 2, "holoassist": 24, "egocentric": 24, "note": "#83: more faces and hard negatives (round things from above), detection crops for the label check"}
+{"stage": "collect", "batch": 2, "holoassist": 24, "egocentric": 40, "note": "#83: batch 2 again, API calls throttled (the first try hit Pixabay 429s)"}
