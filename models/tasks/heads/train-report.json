@@ -1,0 +1,68 @@
+{
+ "stage": "train",
+ "status": "complete",
+ "train_sessions": 88,
+ "head_version": "trained-n175",
+ "head_file": "head-v1.json",
+ "commit": "3ab569a961972342bc7a5d1be77ecb1860b547dc",
+ "run_id": "40101435890",
+ "timings_s": {
+  "setup_s": 135.0,
+  "build_s": 914.0,
+  "train_s": 2465.0
+ },
+ "build": {
+  "val_sessions_annotated": 1466,
+  "split": "train",
+  "skipped": {},
+  "clips": 175,
+  "sessions_requested": 88,
+  "clip_build_s": 913.1
+ },
+ "train": {
+  "clips": 175,
+  "completed": 87,
+  "not_completed": 88,
+  "held_out_clips": 36,
+  "held_out": {
+   "n": 36,
+   "base_reject_rate": 0.5,
+   "reject_precision": null,
+   "reject_recall": 0.0,
+   "false_accept_rate": 0.0,
+   "false_reject_rate": 0.0,
+   "review_rate": 1.0
+  },
+  "held_out_untrained_head": {
+   "n": 36,
+   "base_reject_rate": 0.5,
+   "reject_precision": 0.5,
+   "reject_recall": 0.5,
+   "false_accept_rate": 0.0,
+   "false_reject_rate": 0.5,
+   "review_rate": 0.5
+  },
+  "out_of_fold_all": {
+   "n": 175,
+   "base_reject_rate": 0.5028571428571429,
+   "reject_precision": 1.0,
+   "reject_recall": 0.03409090909090909,
+   "false_accept_rate": 0.011363636363636364,
+   "false_reject_rate": 0.0,
+   "review_rate": 0.9771428571428571
+  },
+  "thresholds": {
+   "reject_at": 0.3717545401709524,
+   "accept_at": 0.6156729360650542
+  },
+  "settings": {
+   "folds": 5,
+   "seed": 0,
+   "l2": 1.0,
+   "holdout": 0.2,
+   "max_false_accept": 0.02,
+   "min_reject_precision": 0.9
+  },
+  "note": "sanity check only; compare against Gemini on the same clips in eval"
+ }
+}
