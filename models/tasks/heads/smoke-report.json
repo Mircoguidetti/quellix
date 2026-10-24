@@ -1,0 +1,13 @@
+{
+ "stage": "smoke",
+ "status": "incomplete",
+ "train_sessions": 10,
+ "head_version": null,
+ "head_file": "head-smoke.json",
+ "commit": "78606f53d5d29898a35fbdaa5986dbcb47b63873",
+ "run_id": "40097455845",
+ "timings_s": {},
+ "build": null,
+ "train": null,
+ "sizing": null
+}
