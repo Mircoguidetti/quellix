@@ -1,0 +1,110 @@
+{
+ "settings": {
+  "folds": 5,
+  "seed": 0,
+  "l2": 1.0,
+  "holdout": 0.2,
+  "max_false_accept": 0.02,
+  "min_reject_precision": 0.9
+ },
+ "manifest_clips": 175,
+ "dataset_clips": 175,
+ "train_report_clips": 175,
+ "same_clips_as_training": true,
+ "reproduces_head": {
+  "max_abs_diff": 8.07695086840754e-07,
+  "tolerance": 1e-06,
+  "ok": true,
+  "clips": 175,
+  "head_version": "trained-n175"
+ },
+ "real_head": {
+  "oof_auc": 0.4479,
+  "oof_mean_p_completed": 0.4947,
+  "oof_mean_p_not_completed": 0.4967,
+  "in_sample_mean_p_completed": 0.5052,
+  "in_sample_mean_p_not_completed": 0.4891,
+  "thresholds": {
+   "reject_at": 0.3717545401709524,
+   "accept_at": 0.6156729360650542
+  },
+  "confusion_oof_at_head_thresholds": {
+   "completed": {
+    "accept": 0,
+    "reject": 0,
+    "review": 87
+   },
+   "not_completed": {
+    "accept": 0,
+    "reject": 2,
+    "review": 86
+   }
+  },
+  "note": "the thresholds were fitted on these same out-of-fold probabilities",
+  "ok": false
+ },
+ "shuffle_control": {
+  "permutations": 20,
+  "oof_auc": [
+   0.4905,
+   0.5393,
+   0.4259,
+   0.4659,
+   0.3294,
+   0.4431,
+   0.5954,
+   0.3865,
+   0.4176,
+   0.4423,
+   0.4069,
+   0.5146,
+   0.4805,
+   0.527,
+   0.45,
+   0.4997,
+   0.4881,
+   0.4956,
+   0.4896,
+   0.5771
+  ],
+  "oof_auc_mean": 0.4732,
+  "oof_auc_min": 0.3294,
+  "oof_auc_max": 0.5954,
+  "first_permutation_report": {
+   "out_of_fold_all": {
+    "n": 175,
+    "base_reject_rate": 0.5028571428571429,
+    "reject_precision": null,
+    "reject_recall": 0.0,
+    "false_accept_rate": 0.011363636363636364,
+    "false_reject_rate": 0.0,
+    "review_rate": 0.9885714285714285
+   },
+   "held_out": {
+    "n": 36,
+    "base_reject_rate": 0.5555555555555556,
+    "reject_precision": null,
+    "reject_recall": 0.0,
+    "false_accept_rate": 0.0,
+    "false_reject_rate": 0.0,
+    "review_rate": 1.0
+   },
+   "thresholds": {
+    "reject_at": 0.0,
+    "accept_at": 0.7599996206044366
+   }
+  },
+  "bands": {
+   "first": [
+    0.41,
+    0.59
+   ],
+   "mean": [
+    0.45,
+    0.55
+   ]
+  },
+  "ok": true
+ },
+ "ok": false
+}
