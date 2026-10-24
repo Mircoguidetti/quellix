@@ -1,1 +1,1 @@
-{"stage": "smoke", "train_sessions": 10, "val_sessions": 130}
+{"stage": "smoke", "train_sessions": 10, "val_sessions": 130, "attempt": 2}
