@@ -1,13 +1,177 @@
 {
  "stage": "smoke",
- "status": "incomplete",
+ "status": "complete",
  "train_sessions": 10,
- "head_version": null,
+ "head_version": "trained-n20",
  "head_file": "head-smoke.json",
- "commit": "78606f53d5d29898a35fbdaa5986dbcb47b63873",
- "run_id": "40097455845",
- "timings_s": {},
- "build": null,
- "train": null,
- "sizing": null
+ "commit": "f1dbd83603692c5b464ee2c24584360842a1aef3",
+ "run_id": "40099029778",
+ "timings_s": {
+  "setup_s": 84.0,
+  "build_s": 822.0,
+  "train_s": 372.0
+ },
+ "build": {
+  "val_sessions_annotated": 1466,
+  "split": "train",
+  "skipped": {},
+  "clips": 20,
+  "sessions_requested": 10,
+  "clip_build_s": 822.0
+ },
+ "train": {
+  "clips": 20,
+  "completed": 10,
+  "not_completed": 10,
+  "held_out_clips": 4,
+  "held_out": {
+   "n": 4,
+   "base_reject_rate": 0.5,
+   "reject_precision": null,
+   "reject_recall": 0.0,
+   "false_accept_rate": 0.0,
+   "false_reject_rate": 0.0,
+   "review_rate": 1.0
+  },
+  "held_out_untrained_head": {
+   "n": 4,
+   "base_reject_rate": 0.5,
+   "reject_precision": 0.5,
+   "reject_recall": 0.5,
+   "false_accept_rate": 0.0,
+   "false_reject_rate": 0.5,
+   "review_rate": 0.5
+  },
+  "out_of_fold_all": {
+   "n": 20,
+   "base_reject_rate": 0.5,
+   "reject_precision": null,
+   "reject_recall": 0.0,
+   "false_accept_rate": 0.0,
+   "false_reject_rate": 0.0,
+   "review_rate": 0.95
+  },
+  "thresholds": {
+   "reject_at": 0.0,
+   "accept_at": 0.9569405934670637
+  },
+  "settings": {
+   "folds": 5,
+   "seed": 0,
+   "l2": 1.0,
+   "holdout": 0.2,
+   "max_false_accept": 0.02,
+   "min_reject_precision": 0.9
+  },
+  "note": "sanity check only; compare against Gemini on the same clips in eval"
+ },
+ "val_ids": {
+  "equal": true,
+  "found": 255,
+  "baseline": 255,
+  "only_found": [],
+  "only_baseline": [],
+  "duplicates": 0
+ },
+ "splits_info": {
+  "members": [
+   "test-v1_2.txt",
+   "train-v1_2.txt",
+   "val-v1_2.txt"
+  ],
+  "lines_per_txt_member": {
+   "test-v1_2.txt": 438,
+   "train-v1_2.txt": 1466,
+   "val-v1_2.txt": 207
+  },
+  "readme": {}
+ },
+ "score_timing": {
+  "head": "../models/tasks/heads/head-smoke.json",
+  "head_version": "trained-n20",
+  "thresholds": {
+   "reject_at": 0.0,
+   "accept_at": 0.9569405934670637
+  },
+  "cmd": [
+   "/home/runner/work/quellix/quellix/models/tasks/.venv/bin/quellix-tasks"
+  ],
+  "rubric": "rub_benchmark_v2_tasks",
+  "rubric_version": 1,
+  "budget_s": 1200.0,
+  "elapsed_s": 75.0,
+  "parallel": 1,
+  "env": {
+   "HF_HOME": "/home/runner/.cache/huggingface",
+   "HF_HUB_OFFLINE": "1"
+  },
+  "rows": [
+   {
+    "clip_id": "holo_task_R096-28July-ATV_full",
+    "truth": "accept",
+    "decision": "review",
+    "checks": {
+     "task_completed": "uncertain",
+     "hands_visible": "skipped",
+     "framing": "skipped",
+     "technical": "skipped",
+     "privacy": "skipped",
+     "originality": "skipped"
+    },
+    "error": null,
+    "not_run": false,
+    "latency_s": 24.9,
+    "p_completed": 0.7537,
+    "completed": null,
+    "missing_steps": 6
+   },
+   {
+    "clip_id": "holo_task_R096-28July-ATV_cut",
+    "truth": "reject",
+    "decision": "review",
+    "checks": {
+     "task_completed": "uncertain",
+     "hands_visible": "skipped",
+     "framing": "skipped",
+     "technical": "skipped",
+     "privacy": "skipped",
+     "originality": "skipped"
+    },
+    "error": null,
+    "not_run": false,
+    "latency_s": 24.9,
+    "p_completed": 0.4008,
+    "completed": null,
+    "missing_steps": 4
+   },
+   {
+    "clip_id": "holo_task_R190-24Oct-Belt_full",
+    "truth": "accept",
+    "decision": "review",
+    "checks": {
+     "task_completed": "uncertain",
+     "hands_visible": "skipped",
+     "framing": "skipped",
+     "technical": "skipped",
+     "privacy": "skipped",
+     "originality": "skipped"
+    },
+    "error": null,
+    "not_run": false,
+    "latency_s": 25.1,
+    "p_completed": 0.4736,
+    "completed": null,
+    "missing_steps": 5
+   }
+  ]
+ },
+ "sizing": {
+  "build_s_per_session": 82.2,
+  "embed_s_per_clip": 18.6,
+  "clips_per_session": 2.0,
+  "setup_s": 84.0,
+  "budget_s": 12600.0,
+  "margin": 0.15,
+  "suggested_train_sessions": 88
+ }
 }
