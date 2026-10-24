@@ -1,0 +1,507 @@
+name: Tasks train
+
+# Train the first task-completion head (models/tasks) on HoloAssist *train* sessions and score it
+# once on the benchmark's tasks slice (HoloAssist *val*, 130 sessions, seed 64, 255 clips).
+# Spend: $0. No secret of any kind (only the job's own github.token): HoloAssist is read over
+# public HTTP, the SigLIP 2 weights are public on Hugging Face, no model API is called.
+#
+# Request file `eval/requests/tasks-train.json`:
+#   {"stage": "smoke" | "train" | "check" | "score", "train_sessions": N, "val_sessions": 130,
+#    "score_budget_minutes": 200}
+# `train_sessions` is read by `train` (smoke always uses 10); `val_sessions` and
+# `score_budget_minutes` (optional, default 200) by `score`. A missing file or stage "none" runs
+# nothing. The three stages are three separate pushes of the request file; pull the previous
+# stage's commit-back and read its report before the next push:
+#   smoke  10 train sessions: measures clip-build time, embedding throughput and the scoring
+#          route's time per clip; checks the expected 255 validation ids against
+#          eval/reports/data/benchmark-v2-tasks-gemini.json (annotations only, no video);
+#          commits models/tasks/heads/head-smoke.json + smoke-report.json. Never head-v1.json,
+#          never builds or scores validation clips.
+#   train  trains on `train_sessions` sessions with the fixed defaults of quellix_tasks.train;
+#          commits models/tasks/heads/head-v1.json + train-report.json (also when partial).
+#   check  between train and score, $0, no validation clip: rebuilds the training feature matrix
+#          from the cached embeddings and proves it reproduces head-v1.json, runs the label-shuffle
+#          control and the sanity of the real head, and runs 10 training sessions (20 clips)
+#          through the scoring route to compare p_completed with the training-time features.
+#          Commits train-features.json, checks-features.json, checks.json and the report's
+#          "Checks before scoring" section. score refuses to run unless checks.json says passed.
+#   score  checks out the branch tip, fails fast unless head-v1.json and a complete train report
+#          agree and the checks passed, builds the validation clips, compares their ids with the baseline, scores them
+#          with the committed head and commits eval/reports/task-head-v1.md. It does not depend
+#          on the train job: the head was committed in an earlier push, so no validation
+#          decision can influence a threshold.
+# The push trigger is the real route (workflow_dispatch needs the file on main). The commit-back
+# is made with GITHUB_TOKEN and does not retrigger this workflow. Not on main: nothing is
+# committed back from main.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/tasks-train, claude/tasks-head-training-gvuukt]
+    paths:
+      - "eval/requests/tasks-train.json"
+
+concurrency:
+  group: tasks-train
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: Read the request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      stage: ${{ steps.p.outputs.stage }}
+      train_sessions: ${{ steps.p.outputs.train_sessions }}
+      val_sessions: ${{ steps.p.outputs.val_sessions }}
+      score_budget_minutes: ${{ steps.p.outputs.score_budget_minutes }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          path = "eval/requests/tasks-train.json"
+          req = json.load(open(path)) if os.path.exists(path) else {"stage": "none"}
+          stage = req.get("stage", "none")
+          assert stage in ("none", "smoke", "train", "check", "score"), f"bad stage {stage!r}"
+          def num(key, default):
+              v = req.get(key, default)
+              assert isinstance(v, int) and not isinstance(v, bool) and v > 0, f"{key} must be a positive integer"
+              return v
+          print(f"stage={stage}")
+          print(f"train_sessions={num('train_sessions', 10) if stage != 'none' else 0}")
+          print(f"val_sessions={num('val_sessions', 130) if stage != 'none' else 0}")
+          print(f"score_budget_minutes={num('score_budget_minutes', 200) if stage != 'none' else 0}")
+          EOF
+          cat "$GITHUB_OUTPUT"
+
+  train:
+    name: Build clips, embed, train (${{ needs.plan.outputs.stage }})
+    needs: plan
+    if: needs.plan.outputs.stage == 'smoke' || needs.plan.outputs.stage == 'train'
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    env:
+      STAGE: ${{ needs.plan.outputs.stage }}
+      QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+      OUT: ${{ github.workspace }}/eval/out/train
+      EMB: ${{ github.workspace }}/emb-cache
+      UV_NO_SYNC: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start clock
+        run: |
+          echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+          mkdir -p "$OUT"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Free disk space (torch and its CUDA wheels are large)
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          df -h / | tail -1 | tee "$OUT/disk-free.txt"
+      - name: Install eval (HoloAssist clips) and models/tasks (SigLIP 2), lockfiles unchanged
+        run: |
+          (cd eval && uv sync --extra data)
+          (cd models/tasks && uv sync --extra embed)
+          # transformers' SigLIP image processor needs Pillow (or torchvision); the locked
+          # `embed` extra has neither. Installed into the venv only: uv.lock stays untouched.
+          (cd models/tasks && uv pip install pillow)
+          df -h / | tail -1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-siglip2-base-patch16-224-v1
+      - name: Download the SigLIP 2 weights once (public repository, no token)
+        working-directory: models/tasks
+        run: |
+          uv run python - <<'EOF'
+          import numpy as np
+          from quellix_tasks.encoder import SiglipEncoder
+          enc = SiglipEncoder()
+          enc.embed_texts(["warm up"])
+          enc.embed_images([np.zeros((64, 64, 3), np.uint8)])
+          print("weights cached")
+          EOF
+      - name: HoloAssist tar indexes (cached; walking them takes minutes)
+        uses: actions/cache@v4
+        with:
+          path: eval/out/holo-cache
+          key: holoassist-index-v1-tasks-train
+          restore-keys: holoassist-index-v1-
+      - name: Embedding cache (small .npz files only, never the clips)
+        uses: actions/cache/restore@v4
+        with:
+          path: emb-cache
+          key: tasks-train-emb-v1-${{ github.run_id }}
+          restore-keys: tasks-train-emb-v1-
+      - name: Setup time
+        run: echo "setup_s=$(( $(date +%s) - T0 ))" >> "$OUT/timing.env"
+      - name: Expected validation ids vs the Gemini baseline (annotations only, smoke)
+        if: env.STAGE == 'smoke'
+        working-directory: eval
+        run: |
+          uv run python -m quellix_eval.tasks_head val-ids \
+            --baseline reports/data/benchmark-v2-tasks-gemini.json --out "$OUT/ids"
+      - name: Build the train clips
+        working-directory: eval
+        env:
+          IN_SESSIONS: ${{ needs.plan.outputs.train_sessions }}
+        run: |
+          s0=$(date +%s); trap 'echo "build_s=$(( $(date +%s) - s0 ))" >> "$OUT/timing.env"' EXIT
+          n="$IN_SESSIONS"; [ "$STAGE" = smoke ] && n=10
+          echo "train sessions: $n"
+          uv run python -m quellix_eval.tasks_head build --split train --sessions "$n" \
+            --out "$OUT" --tolerant
+          df -h / | tail -1
+      - name: Embed and train (fixed defaults of quellix_tasks.train)
+        timeout-minutes: 300
+        working-directory: models/tasks
+        run: |
+          s0=$(date +%s); trap 'echo "train_s=$(( $(date +%s) - s0 ))" >> "$OUT/timing.env"' EXIT
+          name=head-v1; [ "$STAGE" = smoke ] && name=head-smoke
+          mkdir -p heads
+          uv run python -m quellix_tasks.train --manifest "$OUT/manifest.jsonl" \
+            --out "heads/$name.json" --report "$OUT/raw-train-report.json" --cache-dir "$EMB"
+      - name: Time the scoring route on 3 train clips (smoke only; HF offline, one process per clip)
+        if: env.STAGE == 'smoke'
+        working-directory: eval
+        env:
+          HF_HOME: /home/runner/.cache/huggingface
+          HF_HUB_OFFLINE: "1"
+        run: |
+          uv run python -m quellix_eval.tasks_head score --manifest "$OUT/manifest.jsonl" \
+            --head ../models/tasks/heads/head-smoke.json --out "$OUT/smoke-score" --limit 3 \
+            --budget-s 1200 --cmd "$GITHUB_WORKSPACE/models/tasks/.venv/bin/quellix-tasks"
+      - name: Write the report and commit it to this branch
+        if: always() && github.ref != 'refs/heads/main'
+        run: |
+          cd eval
+          name=head-v1; rep=train-report; [ "$STAGE" = smoke ] && name=head-smoke && rep=smoke-report
+          args=()
+          while IFS= read -r l; do [ -n "$l" ] && args+=(--timing "$l"); done < "$OUT/timing.env" || true
+          n="${{ needs.plan.outputs.train_sessions }}"; [ "$STAGE" = smoke ] && n=10
+          inc=()
+          [ -f "$OUT/ids/val-ids.json" ] && inc+=(--include "val_ids=$OUT/ids/val-ids.json" --include "splits_info=$OUT/ids/splits-info.json")
+          [ -f "$OUT/smoke-score/scored.json" ] && inc+=(--include "score_timing=$OUT/smoke-score/scored.json")
+          uv run python -m quellix_eval.tasks_head wrap-report --stage "$STAGE" --sessions "$n" \
+            --head "../models/tasks/heads/$name.json" --raw "$OUT/raw-train-report.json" \
+            --build "$OUT/build-stats.json" --commit "$(git rev-parse HEAD)" \
+            --run-id "${{ github.run_id }}" "${args[@]}" "${inc[@]}" \
+            --out "../models/tasks/heads/$rep.json"
+          cd ..
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f models/tasks/heads/*.json
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "tasks: $STAGE report and head (run ${{ github.run_id }})"
+          git pull --rebase origin "${{ github.ref_name }}" || true
+          git push origin "HEAD:${{ github.ref_name }}"
+      - name: Save the embedding cache once, at the end of the job
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: emb-cache
+          key: tasks-train-emb-v1-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tasks-train-${{ needs.plan.outputs.stage }}
+          if-no-files-found: warn
+          path: |
+            eval/out/train/build-stats.json
+            eval/out/train/raw-train-report.json
+            eval/out/train/timing.env
+            eval/out/train/disk-free.txt
+            eval/out/train/ids
+            eval/out/train/smoke-score/scored.json
+
+  check:
+    name: Checks before scoring (no validation clip)
+    needs: plan
+    if: needs.plan.outputs.stage == 'check'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      OUT: ${{ github.workspace }}/eval/out/check
+      QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+      UV_NO_SYNC: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}      # the branch tip: it holds head-v1.json
+      - name: Fail fast unless the committed head and its training report agree
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          d = "models/tasks/heads"
+          errs = []
+          rep = json.load(open(f"{d}/train-report.json")) if os.path.exists(f"{d}/train-report.json") else {}
+          if rep.get("stage") != "train" or rep.get("status") != "complete":
+              errs.append(f"train report is {rep.get('stage')!r}/{rep.get('status')!r}")
+          if not os.path.exists(f"{d}/head-v1.json"):
+              errs.append("head-v1.json is missing")
+          elif json.load(open(f"{d}/head-v1.json")).get("version") != rep.get("head_version"):
+              errs.append("head version differs from the report")
+          if errs:
+              sys.exit("check refused: " + "; ".join(errs))
+          print("ok:", rep["head_version"], "train_sessions", rep["train_sessions"])
+          EOF
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+      - name: Install eval and models/tasks, lockfiles unchanged
+        run: |
+          (cd eval && uv sync --extra data)
+          (cd models/tasks && uv sync --extra embed)
+          (cd models/tasks && uv pip install pillow)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-siglip2-base-patch16-224-v1
+      - name: Download the SigLIP 2 weights once (public repository, no token)
+        working-directory: models/tasks
+        run: |
+          uv run python - <<'EOF'
+          import numpy as np
+          from quellix_tasks.encoder import SiglipEncoder
+          enc = SiglipEncoder()
+          enc.embed_texts(["warm up"])
+          enc.embed_images([np.zeros((64, 64, 3), np.uint8)])
+          print("weights cached")
+          EOF
+      - name: HoloAssist tar indexes (cached)
+        uses: actions/cache@v4
+        with:
+          path: eval/out/holo-cache
+          key: holoassist-index-v1-tasks-train
+          restore-keys: holoassist-index-v1-
+      - name: Embedding cache saved by the train job (small .npz files)
+        uses: actions/cache/restore@v4
+        with:
+          path: emb-cache
+          key: tasks-train-emb-v1-none
+          restore-keys: tasks-train-emb-v1-
+      - name: The training manifest, rebuilt from the annotations alone (no video)
+        working-directory: eval
+        run: |
+          n="$(python3 -c "import json; print(json.load(open('../models/tasks/heads/train-report.json'))['train_sessions'])")"
+          count="$(ls ../emb-cache 2>/dev/null | wc -l)"; echo "embedding files restored: $count"
+          [ "$count" -gt 0 ] || { echo "no embedding cache from the train job" >&2; exit 1; }
+          uv run python -m quellix_eval.tasks_head manifest-from-annotations --split train \
+            --sessions "$n" --out "$OUT/train-manifest.jsonl"
+      - name: Checks 0, 2, 3 on the rebuilt feature matrix (stops here if one fails)
+        id: features
+        continue-on-error: true
+        working-directory: models/tasks
+        env:
+          HF_HOME: /home/runner/.cache/huggingface
+          HF_HUB_OFFLINE: "1"
+        run: |
+          uv run python -m quellix_tasks.checks features --manifest "$OUT/train-manifest.jsonl" \
+            --cache-dir "$GITHUB_WORKSPACE/emb-cache" --head heads/head-v1.json \
+            --train-report heads/train-report.json --features-out heads/train-features.json \
+            --out heads/checks-features.json
+      - name: Build 10 training sessions (20 clips) again
+        if: steps.features.outcome == 'success'
+        working-directory: eval
+        run: |
+          uv run python -m quellix_eval.tasks_head build --split train --sessions 10 --out "$OUT/serve"
+      - name: Run them through the scoring route (check 1)
+        if: steps.features.outcome == 'success'
+        working-directory: eval
+        env:
+          HF_HOME: /home/runner/.cache/huggingface
+          HF_HUB_OFFLINE: "1"
+        run: |
+          uv run python -m quellix_eval.tasks_head score --manifest "$OUT/serve/manifest.jsonl" \
+            --head ../models/tasks/heads/head-v1.json --out "$OUT/serve/score" --budget-s 3000 \
+            --cmd "$GITHUB_WORKSPACE/models/tasks/.venv/bin/quellix-tasks"
+      - name: Compare p_completed and task text with the training-time features (check 1)
+        id: serve
+        if: steps.features.outcome == 'success'
+        continue-on-error: true
+        working-directory: models/tasks
+        run: |
+          uv run python -m quellix_tasks.checks serve --features heads/train-features.json \
+            --head heads/head-v1.json --train-manifest "$OUT/train-manifest.jsonl" \
+            --scored "$OUT/serve/score/scored.json" --rubrics "$OUT/serve/score/decisions" \
+            --features-check heads/checks-features.json --out heads/checks.json
+      - name: Write the report section and commit the checks to this branch
+        if: always() && github.ref != 'refs/heads/main'
+        run: |
+          if [ -f models/tasks/heads/checks-features.json ]; then
+            (cd eval && uv run python -m quellix_eval.tasks_head checks-report \
+              --checks ../models/tasks/heads/checks.json \
+              --features-check ../models/tasks/heads/checks-features.json \
+              --train ../models/tasks/heads/train-report.json \
+              --commit "$(git rev-parse HEAD)" --run-id "${{ github.run_id }}" --out reports/task-head-v1.md)
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f models/tasks/heads/*.json
+          [ -f eval/reports/task-head-v1.md ] && git add -f eval/reports/task-head-v1.md || true
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "tasks: checks before scoring (run ${{ github.run_id }})"
+          git pull --rebase origin "${{ github.ref_name }}" || true
+          git push origin "HEAD:${{ github.ref_name }}"
+      - name: Fail the job if a check failed
+        if: steps.features.outcome == 'failure' || steps.serve.outcome == 'failure'
+        run: |
+          echo "a check failed: see models/tasks/heads/checks-features.json / checks.json"; exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tasks-checks
+          if-no-files-found: warn
+          path: |
+            models/tasks/heads/checks-features.json
+            models/tasks/heads/checks.json
+            eval/out/check/serve/score/scored.json
+
+  score:
+    name: Score the committed head on the 255 validation clips
+    needs: plan
+    if: needs.plan.outputs.stage == 'score'
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    env:
+      OUT: ${{ github.workspace }}/eval/out/val
+      QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+      UV_NO_SYNC: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}      # the branch tip, not the triggering SHA
+      - name: Fail fast unless the committed head and its training report agree
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          d = "models/tasks/heads"
+          errs = []
+          if not os.path.exists(f"{d}/head-v1.json"):
+              errs.append("models/tasks/heads/head-v1.json is missing")
+          rep = json.load(open(f"{d}/train-report.json")) if os.path.exists(f"{d}/train-report.json") else {}
+          if rep.get("stage") != "train":
+              errs.append(f"train report stage is {rep.get('stage')!r}, not 'train'")
+          if rep.get("status") != "complete":
+              errs.append(f"train report status is {rep.get('status')!r}, not 'complete'")
+          if not errs:
+              v = json.load(open(f"{d}/head-v1.json")).get("version")
+              if v != rep.get("head_version"):
+                  errs.append(f"head version {v!r} != report head_version {rep.get('head_version')!r}")
+              chk = json.load(open(f"{d}/checks.json")) if os.path.exists(f"{d}/checks.json") else {}
+              if chk.get("passed") is not True:
+                  errs.append("checks.json is missing or says passed != true (run the check stage)")
+              elif chk.get("head_version") != v:
+                  errs.append("checks.json was made for another head version")
+          if errs:
+              sys.exit("score refused: " + "; ".join(errs))
+          print("head and report agree:", rep["head_version"], "train_sessions", rep["train_sessions"])
+          EOF
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          df -h / | tail -1
+      - name: Install eval and models/tasks, lockfiles unchanged
+        run: |
+          (cd eval && uv sync --extra data)
+          (cd models/tasks && uv sync --extra embed)
+          # transformers' SigLIP image processor needs Pillow (or torchvision); the locked
+          # `embed` extra has neither. Installed into the venv only: uv.lock stays untouched.
+          (cd models/tasks && uv pip install pillow)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-siglip2-base-patch16-224-v1
+      - name: Download the SigLIP 2 weights once (public repository, no token)
+        working-directory: models/tasks
+        run: |
+          uv run python - <<'EOF'
+          import numpy as np
+          from quellix_tasks.encoder import SiglipEncoder
+          enc = SiglipEncoder()
+          enc.embed_texts(["warm up"])
+          enc.embed_images([np.zeros((64, 64, 3), np.uint8)])
+          print("weights cached")
+          EOF
+      - name: HoloAssist tar indexes (cached)
+        uses: actions/cache@v4
+        with:
+          path: eval/out/holo-cache
+          key: holoassist-index-v1-tasks-train
+          restore-keys: holoassist-index-v1-
+      - name: Expected validation ids vs the Gemini baseline (annotations only)
+        working-directory: eval
+        env:
+          VAL: ${{ needs.plan.outputs.val_sessions }}
+        run: |
+          uv run python -m quellix_eval.tasks_head val-ids --sessions "$VAL" \
+            --baseline reports/data/benchmark-v2-tasks-gemini.json --out "$OUT/ids"
+      - name: Build the validation clips
+        working-directory: eval
+        env:
+          VAL: ${{ needs.plan.outputs.val_sessions }}
+        run: |
+          s0=$(date +%s)
+          uv run python -m quellix_eval.tasks_head build --split val --sessions "$VAL" --out "$OUT"
+          echo "val_build_s=$(( $(date +%s) - s0 ))" | tee -a "$OUT/timing.env"
+      - name: The built clip ids must equal the baseline's (stops here otherwise)
+        working-directory: eval
+        run: |
+          uv run python -m quellix_eval.tasks_head check-ids --manifest "$OUT/manifest.jsonl" \
+            --baseline reports/data/benchmark-v2-tasks-gemini.json
+      - name: Score (one fresh process per clip, SigLIP from the local cache)
+        working-directory: eval
+        env:
+          HF_HOME: /home/runner/.cache/huggingface
+          HF_HUB_OFFLINE: "1"
+          BUDGET_MIN: ${{ needs.plan.outputs.score_budget_minutes }}
+        run: |
+          uv run python -m quellix_eval.tasks_head score --manifest "$OUT/manifest.jsonl" \
+            --head ../models/tasks/heads/head-v1.json --out "$OUT/score" \
+            --budget-s "$(( BUDGET_MIN * 60 ))" \
+            --cmd "$GITHUB_WORKSPACE/models/tasks/.venv/bin/quellix-tasks"
+      - name: Write the report
+        working-directory: eval
+        run: |
+          smoke=()
+          [ -f ../models/tasks/heads/smoke-report.json ] && smoke=(--smoke ../models/tasks/heads/smoke-report.json)
+          uv run python -m quellix_eval.tasks_head report --scored "$OUT/score/scored.json" \
+            --baseline reports/data/benchmark-v2-tasks-gemini.json \
+            --train ../models/tasks/heads/train-report.json "${smoke[@]}" \
+            --checks ../models/tasks/heads/checks.json \
+            --commit "$(git rev-parse HEAD)" --run-id "${{ github.run_id }}" \
+            --out reports/task-head-v1.md
+          cp "$OUT/score/scored.json" reports/data/task-head-v1-scored.json
+          cat reports/task-head-v1.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit the report to this branch
+        if: always() && github.ref != 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f eval/reports/task-head-v1.md eval/reports/data/task-head-v1-scored.json
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -m "eval: task head v1 scored on the benchmark tasks slice (run ${{ github.run_id }})"
+          git pull --rebase origin "${{ github.ref_name }}" || true
+          git push origin "HEAD:${{ github.ref_name }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tasks-score
+          if-no-files-found: warn
+          path: |
+            eval/out/val/score/scored.json
+            eval/out/val/manifest.jsonl
+            eval/out/val/build-stats.json
+            eval/out/val/ids

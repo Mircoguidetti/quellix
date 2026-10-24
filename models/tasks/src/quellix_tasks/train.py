@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -27,7 +28,7 @@ from .encoder import Encoder, SiglipEncoder
 from .head import Head, default_head, fit_logistic, fit_thresholds
 from .metrics import decisions, reject_metrics
 from .model import TaskModel
-from .video import cached_embeddings
+from .video import SAMPLE_FPS, cached_embeddings
 
 
 @dataclass
@@ -38,13 +39,26 @@ class Dataset:
     clip_ids: list[str]
 
 
+_WINDOW = re.compile(r"\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]\s*s\b")
+
+
+def cache_key(clip: Clip) -> str | None:
+    """A key that names the clip's content: id + window (`[start, end] s` in its notes).
+
+    None when the notes carry no window: the path-based key is the safe fallback, because a
+    clip id alone does not say which part of the recording was cut."""
+    m = _WINDOW.search(str(clip.raw.get("notes", "")))
+    return f"{clip.clip_id}|{m.group(1)}|{m.group(2)}" if m else None
+
+
 def build_dataset(clips: Sequence[Clip], encoder: Encoder, cache_dir: Path) -> Dataset:
     model = TaskModel(encoder, default_head())
     xs, ys, groups, ids = [], [], [], []
     for clip in clips:
         if clip.completed is None:
             continue
-        emb, times = cached_embeddings(clip.path, encoder, cache_dir)
+        emb, times = cached_embeddings(clip.path, encoder, cache_dir, SAMPLE_FPS,
+                                      key=cache_key(clip))
         if len(times) < 3:
             print(f"skip {clip.clip_id}: not decodable or too short", file=sys.stderr)
             continue

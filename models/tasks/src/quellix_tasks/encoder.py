@@ -28,6 +28,12 @@ class Encoder(Protocol):
         ...
 
 
+def _features(out: Any) -> Any:
+    """`get_*_features` returns a tensor in transformers 4 and a `BaseModelOutputWithPooling` in
+    5, where `pooler_output` holds the projected embedding."""
+    return out if hasattr(out, "float") else out.pooler_output
+
+
 def _normalise(x: np.ndarray) -> np.ndarray:
     return x / np.maximum(np.linalg.norm(x, axis=-1, keepdims=True), 1e-12)
 
@@ -60,7 +66,7 @@ class SiglipEncoder:
             inputs = self._processor(images=list(frames[i:i + self._batch]), return_tensors="pt")
             inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
             with self._torch.no_grad():
-                out.append(self._model.get_image_features(**inputs).float().cpu().numpy())
+                out.append(_features(self._model.get_image_features(**inputs)).float().cpu().numpy())
         return _normalise(np.concatenate(out)) if out else np.zeros((0, 768), np.float32)
 
     def embed_texts(self, texts: Sequence[str]) -> np.ndarray:  # pragma: no cover
@@ -71,7 +77,7 @@ class SiglipEncoder:
                                  truncation=True, return_tensors="pt")
         inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
         with self._torch.no_grad():
-            feats = self._model.get_text_features(**inputs).float().cpu().numpy()
+            feats = _features(self._model.get_text_features(**inputs)).float().cpu().numpy()
         return _normalise(feats)
 
 

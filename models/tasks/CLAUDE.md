@@ -4,10 +4,13 @@ The task library: models that decide whether a known task was completed (steps h
 
 ## Status (v0, issue #32)
 
-Code, tests and training pipeline are in place. **No trained head and no eval numbers yet**:
-the build sandbox cannot reach Hugging Face or HoloAssist. The built-in head is hand-set and
-abstains on anything unclear. Do not enable it in the worker until a trained head beats
-Gemini in `eval`.
+Code, tests and training pipeline are in place. A first head was trained on 88 HoloAssist train
+sessions (`heads/head-v1.json`, candidate, not enabled) and **fails its own sanity check**:
+out-of-fold AUC 0.45, class means 0.4947 vs 0.4967, every feature at chance (see
+`eval/reports/task-head-v1.md`, "Checks before scoring"). It was not scored on validation clips.
+The built-in head is hand-set and abstains on anything unclear. Do not enable either in the
+worker until a trained head beats Gemini in `eval`. `quellix_tasks.checks` runs the checks that
+must pass before a head is scored.
 
 ## How it works (`src/quellix_tasks/`)
 

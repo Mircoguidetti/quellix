@@ -25,16 +25,21 @@ def sample_frames(
 
 
 def cached_embeddings(
-    path: Path, encoder: Encoder, cache_dir: Path, sample_fps: float = SAMPLE_FPS
+    path: Path, encoder: Encoder, cache_dir: Path, sample_fps: float = SAMPLE_FPS,
+    key: str | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Frame embeddings + times, cached by (file path, size, mtime, encoder, fps).
+    """Frame embeddings + times, cached by (key, encoder, fps).
+
+    Without `key` the entry is keyed by (file path, size, mtime), which changes whenever a
+    clip is cut again. A caller that can name its content (clip id + window) passes `key`:
+    the file is then not looked at, so a rebuilt clip at another path hits the same entry.
 
     The cache holds embeddings only, never frames, and lives outside git (data/)."""
-    st = path.stat()
-    key = hashlib.sha1(
-        f"{path.resolve()}|{st.st_size}|{st.st_mtime_ns}|{encoder.name}|{sample_fps}".encode()
-    ).hexdigest()
-    cache = cache_dir / f"{key}.npz"
+    if key is None:
+        st = path.stat()
+        key = f"{path.resolve()}|{st.st_size}|{st.st_mtime_ns}"
+    digest = hashlib.sha1(f"{key}|{encoder.name}|{sample_fps}".encode()).hexdigest()
+    cache = cache_dir / f"{digest}.npz"
     if cache.exists():
         data = np.load(cache)
         return data["emb"], data["t"]

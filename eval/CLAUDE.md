@@ -119,3 +119,15 @@ rate, base reject rate, each with a Wilson 95% CI. Gemini: full rubric + measure
 in the prompt, JSON-schema answer with per-check confidence (`prompts/benchmark_v2/`), cheap
 model on every clip, strong model on a label-balanced order; spend cap per run (input `cap_usd`,
 default 3) shared by the jobs (tasks 50%, hands 25%, synthetic 25%), checked before every call.
+
+## Task head v1 (`tasks-train.yml`, `quellix_eval.tasks_head`)
+
+First trained head of `models/tasks`, scored once on the benchmark's tasks slice and compared
+with Gemini on the same clips; report in `reports/task-head-v1.md`, Gemini rows in
+`reports/data/benchmark-v2-tasks-gemini.json`. Costs $0 (no secret, no paid API). Three stages,
+each a push of `eval/requests/tasks-train.json` (`{"stage": "smoke"|"train"|"score",
+"train_sessions": N, "val_sessions": 130}`): smoke measures throughput on 10 train sessions,
+train commits `models/tasks/heads/head-v1.json`, score builds the 255 validation clips and
+scores them with that committed head (thresholds come from train out-of-fold probabilities
+only). `eval` never imports `quellix_tasks`; the two uv projects stay separate. Remove the
+request file before merging: a push to `main` under `eval/requests/` starts `eval.yml`.
