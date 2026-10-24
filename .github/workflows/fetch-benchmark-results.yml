@@ -1,0 +1,114 @@
+name: Fetch benchmark results (summary only)
+
+# Coordinator utility, no paid API and no secret other than the built-in GITHUB_TOKEN.
+# Downloads the slice artifacts of two finished Benchmark v2 runs inside Actions (the Claude
+# sandbox cannot reach the artifact storage host), removes local file paths, and force-pushes the
+# result to the orphan branch `analysis-results`. Triggered by a push to `analysis-fetch`.
+# Temporary: never open a pull request from `analysis-fetch`, never merge it.
+
+on:
+  push:
+    branches: [analysis-fetch]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: fetch-benchmark-results
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download run 39783934037
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 39783934037
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: benchmark-*
+          path: ${{ runner.temp }}/dl/run-39783934037
+
+      - name: Download run 39798084516
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 39798084516
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: benchmark-*
+          path: ${{ runner.temp }}/dl/run-39798084516
+
+      - name: Check, strip local paths, summarise
+        env:
+          DL: ${{ runner.temp }}/dl
+          OUT: ${{ runner.temp }}/summary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, re, sys
+
+          dl, out = pathlib.Path(os.environ["DL"]), pathlib.Path(os.environ["OUT"])
+          RUNS = ["run-39783934037", "run-39798084516"]
+          SLICES = ["benchmark-tasks", "benchmark-hands", "benchmark-synthetic"]
+          PATH_RE = re.compile(r"(/home/\S*|/tmp/\S*|/mnt/\S*|/runner\S*|/Users/\S*)")
+          SECRET_RE = re.compile(r"AIza[0-9A-Za-z_-]{20,}|(?:api[_-]?key|token|secret)\s*[=:]\s*[A-Za-z0-9_\-]{16,}", re.I)
+
+          # Every slice of every run must be present.
+          for run in RUNS:
+              for sl in SLICES:
+                  if not (dl / run / sl / "results.json").is_file():
+                      sys.exit(f"missing {run}/{sl}/results.json")
+
+          def scrub(x):
+              if isinstance(x, dict):
+                  return {k: scrub(v) for k, v in x.items()}
+              if isinstance(x, list):
+                  return [scrub(v) for v in x]
+              if isinstance(x, str):
+                  if SECRET_RE.search(x):
+                      sys.exit("a string value looks like it holds a credential; refusing to publish")
+                  return PATH_RE.sub("<path>", x)
+              return x
+
+          for run in RUNS:
+              for sl in SLICES:
+                  src = dl / run / sl / "results.json"
+                  data = json.loads(src.read_text())
+                  n_clips = len(data["clips"])
+                  n_results = {e: len(r) for e, r in data["engines"].items()}
+                  for c in data["clips"]:
+                      c.pop("path", None)
+                  data = scrub(data)
+                  assert len(data["clips"]) == n_clips
+                  assert {e: len(r) for e, r in data["engines"].items()} == n_results
+                  dst = out / run / sl / "results.json"
+                  dst.parent.mkdir(parents=True, exist_ok=True)
+                  dst.write_text(json.dumps(data, indent=1))
+                  print(run, sl, "clips", n_clips, "engines", n_results)
+              rep = dl / run / "benchmark-v2-report"
+              if rep.is_dir():
+                  for f in rep.iterdir():
+                      if f.suffix in {".md", ".json"} and f.stat().st_size < 200_000:
+                          d = out / run / "benchmark-v2-report" / f.name
+                          d.parent.mkdir(parents=True, exist_ok=True)
+                          d.write_bytes(f.read_bytes())
+          PY
+          find "$OUT" -type f | sort
+
+      - name: Push to analysis-results
+        env:
+          OUT: ${{ runner.temp }}/summary
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan analysis-results
+          git rm -rf --quiet .
+          cp -r "$OUT"/. .
+          git add -A
+          git status --short
+          git commit -q -m "Benchmark v2 results.json (paths removed), runs 39783934037 and 39798084516"
+          git push --force origin analysis-results
