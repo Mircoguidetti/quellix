@@ -923,7 +923,9 @@ provides-extras = ["modal", "embed"]
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8" },
+    { name = "quellix-hands", editable = "../hands" },
     { name = "ruff", specifier = ">=0.7" },
+    { name = "scikit-image", specifier = ">=0.26.0" },
 ]
 
 [[package]]
