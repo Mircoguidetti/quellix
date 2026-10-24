@@ -168,3 +168,28 @@ def test_report_includes_the_checks_section():
     text = "\n".join(th.render_checks(c))
     assert "## Checks before scoring" in text and "maximum absolute difference" in text
     assert "Not run." in "\n".join(th.render_checks(None))
+
+
+def test_checks_report_without_the_serve_check(tmp_path):
+    feats = {"manifest_clips": 4, "dataset_clips": 4, "train_report_clips": 4, "ok": False,
+             "reproduces_head": {"max_abs_diff": 0.0, "tolerance": 1e-6, "ok": True},
+             "real_head": {"oof_auc": 0.4, "oof_mean_p_completed": 0.4,
+                           "oof_mean_p_not_completed": 0.5, "ok": False,
+                           "thresholds": {"reject_at": 0.1, "accept_at": 0.9},
+                           "confusion_oof_at_head_thresholds": {
+                               "completed": {"accept": 0, "reject": 0, "review": 2},
+                               "not_completed": {"accept": 0, "reject": 0, "review": 2}}},
+             "shuffle_control": {"permutations": 2, "oof_auc": [0.5, 0.52], "oof_auc_mean": 0.51,
+                                 "oof_auc_min": 0.5, "oof_auc_max": 0.52, "ok": True,
+                                 "bands": {"first": [0.41, 0.59], "mean": [0.45, 0.55]},
+                                 "first_permutation_report": {"out_of_fold_all": {
+                                     "n": 4, "reject_precision": None, "reject_recall": 0.0,
+                                     "false_accept_rate": 0.0, "false_reject_rate": 0.0,
+                                     "review_rate": 1.0}}}}
+    (tmp_path / "f.json").write_text(json.dumps(feats))
+    (tmp_path / "t.json").write_text(json.dumps({"run_id": "1", "commit": "c"}))
+    out = tmp_path / "r.md"
+    assert th.main(["checks-report", "--features-check", str(tmp_path / "f.json"),
+                    "--train", str(tmp_path / "t.json"), "--out", str(out)]) == 0
+    text = out.read_text()
+    assert "a check failed" in text and "Not run: a check on the feature matrix" in text

@@ -329,7 +329,7 @@ def render_checks(c: Mapping[str, Any] | None) -> list[str]:
     """Section 'Checks before scoring' from models/tasks/heads/checks.json."""
     if not c:
         return ["## Checks before scoring", "", "Not run.", ""]
-    f, sv = c["features"], c["serve"]
+    f, sv = c["features"], c.get("serve")
     rep, san, sh = f["reproduces_head"], f["real_head"], f["shuffle_control"]
     lines = ["## Checks before scoring", "",
              "Run before any validation clip was built or scored; no threshold was changed. "
@@ -343,7 +343,22 @@ def render_checks(c: Mapping[str, Any] | None) -> list[str]:
         ["refit on the matrix vs committed head: max abs difference of weights, bias, mean, "
          "scale, thresholds", f"{rep['max_abs_diff']:.2e} (tolerance {rep['tolerance']:.0e}); "
          f"ok = {rep['ok']}"]])
-    lines += ["### 1. Train/serve consistency", "",
+    if sv is None:
+        lines += ["### 1. Train/serve consistency", "",
+                  "Not run: a check on the feature matrix failed first (below), and the stage "
+                  "stops there.", ""]
+    else:
+        lines += _serve_lines(sv)
+    lines += ["### 2. Label-shuffle control and 3. sanity of the real head", "",
+              "Out-of-fold (5 folds grouped by session, seed 0, same settings). Shuffle: labels "
+              f"permuted over the training set, grouping kept, {sh['permutations']} permutations; "
+              f"pass if the first permutation's AUC is within {sh['bands']['first']} and the mean "
+              f"within {sh['bands']['mean']} (bands fixed before the run).", ""]
+    return lines + _real_head_lines(san, sh)
+
+
+def _serve_lines(sv: Mapping[str, Any]) -> list[str]:
+    lines = ["### 1. Train/serve consistency", "",
               f"{sv['clips_compared']} training clips were rebuilt and run through the scoring "
               "route (`quellix-tasks check`, `QUELLIX_TASKS_HEAD`, rubric built per clip as "
               "`run_worker` does). `p_completed` returned by the route vs `head.proba` of the "
@@ -359,11 +374,11 @@ def render_checks(c: Mapping[str, Any] | None) -> list[str]:
     lines += ["The \"training-time\" text is the manifest rebuilt by the same code from the same "
               "annotations (the manifest of the training job was not saved); the scoring-time text "
               "is the rubric the route actually received.", ""]
-    lines += ["### 2. Label-shuffle control and 3. sanity of the real head", "",
-              "Out-of-fold (5 folds grouped by session, seed 0, same settings). Shuffle: labels "
-              f"permuted over the training set, grouping kept, {sh['permutations']} permutations; "
-              f"pass if the first permutation's AUC is within {sh['bands']['first']} and the mean "
-              f"within {sh['bands']['mean']} (bands fixed before the run).", ""]
+    return lines
+
+
+def _real_head_lines(san: Mapping[str, Any], sh: Mapping[str, Any]) -> list[str]:
+    lines: list[str] = []
     cm = san["confusion_oof_at_head_thresholds"]
     lines += _table(["measure", "real labels", "shuffled labels"], [
         ["out-of-fold AUC (completed vs not)", san["oof_auc"],
@@ -549,11 +564,17 @@ def cmd_report(a: argparse.Namespace) -> int:
 
 def cmd_checks_report(a: argparse.Namespace) -> int:
     """A report with provenance and the checks only (before any validation clip is scored)."""
-    c = json.loads(a.checks.read_text())
+    if a.checks and a.checks.exists():
+        c = json.loads(a.checks.read_text())
+    else:      # a check on the feature matrix failed first; the train/serve check did not run
+        c = {"passed": False, "features": json.loads(a.features_check.read_text()),
+             "serve": None}
     train = json.loads(a.train.read_text())
+    status = ("checks passed, validation not scored yet" if c["passed"] else
+              "**a check failed: the head was not scored on validation clips**")
     lines = ["# Task head v1: first trained head, scored once on the benchmark tasks slice", "",
-             "**Status: checks done, validation not scored yet.** A measurement of where the task "
-             "model stands, not a verdict on the product.", "", "## Provenance", ""]
+             f"**Status: {status}.** A measurement of where the task model stands, not a verdict "
+             "on the product.", "", "## Provenance", ""]
     lines += _table(["item", "value"], [
         ["check run", f"{a.run_id} on commit `{a.commit}`"],
         ["train run", f"{train.get('run_id')} on commit `{train.get('commit')}`"],
@@ -591,7 +612,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--out", type=Path, required=True)
     p.set_defaults(fn=cmd_manifest_from_annotations)
     p = sub.add_parser("checks-report")
-    p.add_argument("--checks", type=Path, required=True)
+    p.add_argument("--checks", type=Path, default=None)
+    p.add_argument("--features-check", type=Path, default=None)
     p.add_argument("--train", type=Path, required=True)
     p.add_argument("--commit", default="")
     p.add_argument("--run-id", default="")

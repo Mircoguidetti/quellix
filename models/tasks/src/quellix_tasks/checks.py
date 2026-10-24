@@ -143,7 +143,10 @@ def cmd_features(a: argparse.Namespace, encoder: Encoder | None = None) -> int:
     out["ok"] = bool(out["same_clips_as_training"] and out["reproduces_head"]["ok"]
                      and out["real_head"]["ok"] and out["shuffle_control"]["ok"])
     a.out.write_text(json.dumps(out, indent=1) + "\n")
-    print(json.dumps({k: (v if not isinstance(v, dict) else v.get("ok")) for k, v in out.items()}))
+    print(json.dumps({"ok": out["ok"], "same_clips": out["same_clips_as_training"],
+                      "reproduces_head": out["reproduces_head"], "real_head": out["real_head"],
+                      "shuffle": {k: out["shuffle_control"][k] for k in (
+                          "oof_auc_mean", "oof_auc_min", "oof_auc_max", "ok")}}))
     return 0 if out["ok"] else 1
 
 
