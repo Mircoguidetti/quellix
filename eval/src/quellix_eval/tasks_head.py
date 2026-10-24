@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -124,6 +125,23 @@ def cmd_build(a: argparse.Namespace) -> int:
     return 0 if clips else 1
 
 
+def cmd_manifest_from_annotations(a: argparse.Namespace) -> int:
+    """The manifest `build` would write for the train split, without any video: clip ids,
+    windows and task text come from the annotations alone (the cutter is a stub). Used to find
+    the cached training embeddings again, which are keyed by clip id + window."""
+    client = httpx.Client(timeout=300, follow_redirects=True)
+    ann = holo.load_annotations(json.loads(_fetch(client, holo.ANNOTATIONS_URL)))
+    splits = holo.load_splits(_fetch(client, holo.SPLITS_URL))
+    pool = [s for s in splits.get(a.split, []) if s in ann]
+    recs = []
+    for session in holo.pick_sessions(pool, a.sessions, a.seed):
+        recs += holo.task_clips(session, ann[session], Path("none.mp4"), Path("not-built"),
+                                cutter=lambda _s, _d, start, end: end - start)
+    write_manifest(recs, a.out)
+    print(json.dumps({"clips": len(recs), "sessions": a.sessions}))
+    return 0 if recs else 1
+
+
 def cmd_check_ids(a: argparse.Namespace) -> int:
     clips = load_manifest(a.manifest)
     base = json.loads(a.baseline.read_text())
@@ -152,7 +170,10 @@ def tee(argv: Sequence[str]) -> int:
         return 1
     if "--video-id" in cmd and proc.returncode == 0:
         out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / f"{cmd[cmd.index('--video-id') + 1]}.json").write_text(proc.stdout)
+        vid = cmd[cmd.index("--video-id") + 1]
+        (out_dir / f"{vid}.json").write_text(proc.stdout)
+        if "--rubric" in cmd:      # the exact rubric run_worker built for this clip
+            shutil.copyfile(cmd[cmd.index("--rubric") + 1], out_dir / f"{vid}.rubric.json")
     sys.stdout.write(proc.stdout)
     sys.stderr.write(proc.stderr)
     return proc.returncode
@@ -304,8 +325,67 @@ def _held_out(m: Mapping[str, Any] | None) -> str:
             f"{m['false_reject_rate']:.2f}; review {m['review_rate']:.2f}")
 
 
+def render_checks(c: Mapping[str, Any] | None) -> list[str]:
+    """Section 'Checks before scoring' from models/tasks/heads/checks.json."""
+    if not c:
+        return ["## Checks before scoring", "", "Not run.", ""]
+    f, sv = c["features"], c["serve"]
+    rep, san, sh = f["reproduces_head"], f["real_head"], f["shuffle_control"]
+    lines = ["## Checks before scoring", "",
+             "Run before any validation clip was built or scored; no threshold was changed. "
+             f"Overall: `passed = {c['passed']}`. The training run did not save its feature "
+             "matrix, so it was rebuilt from the cached embeddings (keyed by clip id + window) "
+             "and shown to be the matrix the head was fitted on (check 0).", ""]
+    lines += ["### 0. The rebuilt matrix is the one the head was fitted on", ""]
+    lines += _table(["item", "value"], [
+        ["clips in manifest / dataset / training report",
+         f"{f['manifest_clips']} / {f['dataset_clips']} / {f['train_report_clips']}"],
+        ["refit on the matrix vs committed head: max abs difference of weights, bias, mean, "
+         "scale, thresholds", f"{rep['max_abs_diff']:.2e} (tolerance {rep['tolerance']:.0e}); "
+         f"ok = {rep['ok']}"]])
+    lines += ["### 1. Train/serve consistency", "",
+              f"{sv['clips_compared']} training clips were rebuilt and run through the scoring "
+              "route (`quellix-tasks check`, `QUELLIX_TASKS_HEAD`, rubric built per clip as "
+              "`run_worker` does). `p_completed` returned by the route vs `head.proba` of the "
+              "training-time features of the same clip id:", ""]
+    lines += _table(["item", "value"], [
+        ["maximum absolute difference", f"{sv['max_abs_diff']}"],
+        ["tolerance", f"{sv['tolerance']}"],
+        ["task text (description, steps, final state) identical to the training manifest",
+         str(sv["all_task_text_equal"])],
+        ["clips without `p_completed` / not in the training features",
+         f"{len(sv['no_p_completed'])} / {len(sv['problems'])}"],
+        ["ok", str(sv["ok"])]])
+    lines += ["The \"training-time\" text is the manifest rebuilt by the same code from the same "
+              "annotations (the manifest of the training job was not saved); the scoring-time text "
+              "is the rubric the route actually received.", ""]
+    lines += ["### 2. Label-shuffle control and 3. sanity of the real head", "",
+              "Out-of-fold (5 folds grouped by session, seed 0, same settings). Shuffle: labels "
+              f"permuted over the training set, grouping kept, {sh['permutations']} permutations; "
+              f"pass if the first permutation's AUC is within {sh['bands']['first']} and the mean "
+              f"within {sh['bands']['mean']} (bands fixed before the run).", ""]
+    cm = san["confusion_oof_at_head_thresholds"]
+    lines += _table(["measure", "real labels", "shuffled labels"], [
+        ["out-of-fold AUC (completed vs not)", san["oof_auc"],
+         f"mean {sh['oof_auc_mean']} (min {sh['oof_auc_min']}, max {sh['oof_auc_max']}); "
+         f"first {sh['oof_auc'][0]}"],
+        ["mean out-of-fold p_completed, completed clips", san["oof_mean_p_completed"], ""],
+        ["mean out-of-fold p_completed, not-completed clips", san["oof_mean_p_not_completed"],
+         ""],
+        ["out-of-fold metrics at thresholds fitted on them (first permutation)", "",
+         _held_out(sh["first_permutation_report"]["out_of_fold_all"])],
+        ["ok", str(san["ok"]), str(sh["ok"])]])
+    lines += ["Confusion of the real out-of-fold probabilities at the head's thresholds "
+              f"(`{json.dumps(san['thresholds'])}`; fitted on these same probabilities, so "
+              "optimistic):", ""]
+    lines += _table(["truth", "accept", "reject", "review"], [
+        [k, v["accept"], v["reject"], v["review"]] for k, v in cm.items()])
+    return lines
+
+
 def render(scored: Mapping[str, Any], baseline: Mapping[str, Any], train: Mapping[str, Any],
-           smoke: Mapping[str, Any] | None, meta: Mapping[str, Any]) -> str:
+           smoke: Mapping[str, Any] | None, meta: Mapping[str, Any],
+           checks: Mapping[str, Any] | None = None) -> str:
     rows = [r for r in scored["rows"] if not r["not_run"]]
     by_id = {r["clip_id"]: r for r in rows}
     lines = ["# Task head v1: first trained head, scored once on the benchmark tasks slice", "",
@@ -347,6 +427,8 @@ def render(scored: Mapping[str, Any], baseline: Mapping[str, Any], train: Mappin
         ["internal 20% held-out train sessions", _held_out(tr.get("held_out"))],
         ["same held-out clips, untrained default head",
          _held_out(tr.get("held_out_untrained_head"))]])
+
+    lines += render_checks(checks)
 
     n = len(rows)
     not_run = len(scored["rows"]) - n
@@ -457,10 +539,29 @@ def cmd_report(a: argparse.Namespace) -> int:
     text = render(scored, json.loads(a.baseline.read_text()), json.loads(a.train.read_text()),
                   json.loads(a.smoke.read_text()) if a.smoke and a.smoke.exists() else None,
                   {"run_id": a.run_id, "commit": a.commit,
-                   "levers": a.levers.read_text() if a.levers and a.levers.exists() else ""})
+                   "levers": a.levers.read_text() if a.levers and a.levers.exists() else ""},
+                  json.loads(a.checks.read_text()) if a.checks and a.checks.exists() else None)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(text + "\n")
     print(f"wrote {a.out}")
+    return 0
+
+
+def cmd_checks_report(a: argparse.Namespace) -> int:
+    """A report with provenance and the checks only (before any validation clip is scored)."""
+    c = json.loads(a.checks.read_text())
+    train = json.loads(a.train.read_text())
+    lines = ["# Task head v1: first trained head, scored once on the benchmark tasks slice", "",
+             "**Status: checks done, validation not scored yet.** A measurement of where the task "
+             "model stands, not a verdict on the product.", "", "## Provenance", ""]
+    lines += _table(["item", "value"], [
+        ["check run", f"{a.run_id} on commit `{a.commit}`"],
+        ["train run", f"{train.get('run_id')} on commit `{train.get('commit')}`"],
+        ["head", f"`{train.get('head_file')}` version `{train.get('head_version')}`, "
+                 f"{train.get('train_sessions')} train sessions"]])
+    lines += render_checks(c)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    a.out.write_text("\n".join(lines) + "\n")
     return 0
 
 
@@ -483,6 +584,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--tolerant", action="store_true")
     p.set_defaults(fn=cmd_build)
+    p = sub.add_parser("manifest-from-annotations")
+    p.add_argument("--split", choices=["train", "val"], required=True)
+    p.add_argument("--sessions", type=int, required=True)
+    p.add_argument("--seed", type=int, default=TRAIN_SEED)
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_manifest_from_annotations)
+    p = sub.add_parser("checks-report")
+    p.add_argument("--checks", type=Path, required=True)
+    p.add_argument("--train", type=Path, required=True)
+    p.add_argument("--commit", default="")
+    p.add_argument("--run-id", default="")
+    p.add_argument("--out", type=Path, required=True)
+    p.set_defaults(fn=cmd_checks_report)
     p = sub.add_parser("check-ids")
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--baseline", type=Path, required=True)
@@ -514,6 +628,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--train", type=Path, required=True)
     p.add_argument("--smoke", type=Path, default=None)
     p.add_argument("--levers", type=Path, default=None)
+    p.add_argument("--checks", type=Path, default=None)
     p.add_argument("--commit", default="")
     p.add_argument("--run-id", default="")
     p.add_argument("--out", type=Path, required=True)

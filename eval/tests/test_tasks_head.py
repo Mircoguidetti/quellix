@@ -111,3 +111,60 @@ def test_report_has_the_required_sections(tmp_path):
               "false accept rate"):
         assert h in text
     assert "passes" not in text and "fails" not in text.replace("fails to", "")
+
+
+def test_tee_keeps_the_rubric_the_route_received(tmp_path):
+    fake = tmp_path / "fake.py"
+    fake.write_text(FAKE)
+    rub = tmp_path / "r.json"
+    rub.write_text('{"task": {"description": "d"}}')
+    rc = th.tee([str(tmp_path / "d"), "--", sys.executable, str(fake), "check", "v.mp4",
+                 "--rubric", str(rub), "--video-id", "c1_cut"])
+    assert rc == 0
+    assert json.loads((tmp_path / "d" / "c1_cut.rubric.json").read_text())["task"] == {
+        "description": "d"}
+    assert (tmp_path / "d" / "c1_cut.json").exists()
+
+
+def test_manifest_from_annotations_matches_expected_ids(tmp_path, monkeypatch):
+    ann = [{"video_name": "R1-gopro", "events": _events()},
+           {"video_name": "R2-gopro", "events": _events(wrong=True)}]
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("train-v1_2.txt", "R1-gopro\nR2-gopro\n")
+    blobs = {th.holo.ANNOTATIONS_URL: json.dumps(ann).encode(), th.holo.SPLITS_URL: buf.getvalue()}
+    monkeypatch.setattr(th, "_fetch", lambda _c, url: blobs[url])
+    out = tmp_path / "m.jsonl"
+    assert th.main(["manifest-from-annotations", "--split", "train", "--sessions", "5",
+                    "--out", str(out)]) == 0
+    from quellix_eval.datasets.manifest import load_manifest
+    recs = load_manifest(out)
+    assert sorted(r.clip_id for r in recs) == [
+        "holo_task_R1-gopro_cut", "holo_task_R1-gopro_full", "holo_task_R2-gopro_cut"]
+    assert all("[" in r.notes and r.task.steps == [] for r in recs)
+
+
+def test_report_includes_the_checks_section():
+    c = {"passed": True, "features": {
+        "manifest_clips": 4, "dataset_clips": 4, "train_report_clips": 4, "ok": True,
+        "reproduces_head": {"max_abs_diff": 0.0, "tolerance": 1e-6, "ok": True},
+        "real_head": {"oof_auc": 0.9, "oof_mean_p_completed": 0.8,
+                      "oof_mean_p_not_completed": 0.2, "ok": True,
+                      "thresholds": {"reject_at": 0.1, "accept_at": 0.9},
+                      "confusion_oof_at_head_thresholds": {
+                          "completed": {"accept": 1, "reject": 0, "review": 1},
+                          "not_completed": {"accept": 0, "reject": 1, "review": 1}}},
+        "shuffle_control": {"permutations": 2, "oof_auc": [0.5, 0.52], "oof_auc_mean": 0.51,
+                            "oof_auc_min": 0.5, "oof_auc_max": 0.52, "ok": True,
+                            "bands": {"first": [0.41, 0.59], "mean": [0.45, 0.55]},
+                            "first_permutation_report": {"out_of_fold_all": {
+                                "n": 4, "reject_precision": None, "reject_recall": 0.0,
+                                "false_accept_rate": 0.0, "false_reject_rate": 0.0,
+                                "review_rate": 1.0}}}},
+        "serve": {"clips_compared": 2, "max_abs_diff": 1e-5, "tolerance": 1e-3,
+                  "all_task_text_equal": True, "no_p_completed": [], "problems": [], "ok": True}}
+    text = "\n".join(th.render_checks(c))
+    assert "## Checks before scoring" in text and "maximum absolute difference" in text
+    assert "Not run." in "\n".join(th.render_checks(None))
