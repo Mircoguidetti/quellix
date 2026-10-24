@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>Ormes Security</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dark opening, calm white body, dark close. Section types: showcase (one big visual), statement (big type), detail (quiet text). */
+:root {
+  color-scheme: light;
+  --ink: #0A0A0B; --ink-2: #141416; --paper: #FFFFFF; --text: #0A0A0B;
+  --muted: #6B6B70; --muted-dark: #A1A1A8; --rule: #E6E6E8; --rule-dark: #26262A;
+  --accent: #3D63F2; --ok: #2E9C69; --no: #0A0A0B; --warn: #8A92A3;
+  --signal: #6EE7A8; --amber: #F0B450;
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --w: 1120px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--font-sans); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--ink); }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; }
+p { margin: 0; }
+.wrap { max-width: var(--w); margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.dark { background: var(--ink); color: #F3F4F6; }
+.dark .sub { color: var(--muted-dark); }
+.sub { color: var(--muted); max-width: 54ch; }
+section { padding-block: clamp(64px, 11vh, 120px); }
+.h2 { font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; }
+.lede { font-size: clamp(17px, 1.4vw, 19px); margin-top: 16px; }
+.divider { height: 1px; width: 80%; margin: 0 auto; background: linear-gradient(90deg, transparent, var(--rule) 18%, var(--rule) 82%, transparent); border: 0; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px; font-size: 15px; font-weight: 500; text-decoration: none; transition: background .15s ease; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.btn-light { background: #F3F4F6; color: var(--ink); } .btn-light:hover { background: #fff; }
+.btn-ghost { border: 1px solid #3A3F4B; color: #F3F4F6; } .btn-ghost:hover { border-color: #6B7280; }
+/* nav */
+.nav { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); z-index: 20; background: transparent; border-bottom: 1px solid transparent; transition: background .3s ease, border-color .3s ease; }
+.nav.scrolled { background: rgba(11,13,18,.92); backdrop-filter: saturate(140%) blur(12px); -webkit-backdrop-filter: saturate(140%) blur(12px); border-bottom-color: rgba(255,255,255,.06); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 72px; max-width: 1320px; }
+.logo { display: flex; align-items: center; gap: 10px; color: #F3F4F6; text-decoration: none; font-weight: 600; letter-spacing: .18em; font-size: 15px; }
+.logo i { width: 18px; height: 18px; border: 1.5px solid #F3F4F6; border-radius: 4px; display: grid; place-items: center; }
+.logo i::after { content: ""; width: 6px; height: 6px; background: #F3F4F6; border-radius: 1px; }
+.hero { padding-block: calc(72px + clamp(36px, 7vh, 80px)) 0; text-align: center; overflow: hidden; }
+.hero h1 { font-size: clamp(36px, 4.6vw, 66px); line-height: 1.04; letter-spacing: -0.035em; max-width: 16ch; margin: 0 auto; }
+.hero .lede { margin: 22px auto 0; max-width: 46ch; color: var(--muted-dark); font-size: clamp(16px, 1.35vw, 19px); line-height: 1.6; }
+.hero .ctas { display: flex; gap: 14px; justify-content: center; margin-top: 36px; flex-wrap: wrap; }
+.scene { position: relative; margin: clamp(32px, 6vh, 56px) auto 0; width: min(100%, 1080px); }
+.portrait { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 24px 24px 0 0; overflow: hidden; background: var(--ink);
+  -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); text-align: left; }
+.portrait > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.scan { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--signal), transparent); box-shadow: 0 0 14px 2px rgba(110,231,168,.18); animation: scan 3.6s ease-in-out infinite; }
+@keyframes scan { 0% { top: 4%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 96%; opacity: 0; } }
+.status { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 12px; color: #F3F4F6; background: rgba(11,13,18,.7); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--signal); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.chip { position: absolute; top: 16px; right: 16px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px; background: rgba(11,13,18,.72); color: var(--muted-dark); border: 1px solid rgba(255,255,255,.12); }
+.feed { position: absolute; left: 16px; bottom: 16%; display: flex; flex-direction: column; gap: 6px; max-width: min(70%, 420px); }
+.feed div { font-size: 13px; line-height: 1.35; color: #F3F4F6; background: rgba(11,13,18,.78); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 7px 10px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; gap: 8px; align-items: baseline; animation: ol-in .35s ease both; }
+.feed div time { font-family: var(--font-mono); font-size: 11px; color: var(--muted-dark); }
+.feed div i { font-style: normal; font-family: var(--font-mono); font-size: 11px; }
+.feed .ok i { color: var(--signal); } .feed .warn i { color: #F3F4F6; } .feed .tip { color: #D4D4D8; }
+@keyframes ol-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .scan, .status::before { animation: none; } * { transition: none !important; } }
+/* problem */
+.problem { padding-top: clamp(48px, 9vh, 96px); }
+.problem .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: end; }
+.big { font-size: clamp(96px, 16vw, 200px); line-height: .85; letter-spacing: -0.06em; font-weight: 500; font-variant-numeric: tabular-nums; }
+.big small { display: block; font-size: clamp(18px, 1.7vw, 22px); letter-spacing: -0.01em; color: var(--muted-dark); margin-top: 20px; line-height: 1.35; }
+.problem .say { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.25; letter-spacing: -0.015em; }
+.problem .say span { color: var(--muted-dark); }
+.foot { font-size: 13px; color: var(--muted-dark); margin-top: 28px; }
+.light .foot { color: var(--muted); }
+@media (max-width: 760px) { .problem .grid { grid-template-columns: 1fr; align-items: start; } }
+/* product panel */
+.head { max-width: 640px; }
+.panel { margin-top: clamp(32px, 5vh, 48px); display: grid; grid-template-columns: 1.75fr 1fr; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+.panel .media { position: relative; background: var(--ink); aspect-ratio: 16 / 10; min-width: 0; }
+.panel .media > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.timeline { position: absolute; left: 16px; right: 16px; bottom: 14px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.22); overflow: hidden; }
+.timeline b { position: absolute; top: 0; bottom: 0; background: rgba(240,180,80,.9); }
+.panel .read { padding: clamp(22px, 3vw, 32px); display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.decision { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); width: fit-content; }
+.decision::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+.decision.rej::before { background: var(--no); } .decision.acc::before { background: var(--ok); } .decision.rev::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--warn); }
+.reason { font-size: 18px; line-height: 1.4; }
+.when { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.hint { border-top: 1px solid var(--rule); padding-top: 16px; color: var(--muted); font-size: 15px; }
+.hint strong { color: var(--text); font-weight: 500; }
+.panel .note { font-size: 13px; color: var(--muted); margin-top: auto; }
+@media (max-width: 860px) { .panel { grid-template-columns: 1fr; } }
+/* numbers */
+.numbers .line { font-size: clamp(30px, 4.6vw, 56px); line-height: 1.12; letter-spacing: -0.03em; max-width: 20ch; }
+.numbers .line em { font-style: normal; color: var(--muted); }
+.split { display: flex; gap: clamp(24px, 5vw, 72px); margin-top: clamp(32px, 5vh, 56px); flex-wrap: wrap; }
+.split div { display: flex; flex-direction: column; gap: 4px; }
+.split strong { font-size: clamp(26px, 3vw, 36px); font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.split span { font-size: 14px; color: var(--muted); }
+/* rows */
+.rows { margin-top: clamp(28px, 4vh, 44px); display: grid; grid-template-columns: 1fr 1fr; column-gap: clamp(32px, 6vw, 80px); }
+.row { display: grid; grid-template-columns: 180px 1fr; gap: 16px; padding-block: 18px; border-top: 1px solid var(--rule); align-items: baseline; }
+.row h3 { font-size: 17px; } .row p { color: var(--muted); font-size: 15px; }
+@media (max-width: 860px) { .rows { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; gap: 4px; padding-block: 14px; } }
+/* quotes */
+.quotes { margin-top: clamp(32px, 5vh, 52px); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 4vw, 56px); }
+.q .who { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.q blockquote { margin: 12px 0 0; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.25; letter-spacing: -0.015em; }
+.q.before blockquote { color: #9AA1AE; }
+.q .after-hint { margin-top: 12px; color: var(--muted); font-size: 15px; }
+@media (max-width: 760px) { .quotes { grid-template-columns: 1fr; } }
+/* facts, steps */
+.facts { margin-top: clamp(24px, 4vh, 40px); display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 4vw, 48px); }
+.facts > div { border-top: 1px solid var(--text); padding-top: 14px; }
+.facts h3 { font-size: 17px; } .facts p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.textlink { display: inline-block; margin-top: 28px; color: var(--text); font-weight: 500; text-decoration: none; font-size: 15px; }
+.textlink:hover { text-decoration: underline; }
+@media (max-width: 760px) { .facts { grid-template-columns: 1fr; } }
+.steps { margin-top: clamp(24px, 4vh, 40px); display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 3vw, 36px); counter-reset: s; }
+.steps > div { counter-increment: s; }
+.steps > div::before { content: counter(s); font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: block; margin-bottom: 10px; }
+.steps.three { grid-template-columns: repeat(3, 1fr); }
+.steps h3 { font-size: 17px; } .steps p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.criteria { margin-top: 36px; color: var(--muted); font-size: 15px; max-width: 70ch; }
+@media (max-width: 860px) { .steps, .steps.three { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .steps, .steps.three { grid-template-columns: 1fr; } }
+/* faq */
+.faq { display: grid; grid-template-columns: 1fr 1.6fr; gap: clamp(24px, 5vw, 72px); }
+details { border-top: 1px solid var(--rule); } details:last-child { border-bottom: 1px solid var(--rule); }
+summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; font-size: 17px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--muted); font-size: 20px; line-height: 1; }
+details[open] summary::after { content: "–"; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details p { color: var(--muted); padding-bottom: 18px; max-width: 60ch; font-size: 15px; }
+@media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
+/* devs, cta, footer */
+.devs .grid { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+.devs ol { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 16px; }
+.devs li span { display: block; color: var(--muted-dark); font-size: 15px; }
+.code { background: var(--ink-2); border: 1px solid var(--rule-dark); border-radius: 14px; overflow-x: auto; min-width: 0; }
+.code .bar { font-family: var(--font-mono); font-size: 12px; color: var(--muted-dark); padding: 12px 18px; border-bottom: 1px solid var(--rule-dark); }
+.code pre { margin: 0; padding: 18px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.75; color: #D4D4D8; }
+.code .k { color: #FFFFFF; } .code .s { color: #6EE7A8; } .code .c { color: #7A7A82; }
+@media (max-width: 860px) { .devs .grid { grid-template-columns: 1fr; } }
+.cta { text-align: center; border-top: 1px solid var(--rule-dark); }
+.cta h2 { font-size: clamp(34px, 5vw, 60px); line-height: 1.05; letter-spacing: -0.03em; max-width: 16ch; margin: 0 auto; }
+.cta .sub { margin: 18px auto 0; }
+.cta .ctas { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+footer { border-top: 1px solid var(--rule-dark); padding-block: 28px; font-size: 14px; color: var(--muted-dark); }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
+footer a { text-decoration: none; } footer a:hover { color: #fff; }
+/* verticals strip (home) */
+.fleets { margin-top: clamp(28px, 4vh, 44px); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 3vw, 32px); }
+.fleet { display: block; text-decoration: none; border: 1px solid var(--rule); border-radius: 18px; padding: clamp(22px, 3vw, 32px); min-width: 0; transition: border-color .15s ease; }
+.fleet:hover { border-color: var(--text); }
+.fleet .tag { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--ok); }
+.fleet .tag.soon { color: #B07A12; }
+.fleet h3 { font-size: 24px; margin-top: 10px; }
+.fleet p { color: var(--muted); font-size: 15px; margin-top: 8px; max-width: 44ch; }
+.fleet .go { display: inline-block; margin-top: 18px; font-weight: 500; font-size: 15px; }
+@media (max-width: 760px) { .fleets { grid-template-columns: 1fr; } }
+
+/* media fills the panel height on desktop; fixed ratio when stacked */
+.panel .media, .rv .media, .map { aspect-ratio: auto; min-height: 420px; }
+@media (max-width: 860px) { .panel .media, .rv .media, .map { aspect-ratio: 16 / 10; min-height: 0; } }
+@media (max-width: 600px) {
+  .portrait { aspect-ratio: 5 / 4; }
+  .scene .chip { display: none; }
+  .feed { left: 8px; bottom: 6%; max-width: 94%; }
+  .feed div { font-size: 11.5px; padding: 5px 8px; }
+  .feed div:nth-child(1) { display: none; }
+}
+
+/* hamburger menu, every width */
+.nav.solid { background: rgba(11,13,18,.96); }
+.burger { width: 44px; height: 44px; border: 0; background: transparent; cursor: pointer; display: grid; place-content: center; gap: 7px; padding: 0; margin-right: -8px; }
+.burger span { display: block; width: 24px; height: 2px; background: #F3F4F6; border-radius: 2px; transition: transform .2s ease; }
+.burger[aria-expanded="true"] span:first-child { transform: translateY(4.5px) rotate(45deg); }
+.burger[aria-expanded="true"] span:last-child { transform: translateY(-4.5px) rotate(-45deg); }
+.burger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.menu { background: var(--ink); border-bottom: 1px solid var(--rule-dark); }
+.menu .wrap { display: flex; flex-direction: column; padding-block: 8px 20px; }
+.menu a { color: #F3F4F6; text-decoration: none; font-size: 22px; letter-spacing: -.01em; padding: 12px 0; border-bottom: 1px solid var(--rule-dark); }
+.menu a:last-child { border-bottom: 0; }
+.menu a:hover { color: var(--signal); }
+/* plain title block for sub pages: no hero */
+.ptitle { padding-block: calc(72px + clamp(40px, 7vh, 72px)) 0; }
+.ptitle h1 { font-size: clamp(32px, 4.4vw, 54px); line-height: 1.06; letter-spacing: -0.03em; max-width: 20ch; }
+.ptitle .lede { color: var(--muted); max-width: 56ch; }
+.nav.solid ~ main > section:first-child { padding-top: calc(72px + clamp(40px, 8vh, 80px)); }
+.menu .wrap { height: auto; justify-content: flex-start; align-items: stretch; gap: 0; }
+.fleet-art { height: 150px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.fleet-art svg { width: 100%; height: 100%; display: block; }
+
+.tbl { margin-top: clamp(28px, 4vh, 40px); overflow-x: auto; }
+.tbl table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 15px; }
+.tbl th { text-align: left; font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: .04em; padding: 0 16px 12px 0; }
+.tbl td { padding: 16px 16px 16px 0; border-top: 1px solid var(--rule); vertical-align: top; color: var(--muted); }
+.tbl td:first-child { color: var(--text); font-weight: 500; }
+.sides { margin-top: clamp(28px, 4vh, 44px); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 3vw, 32px); }
+.side2 { border: 1px solid var(--rule); border-radius: 18px; padding: clamp(22px, 3vw, 32px); min-width: 0; }
+.side2 h3 { font-size: 24px; }
+.side2 ul { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 12px; }
+.side2 li { padding-left: 18px; position: relative; color: var(--muted); font-size: 15px; }
+.side2 li::before { content: ""; position: absolute; left: 0; top: .7em; width: 8px; height: 1px; background: var(--text); }
+.side2 li b { color: var(--text); font-weight: 500; }
+@media (max-width: 760px) { .sides { grid-template-columns: 1fr; } }
+.steps { margin-top: clamp(32px, 5vh, 52px); }
+.panel + .steps { margin-top: clamp(32px, 5vh, 48px); }
+code { font-family: var(--font-mono); font-size: .88em; }
+.note { margin-top: 20px; color: var(--muted); font-size: 15px; }
+.sub.lede code { color: var(--text); }
+.code { margin-top: clamp(28px, 4vh, 40px); }
+.code .tabs { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--rule-dark); align-items: center; flex-wrap: wrap; }
+.code .tabs button { font: inherit; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted-dark); background: none; border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.code .tabs button[aria-selected="true"] { color: #fff; background: #26262A; }
+.code .tabs .cp { margin-left: auto; }
+.dual { margin-top: clamp(28px, 4vh, 40px); display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(24px, 4vw, 56px); align-items: start; }
+.dual .code { margin-top: 0; }
+.stack { display: grid; gap: 22px; } .stack h3 { font-size: 17px; } .stack p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+@media (max-width: 860px) { .dual { grid-template-columns: 1fr; } }
+
+</style>
+<header class="nav solid">
+  <div class="wrap">
+    <a class="logo" href="/"><i></i>ORMES</a>
+    <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu"><span></span><span></span></button>
+  </div>
+  <nav class="menu" id="menu" hidden>
+    <div class="wrap">
+      <a href="/product">Ormes for video</a>
+      <a href="/drones">Ormes for drones</a>
+      <a href="/security">Security</a>
+      <a href="/docs">Developers</a>
+      <a href="/login">Sign in</a>
+    </div>
+  </nav>
+</header>
+
+<main id="top">
+  <section id="life">
+    <div class="wrap">
+      <div class="head">
+        <h1 class="h2">Videos are checked, not kept.</h1>
+        <p class="sub lede">What happens to a video from upload to deletion, what we keep, and who processes it.</p>
+      </div>
+      <div class="panel">
+        <div class="media" id="vaultScene"></div>
+        <div class="read">
+          <span class="label">The life of a video</span>
+          <p class="reason">The decision stays. The video does not.</p>
+          <p class="when">upload · analysis · decision · deleted</p>
+          <p class="hint"><strong>A video waiting for a reviewer</strong> is kept until a person decides, 14 days at most, then deleted anyway.</p>
+        </div>
+      </div>
+      <div class="steps">
+        <div><h3>Upload</h3><p>Into a private bucket, with a signed URL that expires. There is no public link.</p></div>
+        <div><h3>Analysis</h3><p>The video is checked once against your rubric.</p></div>
+        <div><h3>Decision</h3><p>Accepted and rejected videos are deleted right after the decision. A failed analysis is deleted after its last retry.</p></div>
+        <div><h3>Review</h3><p>Doubtful videos wait for a person: 14 days at most.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section id="keep">
+    <div class="wrap">
+      <h2 class="h2">What we keep, and what we don’t.</h2>
+      <p class="sub lede">We keep what surrounds the video, so you have a record of every call. We do not keep the video.</p>
+      <div class="sides">
+        <div class="side2">
+          <h3>Kept, per customer</h3>
+          <ul>
+            <li><b>Decisions</b>, their reasons and every measurement</li>
+            <li><b>Rubric versions</b>, as they were when used</li>
+            <li><b>Reviewer decisions</b> and their notes</li>
+            <li><b>Lab outcomes</b></li>
+            <li><b>Fingerprints</b> that cannot be turned back into video</li>
+          </ul>
+        </div>
+        <div class="side2">
+          <h3>Not kept</h3>
+          <ul>
+            <li><b>The video</b> after analysis</li>
+            <li><b>Contributor names, emails and payment details.</b> We only see an opaque id.</li>
+            <li><b>Anything visible to another customer.</b> Nothing is shared across customers.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section id="models">
+    <div class="wrap">
+      <h2 class="h2">Models and training.</h2>
+      <div class="steps">
+        <div><h3>No training without opt-in</h3><p>If you opt in, your videos train Ormes’s own models only, at a lower price.</p></div>
+        <div><h3>No third-party models by default</h3><p>A general model such as Gemini is used as a fallback only if your organisation turns it on.</p></div>
+        <div><h3>Never resold</h3><p>Videos are never resold or shown to another customer.</p></div>
+        <div><h3>A DPA for everyone</h3><p>Every customer can sign a data processing agreement.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section id="isolation">
+    <div class="wrap">
+      <h2 class="h2">Isolation and keys.</h2>
+      <div class="sides">
+        <div class="side2">
+          <h3>Between customers</h3>
+          <ul>
+            <li><b>Row-level security</b> per organisation, in the database itself</li>
+            <li><b>No cross-customer matching.</b> Fingerprints are compared only inside your own account.</li>
+          </ul>
+        </div>
+        <div class="side2">
+          <h3>Keys and webhooks</h3>
+          <ul>
+            <li><b>API keys and webhook secrets</b> are shown once. We keep only a hash of the API key.</li>
+            <li><b>Signed webhooks:</b> HMAC-SHA256 with a timestamp</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section id="processors">
+    <div class="wrap">
+      <h2 class="h2">Who processes your data.</h2>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>PROVIDER</th><th>WHAT IT DOES</th><th>WHERE</th></tr></thead>
+          <tbody>
+            <tr><td>Supabase</td><td>Database, private video storage, sign-in</td><td>EU, Stockholm</td></tr>
+            <tr><td>Vercel</td><td>The web app and the API</td><td>Serves the app</td></tr>
+            <tr><td>Modal</td><td>Runs the analysis of each video</td><td>Compute only; nothing is stored</td></tr>
+            <tr><td>Google Gemini</td><td>General model used as a fallback</td><td>Only if your organisation enables it</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta dark">
+    <div class="wrap">
+      <h2>Questions from your security team?</h2>
+      <p class="sub">Read the data handling page or sign the DPA. We answer the rest in a call.</p>
+      <div class="ctas">
+        <a class="btn btn-light" href="/signup">Start a free pilot</a>
+        <a class="btn btn-ghost" href="/data">Data handling</a>
+        <a class="btn btn-ghost" href="/dpa">DPA</a>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="dark">
+  <div class="wrap">
+    <span>Ormes</span>
+    <nav><a href="/security">Security</a><a href="/data">Data handling</a><a href="/dpa">DPA</a><a href="/docs">Docs</a></nav>
+  </div>
+</footer>
+
+<script>
+/* Ormes scene: a first-person view of hands at work, drawn in SVG. One accent colour, everything else greys. */
+(function () {
+  var NS = 'http://www.w3.org/2000/svg', GREEN = '#6EE7A8', SOFT = '#F3F4F6', OUTL = '#A3A3A8', FILL = '#0A0A0B', uid = 0;
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  var ease = function (x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); };
+  var lerp = function (a, b, k) { return a + (b - a) * k; };
+  /* A limb is drawn twice: a wider stroke in the outline colour, then a narrower one in the fill colour on top. Joined limbs read as one silhouette with a thin edge. */
+  function limb(P, w) {
+    var o = el('polyline', { fill: 'none', stroke: OUTL, 'stroke-width': w + 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, P.o);
+    var f = el('polyline', { fill: 'none', stroke: FILL, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, P.f);
+    return function (pts) { var v = pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '); o.setAttribute('points', v); f.setAttribute('points', v); };
+  }
+  function seg(p, len, a) { return [p[0] + len * Math.sin(a), p[1] - len * Math.cos(a)]; }
+  function hand(parent) {
+    var g = el('g', {}, parent), P = { o: el('g', {}, g), f: el('g', {}, g) };
+    limb(P, 52)([[0, 40], [0, 250]]);
+    limb(P, 60)([[0, -2], [0, 28]]);
+    var F = [[-23, 54], [-8, 64], [7.5, 58], [22, 44]].map(function (d, i) { return { x: d[0], L: d[1], i: i, set: limb(P, 13.5) }; });
+    var thumb = limb(P, 15);
+    function update(t, ph) {
+      F.forEach(function (f) {
+        var a0 = (f.i - 1.5) * 0.07, k = 0.95 + 0.05 * Math.sin(t * 2.1 + f.i * 1.1 + ph), b = 0.1 * Math.sin(t * 1.7 + f.i * 0.9 + ph);
+        var p0 = [f.x, -18], p1 = seg(p0, f.L * 0.52 * k, a0), p2 = seg(p1, f.L * 0.48 * k, a0 + b);
+        f.set([p0, p1, p2]);
+      });
+      var q0 = [-27, 14], q1 = seg(q0, 28, -0.85 + 0.05 * Math.sin(t * 1.9 + ph)), q2 = seg(q1, 22, -0.45);
+      thumb([q0, q1, q2]);
+    }
+    update(0, 0);
+    return { g: g, update: update };
+  }
+  function backdrop(svg) {
+    var id = 'bg' + (++uid), d = el('defs', {}, svg), lg = el('linearGradient', { id: id, x1: 0, y1: 0, x2: 0, y2: 1 }, d);
+    el('stop', { offset: 0, 'stop-color': '#0A0A0B' }, lg); el('stop', { offset: 1, 'stop-color': '#101012' }, lg);
+    el('rect', { width: 800, height: 500, fill: 'url(#' + id + ')' }, svg);
+    el('path', { d: 'M0 250H800', stroke: 'rgba(255,255,255,.07)', fill: 'none' }, svg);
+    el('ellipse', { cx: 400, cy: 362, rx: 172, ry: 44, fill: 'none', stroke: 'rgba(255,255,255,.12)' }, svg);
+    el('ellipse', { cx: 400, cy: 362, rx: 118, ry: 28, fill: 'none', stroke: 'rgba(255,255,255,.06)' }, svg);
+  }
+  function work(side, t) {
+    var L = side === 'L';
+    return [(L ? 285 : 525) + 14 * Math.sin(t * 3.4 + (L ? 0 : 1.7)), 336 + 6 * Math.sin(t * 5.1 + (L ? .5 : 2.1))];
+  }
+  var OUT = [740, 640];
+  /* modes: cycle (10 s story: right hand leaves and returns), both (steady), one (right hand cut at the frame edge) */
+  function presence(mode, side, t) {
+    if (mode === 'both') return 1;
+    if (mode === 'one') return side === 'L' ? 1 : 0.0;
+    if (side === 'L') return ease(t / 1);
+    return t < 1 ? ease(t) : t < 4.4 ? 1 : t < 5.4 ? 1 - ease(t - 4.4) : t < 7.6 ? 0 : t < 8.8 ? ease((t - 7.6) / 1.2) : 1;
+  }
+  function create(host, opts) {
+    var mode = opts.mode || 'both';
+    var svg = el('svg', { viewBox: '0 0 800 500', preserveAspectRatio: 'xMidYMid slice', role: 'img', 'aria-label': opts.label || '' }, host);
+    host.insertBefore(svg, host.firstChild);
+    backdrop(svg);
+    var H = { L: hand(svg), R: hand(svg) }, B = {};
+    ['L', 'R'].forEach(function (s) {
+      var g = el('g', {}, svg);
+      B[s] = { g: g, r: el('path', { fill: 'none', 'stroke-width': 1.25, 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke' }, g), t: el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-size': 12 }, g) };
+    });
+    function render(t) {
+      var info = {};
+      ['L', 'R'].forEach(function (s) {
+        var p = presence(mode, s, t), w = work(s, t), x, y;
+        if (mode === 'one' && s === 'R') { x = 790; y = 420; p = 1; } else { x = lerp(OUT[0] + (s === 'L' ? -440 : 0), w[0], p); y = lerp(OUT[1], w[1], p); }
+        var rot = s === 'L' ? 14 : -14, sc = s === 'L' ? '-1.5,1.5' : '1.5,1.5';
+        H[s].g.setAttribute('transform', 'translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ') rotate(' + rot + ') scale(' + sc + ')');
+        H[s].update(t, s === 'L' ? 0 : 2);
+        var partial = (mode === 'one' && s === 'R') || (p > 0.02 && p < 0.98);
+        var show = p > 0.5 || (mode === 'one' && s === 'R');
+        var b = B[s], col = partial ? SOFT : GREEN;
+        b.g.setAttribute('opacity', show ? 1 : 0);
+        var bx = x - 82, by = y - 126, bw = 140, bh = 186, c = 18;
+        b.r.setAttribute('d', 'M' + bx + ' ' + (by + c) + 'V' + by + 'H' + (bx + c) + 'M' + (bx + bw - c) + ' ' + by + 'H' + (bx + bw) + 'V' + (by + c) + 'M' + bx + ' ' + (by + bh - c) + 'V' + (by + bh) + 'H' + (bx + c) + 'M' + (bx + bw - c) + ' ' + (by + bh) + 'H' + (bx + bw) + 'V' + (by + bh - c));
+        b.r.setAttribute('stroke', col); b.r.setAttribute('stroke-opacity', partial ? .55 : .9);
+        b.t.setAttribute('x', x - 82); b.t.setAttribute('y', y - 134); b.t.setAttribute('fill', col); b.t.setAttribute('fill-opacity', partial ? .8 : .9);
+        b.t.textContent = (s === 'L' ? 'left hand' : 'right hand') + (partial ? ' · cut at frame edge' : ' · in view');
+        info[s] = p;
+      });
+      return info;
+    }
+    return { render: render };
+  }
+  window.OrmesScene = {
+    mount: function (host, opts) {
+      var sc = create(host, opts), still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var t0 = performance.now(), cycle = opts.cycle || 0;
+      function frame(now) {
+        var t = (now - t0) / 1000; if (cycle) t = t % cycle;
+        sc.render(t); if (opts.onTime) opts.onTime(t);
+        if (!still) requestAnimationFrame(frame);
+      }
+      if (still) { var ts = opts.stillAt == null ? 3 : opts.stillAt; sc.render(ts); if (opts.onTime) opts.onTime(ts, true); }
+      else requestAnimationFrame(frame);
+    }
+  };
+  (function () { var bt = document.querySelector('.burger'), mn = document.getElementById('menu'); if (!bt || !mn) return;
+    function set(o) { bt.setAttribute('aria-expanded', o ? 'true' : 'false'); mn.hidden = !o; }
+    bt.addEventListener('click', function () { set(mn.hidden); });
+    mn.addEventListener('click', function (e) { if (e.target.tagName === 'A') set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); }); })();
+  window.addEventListener('scroll', function () { var n = document.querySelector('.nav'); if (n) n.classList.toggle('scrolled', window.scrollY > 8); }, { passive: true });
+})();
+
+</script>
+<script>
+/* Ormes graphics, one concept per page. Black, white and one green.
+   filmstrip (landing): a video as frames, the hands check walks through them
+   skeleton  (product): how Ormes sees a hand, as tracked joints
+   scan      (drones):  a drone scans a solar field; two rows are never flown
+   vault     (security): a video is decided, then dissolves; the record stays
+   wire      (developers): three calls and a signed webhook */
+window.OrmesViz = (function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var BG = '#0A0A0B', W = '#F4F4F5', GRN = '#6EE7A8', DIM = '#8C8C92', EDGE = '#2A2A2E';
+  var SANS = 'Schibsted Grotesk, system-ui, sans-serif', MONO = 'JetBrains Mono, monospace';
+  function el(tag, a, p) { var e = document.createElementNS(NS, tag); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+  function txt(p, x, y, s, o) { var t = el('text', Object.assign({ x: x, y: y, fill: DIM, 'font-size': 15, 'font-family': SANS }, o || {}), p); t.textContent = s; return t; }
+  function base(host, label) {
+    var svg = el('svg', { viewBox: '0 0 800 500', preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': label });
+    host.style.background = BG; host.insertBefore(svg, host.firstChild); return svg;
+  }
+  function loop(cycle, still, render) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { render(still); return; }
+    var t0 = performance.now(); (function f(now) { render(Math.max(0, (now - t0) / 1000) % cycle); requestAnimationFrame(f); })(t0);
+  }
+  var clamp = function (v) { return Math.max(0, Math.min(1, v)); };
+  var ease = function (x) { x = clamp(x); return x * x * (3 - 2 * x); };
+  window.__vizTime = null;
+
+  /* a small hand, same drawing as the landing scene */
+  function miniHand(p, cx, cy, s, flip, rot) {
+    var g = el('g', { transform: 'translate(' + cx + ',' + cy + ') rotate(' + rot + ') scale(' + (flip ? -s : s) + ',' + s + ')' }, p), go = el('g', {}, g), gf = el('g', {}, g);
+    function limb(pts, w) {
+      var v = pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ');
+      el('polyline', { points: v, fill: 'none', stroke: '#A3A3A8', 'stroke-width': w + 3.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, go);
+      el('polyline', { points: v, fill: 'none', stroke: BG, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gf);
+    }
+    limb([[0, 40], [0, 160]], 52); limb([[0, -2], [0, 28]], 60);
+    [[-23, 54], [-8, 64], [7.5, 58], [22, 44]].forEach(function (d, i) {
+      var a = (i - 1.5) * 0.07, p0 = [d[0], -18], p1 = [p0[0] + d[1] * .52 * Math.sin(a), p0[1] - d[1] * .52 * Math.cos(a)], p2 = [p1[0] + d[1] * .48 * Math.sin(a), p1[1] - d[1] * .48 * Math.cos(a)];
+      limb([p0, p1, p2], 13.5);
+    });
+    var q0 = [-27, 14], q1 = [q0[0] + 28 * Math.sin(-.85), q0[1] - 28 * Math.cos(-.85)], q2 = [q1[0] + 22 * Math.sin(-.45), q1[1] - 22 * Math.cos(-.45)];
+    limb([q0, q1, q2], 15);
+  }
+
+  /* LANDING: the video as eight frames; a check walks through them and stops where the right hand is missing */
+  function filmstrip(host) {
+    var svg = base(host, 'Eight frames of a video. The hands check passes on frames 0 to 2 and 7, and flags frames 3 to 6, where the right hand is out of the frame');
+    var FW = 168, FH = 112, GX = 20, X0 = 34, Y = [92, 244], F = [], defs = el('defs', {}, svg);
+    for (var i = 0; i < 8; i++) {
+      var x = X0 + (i % 4) * (FW + GX), y = Y[Math.floor(i / 4)], miss = i >= 3 && i <= 6;
+      var cp = el('clipPath', { id: 'fc' + i }, defs); el('rect', { x: x, y: y, width: FW, height: FH, rx: 8 }, cp);
+      var g = el('g', { 'clip-path': 'url(#fc' + i + ')' }, svg);
+      el('rect', { x: x, y: y, width: FW, height: FH, fill: '#101012' }, g);
+      el('line', { x1: x, y1: y + 44, x2: x + FW, y2: y + 44, stroke: '#1E1E21' }, g);
+      el('ellipse', { cx: x + FW / 2, cy: y + 78, rx: 58, ry: 13, fill: 'none', stroke: '#222226' }, g);
+      miniHand(g, x + 50, y + 100, 0.5, true, 12);
+      if (!miss) miniHand(g, x + 118, y + 100, 0.5, false, -12);
+      else if (i === 3) miniHand(g, x + 182, y + 100, 0.5, false, -12);
+      else if (i === 6) miniHand(g, x + 168, y + 112, 0.5, false, -12);
+      txt(svg, x + 10, y + 20, '0:0' + i, { 'font-family': MONO, 'font-size': 12 });
+      var edge = el('rect', { x: x, y: y, width: FW, height: FH, rx: 8, fill: 'none', stroke: EDGE }, svg);
+      var mark = el('g', { opacity: 0 }, svg);
+      if (miss) el('circle', { cx: x + FW - 16, cy: y + 16, r: 5.5, fill: 'none', stroke: W, 'stroke-opacity': .7, 'stroke-dasharray': '2 2.5' }, mark);
+      else { el('circle', { cx: x + FW - 16, cy: y + 16, r: 6, fill: 'none', stroke: GRN }, mark); el('path', { d: 'M' + (x + FW - 19) + ' ' + (y + 16) + 'l2.2 2.4 4-4.6', fill: 'none', stroke: GRN, 'stroke-width': 1.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, mark); }
+      F.push({ edge: edge, mark: mark, miss: miss });
+    }
+    var cap = txt(svg, 400, 418, 'review  ·  right hand out of the frame  ·  0:03 – 0:07', { 'text-anchor': 'middle', fill: W, 'font-size': 17, opacity: 0 });
+    loop(14, 12, function (t) {
+      var a = Math.min(7, Math.floor(t / 1.1)), over = t > 9.2;
+      F.forEach(function (f, i) {
+        var seen = i < a || (i === a && t % 1.1 > 0.5) || over;
+        f.mark.setAttribute('opacity', seen ? 1 : 0);
+        f.edge.setAttribute('stroke', i === a && !over ? GRN : (seen && f.miss ? '#8C8C92' : EDGE));
+        f.edge.setAttribute('stroke-width', i === a && !over ? 1.6 : 1);
+        f.edge.setAttribute('stroke-dasharray', seen && f.miss ? '5 4' : '');
+      });
+      cap.setAttribute('opacity', a >= 3 || over ? 1 : 0);
+    });
+  }
+
+  /* PRODUCT: how Ormes sees one hand. Joints, bones, and three things it measures */
+  function skeleton(host) {
+    var svg = base(host, 'A hand seen as tracked joints and bones, slowly opening and closing, with three measurements pointing at it');
+    var S = 1.7, TX = 400, TY = 214, TXA = 400;
+    /* finger: base point, direction (deg from up), three bone lengths */
+    var FING = [
+      { n: 'thumb', b: [-40, 92], a: -52, L: [30, 24, 20], k: 0.5 },
+      { n: 'index', b: [-30, 22], a: -7, L: [40, 26, 20], k: 1 },
+      { n: 'middle', b: [-8, 16], a: -1, L: [46, 30, 22], k: 1 },
+      { n: 'ring', b: [14, 20], a: 5, L: [42, 28, 20], k: 1 },
+      { n: 'pinky', b: [34, 32], a: 12, L: [32, 20, 16], k: 1 }
+    ], WR = [0, 120];
+    var pal = el('polygon', { fill: 'rgba(255,255,255,.035)', stroke: 'rgba(255,255,255,.22)', 'stroke-linejoin': 'round' }, svg);
+    var bones = FING.map(function () { return el('polyline', { fill: 'none', stroke: W, 'stroke-opacity': .78, 'stroke-width': 1.3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg); });
+    var spokes = FING.map(function () { return el('line', { stroke: W, 'stroke-opacity': .3, 'stroke-width': 1 }, svg); });
+    var joints = [], tips = [];
+    FING.forEach(function () { var j = []; for (var q = 0; q < 3; q++) j.push(el('circle', { r: 3, fill: BG, stroke: W, 'stroke-opacity': .9 }, svg)); joints.push(j); tips.push(el('circle', { r: 4.2, fill: GRN }, svg)); });
+    var wrist = el('circle', { r: 3.4, fill: BG, stroke: W }, svg);
+    function tf(p) { return [TXA + p[0] * S, TY + p[1] * S]; }
+    /* callouts */
+    var calls = [
+      { who: 'tip', side: -1, y: 96, a: 'fingertips', b: 'in the frame' },
+      { who: 'palm', side: 1, y: 236, a: 'palm', b: '93% visible' },
+      { who: 'wrist', side: -1, y: 424, a: 'wrist', b: 'enters from below' }
+    ];
+    var cg = el('g', {}, svg);
+    calls.forEach(function (c) {
+      var tx = c.side < 0 ? 56 : 744, an = c.side < 0 ? 'start' : 'end';
+      c.line = el('polyline', { fill: 'none', stroke: W, 'stroke-opacity': .35, 'stroke-width': 1 }, cg);
+      c.dot = el('circle', { r: 2.2, fill: GRN }, cg);
+      txt(cg, tx, c.y, c.a, { fill: W, 'font-size': 16, 'text-anchor': an });
+      txt(cg, tx, c.y + 20, c.b, { 'font-family': MONO, 'font-size': 12, 'text-anchor': an });
+      c.tx = c.side < 0 ? 56 + 150 : 744 - 100; c.ty = c.y - 5;
+    });
+    var card = el('g', { opacity: 0 }, svg);
+    el('rect', { x: 468, y: 118, width: 292, height: 264, rx: 14, fill: '#101012', stroke: EDGE }, card);
+    txt(card, 492, 154, 'DECISION', { 'font-family': MONO, 'font-size': 12 });
+    el('circle', { cx: 498, cy: 190, r: 7, fill: 'none', stroke: W, 'stroke-width': 1.6 }, card);
+    txt(card, 516, 198, 'review', { fill: W, 'font-family': MONO, 'font-size': 26 });
+    txt(card, 492, 238, 'Right hand out of frame', { fill: W, 'font-size': 19 });
+    txt(card, 492, 262, '0:03 – 0:07 · hands_visible', { 'font-family': MONO, 'font-size': 12 });
+    el('line', { x1: 492, y1: 284, x2: 736, y2: 284, stroke: EDGE }, card);
+    txt(card, 492, 314, 'In view 50% of the time.', { fill: DIM, 'font-size': 15 });
+    txt(card, 492, 336, 'Your rubric asks for at least 80%.', { fill: DIM, 'font-size': 15 });
+    txt(card, 492, 364, 'Sent to a reviewer, at that moment.', { fill: GRN, 'font-size': 14 });
+    function pose(t) {
+      var c = 0.36 + 0.36 * Math.sin(t * 0.85), out = {}, pts = [];
+      FING.forEach(function (f, i) {
+        var cur = c * f.k + (f.n === 'thumb' ? 0.15 * Math.sin(t * 1.3) : 0), p = f.b.slice(), a = f.a * Math.PI / 180, res = [p.slice()];
+        for (var s = 0; s < 3; s++) {
+          var len = f.L[s] * Math.cos(cur * (0.55 + s * 0.5));
+          p = [p[0] + len * Math.sin(a), p[1] - len * Math.cos(a)]; res.push(p.slice());
+        }
+        pts.push(res);
+      });
+      return pts;
+    }
+    loop(14, 9, function (t) {
+      var sh = ease((t - 7) / 1.2), back = ease((t - 12.4) / 1.2), m = sh * (1 - back);
+      TXA = TX - 150 * m;
+      cg.setAttribute('opacity', 1 - ease((t - 6.6) / 0.6) + ease((t - 13) / 0.6) * 1);
+      card.setAttribute('opacity', m);
+      var pts = pose(Math.min(t, 7.2) * (t < 7.2 ? 1 : 1)), ring = [WR];
+      pts.forEach(function (r, i) {
+        var T = r.map(tf);
+        bones[i].setAttribute('points', T.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '));
+        var b = tf(r[0]); spokes[i].setAttribute('x1', tf(WR)[0]); spokes[i].setAttribute('y1', tf(WR)[1]); spokes[i].setAttribute('x2', b[0]); spokes[i].setAttribute('y2', b[1]);
+        for (var q = 0; q < 3; q++) { joints[i][q].setAttribute('cx', T[q][0]); joints[i][q].setAttribute('cy', T[q][1]); }
+        tips[i].setAttribute('cx', T[3][0]); tips[i].setAttribute('cy', T[3][1]);
+      });
+      var order = [1, 2, 3, 4].map(function (i) { return tf(pts[i][0]); }), th = tf(pts[0][0]);
+      pal.setAttribute('points', [tf(WR), th].concat(order).map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '));
+      var w = tf(WR); wrist.setAttribute('cx', w[0]); wrist.setAttribute('cy', w[1]);
+      var targets = { tip: tf(pts[2][3]), palm: tf([-4, 62]), wrist: w };
+      calls.forEach(function (c) {
+        var q = targets[c.who], mx = c.side < 0 ? Math.min(c.tx, q[0] - 40) : Math.max(c.tx, q[0] + 40);
+        c.line.setAttribute('points', [c.tx, c.ty, mx, c.ty, q[0], q[1]].map(function (v) { return v.toFixed(1); }).join(' '));
+        c.dot.setAttribute('cx', q[0]); c.dot.setAttribute('cy', q[1]);
+      });
+    });
+  }
+
+  /* a quadcopter in three-quarter view; returns a group, origin at the centre of the body */
+  function drone(p) {
+    var g = el('g', {}), spinners = [];
+    p.appendChild(g);
+    var R = [[-34, -17, 0], [34, -17, 0], [-60, 15, 1], [60, 15, 1]];
+    R.forEach(function (r) { el('line', { x1: 0, y1: 0, x2: r[0], y2: r[1], stroke: W, 'stroke-opacity': r[2] ? .9 : .5, 'stroke-width': 2.6, 'stroke-linecap': 'round' }, g); });
+    [[0, 10, -16, 28], [0, 10, 16, 28]].forEach(function () { });
+    el('line', { x1: -17, y1: 8, x2: -25, y2: 30, stroke: W, 'stroke-opacity': .7, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: 17, y1: 8, x2: 25, y2: 30, stroke: W, 'stroke-opacity': .7, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: -30, y1: 30, x2: -20, y2: 30, stroke: W, 'stroke-opacity': .7, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: 20, y1: 30, x2: 30, y2: 30, stroke: W, 'stroke-opacity': .7, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
+    R.forEach(function (r) {
+      el('ellipse', { cx: r[0], cy: r[1] - 5, rx: 29, ry: 7.5, fill: BG, 'fill-opacity': .0, stroke: W, 'stroke-opacity': r[2] ? .5 : .28 }, g);
+      var sp = el('ellipse', { cx: r[0], cy: r[1] - 5, rx: 25, ry: 5.8, fill: 'none', stroke: W, 'stroke-opacity': r[2] ? .35 : .2, 'stroke-dasharray': '10 14' }, g); spinners.push(sp);
+      el('circle', { cx: r[0], cy: r[1] - 5, r: 3, fill: BG, stroke: W, 'stroke-opacity': .8 }, g);
+    });
+    el('rect', { x: -24, y: -11, width: 48, height: 22, rx: 10, fill: BG, stroke: W, 'stroke-opacity': .95, 'stroke-width': 1.5 }, g);
+    el('rect', { x: -12, y: -6, width: 24, height: 9, rx: 4.5, fill: 'none', stroke: W, 'stroke-opacity': .35 }, g);
+    el('circle', { cx: 0, cy: 22, r: 7, fill: BG, stroke: W, 'stroke-width': 1.5 }, g);
+    el('circle', { cx: 0, cy: 24, r: 2.4, fill: GRN }, g);
+    return { g: g, spin: function (t) { spinners.forEach(function (s, i) { s.setAttribute('stroke-dashoffset', (-t * 140 * (i % 2 ? 1 : -1)).toFixed(1)); }); } };
+  }
+
+  /* DRONES: the drone hovers, its camera sweeps the rows of a solar field in perspective; the last two rows are never scanned */
+  function scan(host, cb) {
+    var svg = base(host, 'A drone scans ten rows of solar panels in perspective. It scans the first eight. The last two rows get no photos');
+    var N = 10, ROWS = [], CX = 400;
+    for (var k = 0; k < N; k++) {
+      var y = 262 + k * 19, w = 380 + k * 24;
+      var r = { y: y, w: w, x0: CX - w / 2, h: 12 };
+      r.base = el('rect', { x: r.x0, y: y, width: w, height: r.h, rx: 2, fill: 'none', stroke: W, 'stroke-opacity': .2 }, svg);
+      for (var c = 1; c < 16; c++) el('line', { x1: r.x0 + c * w / 16, y1: y, x2: r.x0 + c * w / 16, y2: y + r.h, stroke: W, 'stroke-opacity': .07 }, svg);
+      r.fill = el('rect', { x: r.x0, y: y, width: 0, height: r.h, rx: 2, fill: GRN, 'fill-opacity': .22 }, svg);
+      r.edge = el('rect', { x: r.x0, y: y, width: w, height: r.h, rx: 2, fill: 'none', stroke: GRN, 'stroke-opacity': 0 }, svg);
+      ROWS.push(r);
+    }
+    var cone = el('polygon', { fill: GRN, 'fill-opacity': .07 }, svg);
+    var l1 = el('line', { stroke: GRN, 'stroke-opacity': .4 }, svg), l2 = el('line', { stroke: GRN, 'stroke-opacity': .4 }, svg);
+    var foot = el('polygon', { fill: GRN, 'fill-opacity': .12, stroke: GRN, 'stroke-opacity': .9, 'stroke-width': 1.2 }, svg);
+    var dr = drone(svg);
+    var miss = el('g', { opacity: 0 }, svg), my = ROWS[8].y - 8, mh = ROWS[9].y + ROWS[9].h - ROWS[8].y + 16;
+    el('rect', { x: ROWS[9].x0 - 12, y: my, width: ROWS[9].w + 24, height: mh, rx: 5, fill: 'none', stroke: W, 'stroke-opacity': .8, 'stroke-dasharray': '6 5' }, miss);
+    var bx = 500, by = 64;
+    el('rect', { x: bx, y: by, width: 270, height: 118, rx: 12, fill: '#101012', stroke: EDGE }, miss);
+    txt(miss, bx + 20, by + 30, 'COVERAGE', { 'font-family': MONO, 'font-size': 12 });
+    txt(miss, bx + 20, by + 64, '86%', { fill: W, 'font-family': MONO, 'font-size': 30 });
+    txt(miss, bx + 100, by + 62, 'the contract asks 100%', { fill: DIM, 'font-size': 14 });
+    txt(miss, bx + 20, by + 96, 'rows 9–10 · no photos', { fill: W, 'font-family': MONO, 'font-size': 13 });
+    el('polyline', { fill: 'none', stroke: W, 'stroke-opacity': .35, points: '745,' + (by + 118) + ' 745,' + (my + mh / 2) + ' ' + (ROWS[9].x0 + ROWS[9].w + 12) + ',' + (my + mh / 2) }, miss);
+    var PASS = 2.0, GAP = 0.25, END = 4 * (PASS + GAP);
+    loop(END + 5.5, END + 3, function (t) {
+      var pi = Math.min(3, Math.floor(t / (PASS + GAP))), within = t - pi * (PASS + GAP), done = t >= END, k = clamp(within / PASS), e = ease(k);
+      var dir = pi % 2 ? -1 : 1, u = dir * (-0.78 + 1.56 * e);
+      if (done) { pi = 3; u = (3 % 2 ? -1 : 1) * 0.78; }
+      var r0 = ROWS[pi * 2], r1 = ROWS[pi * 2 + 1], wmid = (r0.w + r1.w) / 2;
+      var dx = CX + u * wmid / 2, dy = 118 + 5 * Math.sin(t * 2.2), sc = 1.12;
+      dr.g.setAttribute('transform', 'translate(' + dx.toFixed(1) + ',' + dy.toFixed(1) + ') scale(' + sc + ')');
+      dr.spin(t);
+      var gx = dx, gy = dy + 24 * sc, fw0 = 0.2 * r0.w, fw1 = 0.2 * r1.w, ya = r0.y, yb = r1.y + r1.h;
+      var TL = [dx - fw0 / 2, ya], TR = [dx + fw0 / 2, ya], BR = [dx + fw1 / 2, yb], BL = [dx - fw1 / 2, yb];
+      var show = !done;
+      cone.setAttribute('points', [[gx, gy], TL, TR, BR, BL].map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '));
+      cone.setAttribute('opacity', show ? 1 : 0); foot.setAttribute('opacity', show ? 1 : 0);
+      foot.setAttribute('points', [TL, TR, BR, BL].map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '));
+      l1.setAttribute('x1', gx); l1.setAttribute('y1', gy); l1.setAttribute('x2', TL[0]); l1.setAttribute('y2', TL[1]);
+      l2.setAttribute('x1', gx); l2.setAttribute('y1', gy); l2.setAttribute('x2', TR[0]); l2.setAttribute('y2', TR[1]);
+      l1.setAttribute('opacity', show ? 1 : 0); l2.setAttribute('opacity', show ? 1 : 0);
+      ROWS.forEach(function (r, i) {
+        var p = Math.floor(i / 2), full = done ? (p < 4) : (p < pi), cur = !done && p === pi, wdt = 0;
+        if (full) wdt = r.w; else if (cur) { var from = dir > 0 ? r.x0 : r.x0 + r.w, a = Math.min(from, dx + 0), edgeX = dx; wdt = dir > 0 ? clamp((edgeX + fw0 / 2 - r.x0) / r.w) * r.w : clamp((r.x0 + r.w - (edgeX - fw0 / 2)) / r.w) * r.w; }
+        r.fill.setAttribute('width', wdt.toFixed(1));
+        if (cur && dir < 0) r.fill.setAttribute('x', (r.x0 + r.w - wdt).toFixed(1)); else r.fill.setAttribute('x', r.x0.toFixed(1));
+        r.edge.setAttribute('stroke-opacity', full ? .6 : 0);
+      });
+      miss.setAttribute('opacity', done ? ease((t - END - 0.3) / 0.6) : 0);
+      if (cb) cb(t - END);
+    });
+  }
+  /* small tile for the cards on the landing page */
+
+  /* SECURITY: a video is analysed, decided, then dissolves. The record of the decision stays. */
+  function vault(host) {
+    var svg = base(host, 'A video is uploaded, analysed and decided, then deleted. The decision record stays.');
+    var root = el('g', {}, svg), xs = [110, 290, 470, 690], names = ['UPLOAD', 'ANALYSIS', 'DECISION', 'DELETED'];
+    el('line', { x1: 110, y1: 150, x2: 690, y2: 150, stroke: EDGE, 'stroke-width': 1.5 }, root);
+    var prog = el('line', { x1: 110, y1: 150, x2: 110, y2: 150, stroke: GRN, 'stroke-width': 1.5 }, root);
+    var dots = [], labs = [];
+    xs.forEach(function (x, i) {
+      dots.push(el('circle', { cx: x, cy: 150, r: 6, fill: BG, stroke: EDGE, 'stroke-width': 1.5 }, root));
+      labs.push(txt(root, x, 184, names[i], { 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 13, 'letter-spacing': '1.2' }));
+    });
+    var tile = el('g', {}, root);
+    el('rect', { x: -44, y: -29, width: 88, height: 58, rx: 7, fill: '#141416', stroke: W, 'stroke-opacity': .85 }, tile);
+    [-12, 2, 16].forEach(function (y, i) { el('line', { x1: -30, y1: y, x2: i === 2 ? 4 : 30, y2: y, stroke: W, 'stroke-opacity': .22, 'stroke-width': 2, 'stroke-linecap': 'round' }, tile); });
+    var scanL = el('line', { x1: -44, y1: 0, x2: 44, y2: 0, stroke: GRN, 'stroke-width': 1.6, opacity: 0 }, tile);
+    var bits = [];
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 4; c++) bits.push({ r: r, c: c, e: el('rect', { width: 22, height: 19, rx: 3, fill: '#141416', stroke: W, 'stroke-opacity': .7, opacity: 0 }, root) });
+    var badge = el('g', { opacity: 0 }, root);
+    el('rect', { x: 430, y: 40, width: 80, height: 26, rx: 13, fill: 'none', stroke: GRN }, badge);
+    el('circle', { cx: 446, cy: 53, r: 4, fill: GRN }, badge);
+    txt(badge, 458, 58, 'accept', { fill: W, 'font-family': MONO, 'font-size': 13 });
+    var link = el('line', { x1: 470, y1: 162, x2: 470, y2: 252, stroke: GRN, 'stroke-width': 1.3, 'stroke-dasharray': '90', 'stroke-dashoffset': 90, opacity: .9 }, root);
+    var card = el('g', {}, root);
+    el('rect', { x: 190, y: 252, width: 560, height: 220, rx: 14, fill: '#101012', stroke: EDGE }, card);
+    txt(card, 220, 286, 'KEPT FOR YOU', { 'font-family': MONO, 'font-size': 12, 'letter-spacing': '1.4' });
+    var rows = [['decision', 'accept'], ['measurements', 'all 38, with their values'], ['rubric', 'hands-v3, the version used'], ['fingerprint', 'stored, cannot become a video']], rowEls = [];
+    rows.forEach(function (rw, i) {
+      var y = 330 + i * 38, g = el('g', { opacity: 0 }, card);
+      el('line', { x1: 220, y1: y - 22, x2: 720, y2: y - 22, stroke: EDGE }, g);
+      txt(g, 220, y, rw[0], { 'font-family': MONO, 'font-size': 13.5 });
+      txt(g, 400, y, rw[1], { fill: W, 'font-size': 16 });
+      if (i === 0) el('circle', { cx: 388, cy: y - 5, r: 0, fill: GRN }, g);
+      rowEls.push(g);
+    });
+    var cardGhost = card; card.setAttribute('opacity', 0);
+    var END = 10, dxs = [-14, -4, 10, 22, -20, 6, 14, 26, -10, 0, 18, 30];
+    loop(11, 9, function (t) {
+      var fade = 1 - ease((t - END) / 0.9); root.setAttribute('opacity', fade.toFixed(3));
+      var x, o = ease(t / 0.4);
+      if (t < 0.4) x = 110; else if (t < 1.8) x = 110 + 180 * ease((t - 0.4) / 1.4); else if (t < 4.2) x = 290; else if (t < 5.2) x = 290 + 180 * ease(t - 4.2); else x = 470;
+      var dissolve = clamp((t - 5.8) / 1.3);
+      tile.setAttribute('transform', 'translate(' + x.toFixed(1) + ',98)');
+      tile.setAttribute('opacity', (dissolve > 0 ? 0 : o).toFixed(2));
+      var sp = t > 1.8 && t < 4.2 ? (t - 1.8) / 2.4 : -1;
+      scanL.setAttribute('opacity', sp >= 0 ? 1 : 0);
+      if (sp >= 0) { var yy = -29 + 58 * (0.5 - 0.5 * Math.cos(sp * Math.PI * 3)); scanL.setAttribute('y1', yy.toFixed(1)); scanL.setAttribute('y2', yy.toFixed(1)); }
+      bits.forEach(function (b, i) {
+        var e = clamp(dissolve * 1.15 - (i % 4) * 0.06);
+        b.e.setAttribute('opacity', dissolve > 0 ? (0.9 * (1 - ease(e))).toFixed(2) : 0);
+        b.e.setAttribute('x', (470 - 44 + b.c * 22 + dxs[i] * ease(e) * 1.6 + 0).toFixed(1));
+        b.e.setAttribute('y', (98 - 29 + b.r * 19.5 + ((i * 7) % 5 - 1) * 5 * ease(e) + 22 * ease(e) * ease(e)).toFixed(1));
+        b.e.setAttribute('transform', 'rotate(' + (dxs[i] * ease(e) * 0.8).toFixed(1) + ' ' + (470 + (b.c - 1.5) * 22) + ' ' + (98 + (b.r - 1) * 19.5) + ')');
+      });
+      var px = t > 6 ? 110 + 580 * 1 : x;
+      var reach = t < 5.9 ? x : 470 + 220 * ease((t - 6.1) / 1.0);
+      prog.setAttribute('x2', Math.min(690, reach).toFixed(1));
+      dots.forEach(function (d, i) {
+        var lit = i < 3 ? reach >= xs[i] - 1 && t > 0.3 + (i ? 0.3 : -0.3) : t > 7.0;
+        d.setAttribute('fill', lit ? GRN : BG); d.setAttribute('stroke', lit ? GRN : EDGE);
+        labs[i].setAttribute('fill', lit ? W : DIM);
+      });
+      badge.setAttribute('opacity', ease((t - 5.2) / 0.4).toFixed(2));
+      link.setAttribute('stroke-dashoffset', (90 * (1 - ease((t - 5.3) / 0.6))).toFixed(1));
+      card.setAttribute('opacity', ease((t - 5.7) / 0.4).toFixed(2));
+      rowEls.forEach(function (g, i) {
+        g.setAttribute('opacity', ease((t - 6.0 - i * 0.4) / 0.35).toFixed(2));
+        if (i === 0) { var cc = g.querySelector('circle'); if (cc) cc.setAttribute('r', (4 * ease((t - 6.0) / 0.35)).toFixed(1)); }
+      });
+    });
+  }
+
+  /* DEVELOPERS: the conversation between your system and Ormes, ending in a signed decision */
+  function wire(host) {
+    var svg = base(host, 'Your system calls Ormes three times, then receives the decision by webhook.');
+    var root = el('g', {}, svg), L = 130, R = 670;
+    el('line', { x1: L, y1: 76, x2: L, y2: 350, stroke: EDGE, 'stroke-width': 1.5 }, root);
+    el('line', { x1: R, y1: 76, x2: R, y2: 350, stroke: EDGE, 'stroke-width': 1.5 }, root);
+    txt(root, L, 54, 'YOUR SYSTEM', { 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 13, 'letter-spacing': '1.4', fill: W });
+    txt(root, R, 54, 'ORMES', { 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 13, 'letter-spacing': '1.4', fill: W });
+    var msgs = [
+      { y: 108, a: 0.3, label: '1  POST /v1/videos', sub: 'rubric, file details', dir: 1 },
+      { y: 172, a: 1.6, label: '2  PUT upload_url', sub: 'the video bytes', dir: 1 },
+      { y: 236, a: 2.9, label: '3  POST /complete', sub: 'start the analysis', dir: 1 },
+      { y: 330, a: 5.0, label: 'video.decided', sub: 'signed webhook', dir: -1, g: true }
+    ];
+    msgs.forEach(function (m) {
+      m.line = el('line', { x1: m.dir > 0 ? L : R, y1: m.y, x2: m.dir > 0 ? L : R, y2: m.y, stroke: m.g ? GRN : W, 'stroke-opacity': m.g ? 1 : .75, 'stroke-width': 1.5 }, root);
+      m.dot = el('circle', { cx: m.dir > 0 ? L : R, cy: m.y, r: 5, fill: m.g ? GRN : W, opacity: 0 }, root);
+      m.t1 = txt(root, 400, m.y - 12, m.label, { 'text-anchor': 'middle', 'font-family': MONO, 'font-size': 14, fill: W, opacity: 0 });
+      m.t2 = txt(root, 400, m.y + 22, m.sub, { 'text-anchor': 'middle', 'font-size': 14, opacity: 0 });
+    });
+    var work = el('line', { x1: R, y1: 262, x2: R, y2: 262, stroke: GRN, 'stroke-width': 4, 'stroke-linecap': 'round' }, root);
+    var wt = txt(root, R - 18, 290, 'checks the rubric', { 'text-anchor': 'end', opacity: 0 });
+    var card = el('g', { opacity: 0 }, root);
+    el('rect', { x: 60, y: 372, width: 420, height: 108, rx: 12, fill: '#101012', stroke: EDGE }, card);
+    var cl = [['decision', 'reject'], ['reason', 'hands_visible.below_min, 61%'], ['rubric', 'rub_load_dishwasher v3']], cr = [];
+    cl.forEach(function (c, i) {
+      var g = el('g', { opacity: 0 }, card), y = 402 + i * 26;
+      txt(g, 84, y, c[0], { 'font-family': MONO, 'font-size': 13 }); txt(g, 184, y, c[1], { fill: W, 'font-family': MONO, 'font-size': 13.5 }); cr.push(g);
+    });
+    loop(11, 9, function (t) {
+      root.setAttribute('opacity', (1 - ease((t - 10) / 0.9)).toFixed(3));
+      msgs.forEach(function (m) {
+        var p = clamp((t - m.a) / 1.0), x = m.dir > 0 ? L + (R - L) * ease(p) : R - (R - L) * ease(p);
+        m.line.setAttribute('x2', x.toFixed(1)); m.dot.setAttribute('cx', x.toFixed(1));
+        m.dot.setAttribute('opacity', p > 0 && p < 1 ? 1 : 0);
+        m.t1.setAttribute('opacity', ease((t - m.a) / 0.3).toFixed(2)); m.t2.setAttribute('opacity', ease((t - m.a - 0.2) / 0.3).toFixed(2));
+      });
+      var wp = clamp((t - 3.9) / 1.1); work.setAttribute('y2', (262 + 40 * ease(wp)).toFixed(1)); work.setAttribute('opacity', wp > 0 ? 1 : 0);
+      wt.setAttribute('opacity', ease((t - 4.0) / 0.3).toFixed(2));
+      card.setAttribute('opacity', ease((t - 6.1) / 0.4).toFixed(2));
+      cr.forEach(function (g, i) { g.setAttribute('opacity', ease((t - 6.3 - i * 0.35) / 0.3).toFixed(2)); });
+    });
+  }
+
+  function icon(host, kind) {
+    var svg = el('svg', { viewBox: '0 0 300 140', preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': kind === 'drone' ? 'A drone hovering' : 'Two hands' });
+    host.style.background = BG; host.appendChild(svg);
+    if (kind === 'drone') {
+      var d = drone(svg);
+      el('line', { x1: 40, y1: 126, x2: 260, y2: 126, stroke: W, 'stroke-opacity': .15 }, svg);
+      loop(8, 1, function (t) { d.g.setAttribute('transform', 'translate(150,' + (62 + 4 * Math.sin(t * 1.6)).toFixed(1) + ') scale(.95)'); d.spin(t); });
+    } else {
+      var g = el('g', {}, svg);
+      miniHand(g, 118, 108, 0.4, true, 12); miniHand(g, 182, 108, 0.4, false, -12);
+      el('path', { d: 'M70 30v-16h16M230 30v-16h-16M70 110v16h16M230 110v16h-16', fill: 'none', stroke: GRN, 'stroke-opacity': .85, 'stroke-width': 1.3, 'stroke-linecap': 'round' }, svg);
+    }
+  }
+  return { filmstrip: filmstrip, skeleton: skeleton, scan: scan, vault: vault, wire: wire, icon: icon };
+})();
+
+</script>
+<script>
+OrmesViz.vault(document.getElementById('vaultScene'));
+
+</script>
+</body></html>
