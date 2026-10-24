@@ -571,7 +571,7 @@ def cmd_checks_report(a: argparse.Namespace) -> int:
              "serve": None}
     train = json.loads(a.train.read_text())
     status = ("checks passed, validation not scored yet" if c["passed"] else
-              "**a check failed: the head was not scored on validation clips**")
+              "a check failed: the head was not scored on validation clips")
     lines = ["# Task head v1: first trained head, scored once on the benchmark tasks slice", "",
              f"**Status: {status}.** A measurement of where the task model stands, not a verdict "
              "on the product.", "", "## Provenance", ""]
