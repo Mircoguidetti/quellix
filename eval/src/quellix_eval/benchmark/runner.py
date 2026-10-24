@@ -73,7 +73,9 @@ def summarise(decision: Mapping[str, Any] | None) -> tuple[str | None, dict[str,
 
 def holo_clips(kind: str, sessions_n: int, work: Path, seed: int,
                remote: holo.Remote, client: httpx.Client,
-               split: str = "val") -> tuple[list[ClipRecord], dict]:
+               split: str = "val", tolerant: bool = False) -> tuple[list[ClipRecord], dict]:
+    """`tolerant`: a session whose video cannot be downloaded is skipped instead of stopping the
+    run. Training sets use it; the benchmark does not (a lost clip would change its slice)."""
     ann_path = work / "annotations.json"
     if not ann_path.exists():
         ann_path.write_bytes(client.get(holo.ANNOTATIONS_URL).raise_for_status().content)
@@ -104,7 +106,14 @@ def holo_clips(kind: str, sessions_n: int, work: Path, seed: int,
                 continue
         with tempfile.TemporaryDirectory(dir=work) as td:
             src = Path(td) / "video.mp4"
-            vreader.copy_to(member.offset, member.size, src)
+            try:
+                vreader.copy_to(member.offset, member.size, src)
+            except Exception as e:  # noqa: BLE001
+                if not tolerant:
+                    raise
+                print(f"{kind} {session}: download failed: {e}", file=sys.stderr)
+                skip("video could not be downloaded")
+                continue
             try:
                 if kind == "tasks":
                     recs = holo.task_clips(session, ann[session], src, work / "clips")
