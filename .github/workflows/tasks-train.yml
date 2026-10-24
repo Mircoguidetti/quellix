@@ -84,6 +84,7 @@ jobs:
       QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
       OUT: ${{ github.workspace }}/eval/out/train
       EMB: ${{ github.workspace }}/emb-cache
+      UV_NO_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Start clock
@@ -102,6 +103,9 @@ jobs:
         run: |
           (cd eval && uv sync --extra data)
           (cd models/tasks && uv sync --extra embed)
+          # transformers' SigLIP image processor needs Pillow (or torchvision); the locked
+          # `embed` extra has neither. Installed into the venv only: uv.lock stays untouched.
+          (cd models/tasks && uv pip install pillow)
           df -h / | tail -1
       - uses: actions/cache@v4
         with:
@@ -220,6 +224,7 @@ jobs:
     env:
       OUT: ${{ github.workspace }}/eval/out/val
       QUELLIX_HOLO_CACHE: ${{ github.workspace }}/eval/out/holo-cache
+      UV_NO_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -256,6 +261,9 @@ jobs:
         run: |
           (cd eval && uv sync --extra data)
           (cd models/tasks && uv sync --extra embed)
+          # transformers' SigLIP image processor needs Pillow (or torchvision); the locked
+          # `embed` extra has neither. Installed into the venv only: uv.lock stays untouched.
+          (cd models/tasks && uv pip install pillow)
       - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
